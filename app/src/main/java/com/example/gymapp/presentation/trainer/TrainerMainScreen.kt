@@ -34,25 +34,26 @@ fun TrainerMainScreen(
     val navController = rememberNavController()
 
     val tabs = listOf(
-    TrainerTab("dashboard", "Dashboard", Icons.Default.Home),
-    TrainerTab("create_workout", "Criar Treino", Icons.Default.Add),
-    TrainerTab("manage_workouts", "Treinos", Icons.Default.FitnessCenter),
-    TrainerTab("exercises", "Exercícios", Icons.Default.ViewModule),
-    TrainerTab("students", "Alunos", Icons.Default.People),
-    TrainerTab("announcements", "Avisos", Icons.Default.Notifications)
+        TrainerTab("dashboard", "Dashboard", Icons.Default.Home),
+        TrainerTab("workouts", "Treinos", Icons.Default.FitnessCenter),
+        TrainerTab("exercises", "Exercícios", Icons.Default.ViewModule),
+        TrainerTab("students", "Alunos", Icons.Default.People),
+        TrainerTab("announcements", "Avisos", Icons.Default.Notifications),
+        TrainerTab("profile", "Perfil", Icons.Default.Person)
     )
 
     val isAdmin by viewModel.isAdmin.collectAsState()
+
     val visibleTabs = if (isAdmin) {
-    tabs + TrainerTab("admin", "Admin", Icons.Default.AdminPanelSettings)
+        tabs + TrainerTab("admin", "Admin", Icons.Default.AdminPanelSettings)
     } else {
-    tabs
+        tabs
     }
 
     Scaffold(
-        topBar = { TrainerHeader() },
+        topBar = { TrainerHeader(isAdmin = isAdmin) },
         bottomBar = { TrainerBottomBar(navController = navController, tabs = visibleTabs) },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -62,34 +63,46 @@ fun TrainerMainScreen(
             composable("dashboard") {
                 ProfessorDashboardScreen(
                     viewModel = viewModel,
-                    onNavigate = { route -> navController.navigate(route) { launchSingleTop = true } }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
-            composable("create_workout") {
-                CreateWorkoutScreen(viewModel = viewModel)
-            }
-            composable("manage_workouts") {
-            ManageWorkoutsScreen(viewModel = viewModel)
+            composable("workouts") {
+                WorkoutHubScreen(viewModel = viewModel)
             }
             composable("exercises") {
-            ManageExercisesScreen(viewModel = viewModel)
+                ManageExercisesScreen(viewModel = viewModel)
             }
             composable("students") {
                 StudentsOverviewScreen(viewModel = viewModel)
             }
             composable("announcements") {
-            CreateAnnouncementScreen(viewModel = viewModel)
+                CreateAnnouncementScreen(viewModel = viewModel)
+            }
+            composable("profile") {
+                TrainerProfileScreen(
+                    viewModel = viewModel,
+                    themeManager = viewModel.themeManager,
+                    onLogout = onLogout
+                )
             }
             composable("admin") {
-            AdminScreen(viewModel = viewModel)
+                AdminScreen(viewModel = viewModel)
             }
-            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TrainerHeader() {
+private fun TrainerHeader(isAdmin: Boolean) {
     TopAppBar(
         title = {
             Column {
@@ -101,7 +114,7 @@ private fun TrainerHeader() {
                     )
                 )
                 Text(
-                    text = "Painel do Professor",
+                    text = if (isAdmin) "Painel do Admin" else "Painel do Professor",
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -128,7 +141,7 @@ private fun TrainerBottomBar(
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
         tabs.forEach { tab ->
@@ -138,17 +151,19 @@ private fun TrainerBottomBar(
                 selected = currentRoute == tab.route,
                 onClick = {
                     navController.navigate(tab.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = IfgGreen,
-                    selectedTextColor = IfgGreen,
-                    unselectedIconColor = TextSecondary,
-                    unselectedTextColor = TextSecondary,
-                    indicatorColor = Green100
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
         }

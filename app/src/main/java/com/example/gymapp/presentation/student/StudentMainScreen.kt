@@ -24,6 +24,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.gymapp.domain.model.WorkoutAssignment
 import com.example.gymapp.ui.theme.*
 
+import com.example.gymapp.ui.theme.ThemeManager
+
 data class StudentTab(
     val route: String,
     val label: String,
@@ -33,6 +35,7 @@ data class StudentTab(
 @Composable
 fun StudentMainScreen(
     viewModel: StudentViewModel = hiltViewModel(),
+    themeManager: ThemeManager,
     onStartWorkout: (WorkoutAssignment) -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
@@ -50,7 +53,7 @@ fun StudentMainScreen(
     Scaffold(
         topBar = { StudentHeader() },
         bottomBar = { StudentBottomBar(navController = navController, tabs = tabs) },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -58,7 +61,11 @@ fun StudentMainScreen(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") {
-            StudentHomeScreen(viewModel = viewModel, onStartWorkout = onStartWorkout, onNavigate = { route -> navController.navigate(route) { launchSingleTop = true } })
+                StudentHomeScreen(viewModel = viewModel, onStartWorkout = onStartWorkout, onNavigate = { route ->
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                    }
+                })
             }
             composable("workouts") {
                 StudentWorkoutsScreen(viewModel = viewModel, onStartWorkout = onStartWorkout)
@@ -73,7 +80,11 @@ fun StudentMainScreen(
                 StudentCommunicationScreen(viewModel = viewModel)
             }
             composable("profile") {
-                StudentProfileScreen(viewModel = viewModel, onLogout = onLogout)
+                StudentProfileScreen(
+                    viewModel = viewModel,
+                    themeManager = themeManager,
+                    onLogout = onLogout
+                )
             }
         }
     }
@@ -120,7 +131,7 @@ private fun StudentBottomBar(
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
         tabs.forEach { tab ->
@@ -130,17 +141,19 @@ private fun StudentBottomBar(
                 selected = currentRoute == tab.route,
                 onClick = {
                     navController.navigate(tab.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = IfgGreen,
-                    selectedTextColor = IfgGreen,
-                    unselectedIconColor = TextSecondary,
-                    unselectedTextColor = TextSecondary,
-                    indicatorColor = Green100
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
         }

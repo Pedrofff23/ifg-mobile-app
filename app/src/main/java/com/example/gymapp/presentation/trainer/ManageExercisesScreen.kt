@@ -70,7 +70,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                 Icon(Icons.Default.Add, contentDescription = "Novo Exercício")
             }
         },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Text(
@@ -80,7 +80,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
             Text(
                 "Gerencie o catálogo de exercícios",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -93,7 +93,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -128,13 +128,13 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                             Icons.Default.FitnessCenter,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = TextSecondary
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "Nenhum exercício encontrado",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -182,7 +182,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                         Icon(
                                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                             contentDescription = if (isExpanded) "Recolher" else "Expandir",
-                                            tint = TextSecondary
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -198,7 +198,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                             Text(
                                                 exercise.description,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = TextSecondary
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                         }
@@ -333,7 +333,7 @@ private fun ExerciseFormDialog(
             label = { Text("Nome") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
             )
             OutlinedTextField(
             value = description,
@@ -342,7 +342,7 @@ private fun ExerciseFormDialog(
             minLines = 2,
             maxLines = 4,
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
             )
 
                 var groupExpanded by remember { mutableStateOf(false) }
@@ -357,7 +357,7 @@ private fun ExerciseFormDialog(
                     label = { Text("Grupo Muscular") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                     )
                     ExposedDropdownMenu(
                         expanded = groupExpanded,
@@ -389,7 +389,7 @@ private fun ExerciseFormDialog(
                 label = { Text("URL do vídeo (opcional)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
             }
         },

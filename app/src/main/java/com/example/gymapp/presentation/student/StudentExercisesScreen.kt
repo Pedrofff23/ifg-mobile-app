@@ -41,7 +41,7 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
         )
         Text(
             text = "Explore todos os exercícios disponíveis",
-            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         )
 
@@ -82,9 +82,9 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = TextPrimary,
-            unfocusedTextColor = TextPrimary,
-            cursorColor = IfgGreen,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            cursorColor = MaterialTheme.colorScheme.primary,
             unfocusedContainerColor = LightSurfaceVariant,
             focusedContainerColor = LightSurfaceVariant
             )
@@ -107,12 +107,12 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
                     text = {
                         Text(
                             category,
-                            color = if (selectedCategory == category) IfgGreen else TextSecondary,
+                            color = if (selectedCategory == category) IfgGreen else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (selectedCategory == category) FontWeight.SemiBold else FontWeight.Normal
                         )
                     },
                     selectedContentColor = IfgGreen,
-                    unselectedContentColor = TextSecondary
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -137,7 +137,7 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
                     ) {
                         Text(
                             "Nenhum exercício encontrado",
-                            style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary)
+                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
                 }
@@ -162,7 +162,7 @@ private fun ExerciseCard(exercise: Exercise) {
             if (exercise.description.isNotBlank()) {
                 Text(
                     text = exercise.description,
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     maxLines = 2
                 )
             }

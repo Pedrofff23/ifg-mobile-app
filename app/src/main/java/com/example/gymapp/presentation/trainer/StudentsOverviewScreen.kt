@@ -58,7 +58,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         // Title
         Text("Meus Alunos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-        Text("Gerencie e acompanhe seus alunos", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        Text("Gerencie e acompanhe seus alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(16.dp))
 
         // Search bar
@@ -69,7 +69,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -88,9 +88,9 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
         } else if (students.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                    Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Nenhum aluno encontrado", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                    Text("Nenhum aluno encontrado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -116,7 +116,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(student.fullName ?: "", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(student.email, style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(student.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     if (student.isActive) {
@@ -152,7 +152,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                             readOnly = true,
                             label = { Text("Selecionar Treino") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = templateExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                         )
                         ExposedDropdownMenu(expanded = templateExpanded, onDismissRequest = { templateExpanded = false }) {
                             templates.forEach { template ->
@@ -169,7 +169,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         onValueChange = { startsAt = it },
                         label = { Text("Data início (YYYY-MM-DD)") },
                         modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                 }
             },
@@ -213,7 +213,7 @@ private fun StatCardSmall(
             Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(4.dp))
             Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = iconTint)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

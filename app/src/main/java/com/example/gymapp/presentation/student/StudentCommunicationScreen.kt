@@ -77,7 +77,7 @@ fun StudentCommunicationScreen(viewModel: StudentViewModel) {
                     onClick = { selectedTab = index },
                     text = { Text(title, fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal) },
                     selectedContentColor = IfgGreen,
-                    unselectedContentColor = TextSecondary
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -105,10 +105,10 @@ private fun MuralTab(announcements: List<Announcement>?) {
                     Icons.Default.Notifications,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = TextSecondary
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Nenhum aviso no mural", style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary))
+                Text("Nenhum aviso no mural", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
         }
     } else {
@@ -139,7 +139,7 @@ private fun AnnouncementCard(announcement: Announcement) {
                 Icon(
                 Icons.Default.Notifications,
                 contentDescription = null,
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -160,19 +160,19 @@ private fun AnnouncementCard(announcement: Announcement) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextSecondary)
+                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = announcement.authorName ?: "Administração",
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextSecondary)
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = announcement.publishedAt?.take(10) ?: announcement.createdAt?.take(10) ?: "",
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
             }
@@ -246,7 +246,7 @@ private fun InstructionCard(instruction: Instrução) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = instruction.content,
-                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
             )
         }
     }
@@ -260,9 +260,9 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Newspaper, contentDescription = null, modifier = Modifier.size(48.dp), tint = TextSecondary)
+                Icon(Icons.Default.Newspaper, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Nenhuma notícia disponível", style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary))
+                Text("Nenhuma notícia disponível", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
         }
     } else {
@@ -290,7 +290,7 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
                                 Icons.AutoMirrored.Filled.Article,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = TextSecondary
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Text(
@@ -300,7 +300,7 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = announcement.publishedAt?.take(10) ?: "",
-                            style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
                 }

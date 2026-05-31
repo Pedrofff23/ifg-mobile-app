@@ -58,7 +58,7 @@ fun AdminScreen(viewModel: ProfessorViewModel) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Text(
@@ -68,7 +68,7 @@ fun AdminScreen(viewModel: ProfessorViewModel) {
             Text(
                 "Promova usuários e altere status",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -81,7 +81,7 @@ fun AdminScreen(viewModel: ProfessorViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -124,9 +124,9 @@ fun AdminScreen(viewModel: ProfessorViewModel) {
             } else if (filteredUsers.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Nenhum usuário encontrado", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                        Text("Nenhum usuário encontrado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -246,7 +246,7 @@ private fun UserCard(
                     user.fullName ?: "",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
-                Text(user.email, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             // Role badge
@@ -334,7 +334,7 @@ private fun RoleChangeDialog(
                 Text(
                     "Papel atual: ${user.role.replaceFirstChar { it.uppercase() }}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 roles.forEach { role ->

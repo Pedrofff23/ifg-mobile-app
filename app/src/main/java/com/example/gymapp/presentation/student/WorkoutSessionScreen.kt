@@ -45,7 +45,7 @@ fun WorkoutSessionScreen(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
     CircularProgressIndicator(color = IfgGreen)
     Spacer(modifier = Modifier.height(16.dp))
-    Text("Carregando sessão...", style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary))
+    Text("Carregando sessão...", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
     }
     }
     return
@@ -99,7 +99,7 @@ fun WorkoutSessionScreen(
         )
         Text(
         text = "Sessão ${session?.sessionNumber ?: "..."}",
-        style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
         )
         }
         if (sessionState == WorkoutSessionState.Resumed) {
@@ -128,7 +128,7 @@ fun WorkoutSessionScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Exercício ${currentExerciseIndex + 1} de $totalExercises",
-                style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary),
+                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
@@ -320,7 +320,7 @@ private fun SetRow(
                         text = "$setNumber",
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = if (isCurrentSet) Color.White else TextSecondary
+                            color = if (isCurrentSet) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -342,7 +342,7 @@ private fun SetRow(
                 placeholder = { Text("kg", style = MaterialTheme.typography.labelSmall) },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodySmall,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
@@ -380,7 +380,7 @@ private fun RatingDialog(
                             Icon(
                                 if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = null,
-                                tint = if (star <= rating) Color(0xFFFFC107) else TextSecondary,
+                                tint = if (star <= rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(32.dp)
                             )
                         }
@@ -393,7 +393,7 @@ private fun RatingDialog(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Observações (opcional)") },
                 maxLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
             }
         },

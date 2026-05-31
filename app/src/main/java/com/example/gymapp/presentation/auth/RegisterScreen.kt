@@ -90,7 +90,7 @@ fun RegisterScreen(
                 )
                 Text(
                     text = "Preencha seus dados para se registrar",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
@@ -110,9 +110,9 @@ fun RegisterScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = InputBackground,
                         focusedContainerColor = InputBackground,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = IfgGreen
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -129,9 +129,9 @@ fun RegisterScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = InputBackground,
                         focusedContainerColor = InputBackground,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = IfgGreen
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -157,9 +157,9 @@ fun RegisterScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = InputBackground,
                         focusedContainerColor = InputBackground,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = IfgGreen
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -200,7 +200,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TextButton(onClick = onNavigateToLogin) {
-                    Text("Já tem uma conta? ", color = TextSecondary)
+                    Text("Já tem uma conta? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Entre aqui", color = IfgGreen, fontWeight = FontWeight.SemiBold)
                 }
 

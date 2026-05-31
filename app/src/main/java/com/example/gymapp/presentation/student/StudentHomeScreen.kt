@@ -134,7 +134,7 @@ fun StudentHomeScreen(
                                     )
                                     Text(
                                         text = "${sessions.size} sessões realizadas",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
+                                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
                                 }
@@ -149,7 +149,7 @@ fun StudentHomeScreen(
                     } else {
                         Text(
                             text = "Nenhum treino atribuído",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                             modifier = Modifier.padding(16.dp)
                         )
                     }
@@ -313,7 +313,7 @@ private fun StatCard(
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
             )
         }
     }

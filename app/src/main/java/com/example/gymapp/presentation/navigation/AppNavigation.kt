@@ -20,6 +20,7 @@ import com.example.gymapp.presentation.auth.RegisterScreen
 import com.example.gymapp.presentation.student.StudentMainScreen
 import com.example.gymapp.presentation.student.WorkoutSessionScreen
 import com.example.gymapp.presentation.trainer.TrainerMainScreen
+import com.example.gymapp.ui.theme.ThemeManager
 
 object Routes {
     const val SPLASH = "splash"
@@ -33,7 +34,7 @@ object Routes {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(themeManager: ThemeManager) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
 
@@ -110,6 +111,7 @@ fun AppNavigation() {
 
         composable(Routes.STUDENT_HOME) {
             StudentMainScreen(
+                themeManager = themeManager,
                 onStartWorkout = { assignment ->
                     navController.navigate(Routes.workoutSessionRoute(assignment.id))
                 },

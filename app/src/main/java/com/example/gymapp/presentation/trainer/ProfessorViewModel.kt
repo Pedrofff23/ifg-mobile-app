@@ -16,6 +16,7 @@ import com.example.gymapp.domain.model.UpdateRoleRequest
 import com.example.gymapp.domain.model.UpdateStatusRequest
 import com.example.gymapp.domain.model.User
 import com.example.gymapp.domain.model.WorkoutTemplate
+import com.example.gymapp.ui.theme.ThemeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class ProfessorViewModel @Inject constructor(
     private val erpService: ErpService,
     private val userService: UserService,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    val themeManager: ThemeManager,
 ) : ViewModel() {
 
     private val _students = MutableStateFlow<List<User>>(emptyList())

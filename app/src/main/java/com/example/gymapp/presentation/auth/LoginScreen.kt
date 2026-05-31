@@ -85,7 +85,7 @@ fun LoginScreen(
                 )
                 Text(
                     text = "Instituto Federal de Goiás",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
@@ -103,9 +103,9 @@ fun LoginScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = InputBackground,
                         focusedContainerColor = InputBackground,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = IfgGreen
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -132,9 +132,9 @@ fun LoginScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = InputBackground,
                         focusedContainerColor = InputBackground,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = IfgGreen
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -154,7 +154,7 @@ fun LoginScreen(
 
                 // Register Link
                 TextButton(onClick = onNavigateToRegister) {
-                    Text("Não tem conta? ", color = TextSecondary)
+                    Text("Não tem conta? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Criar Conta", color = IfgGreen, fontWeight = FontWeight.SemiBold)
                 }
 

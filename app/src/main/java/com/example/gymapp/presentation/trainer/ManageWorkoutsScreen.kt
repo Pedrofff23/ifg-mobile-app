@@ -69,11 +69,11 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Text("Gerenciar Treinos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-            Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -83,7 +83,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -94,9 +94,9 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
             } else if (filteredTemplates.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                        Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Nenhum treino encontrado", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                        Text("Nenhum treino encontrado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -128,7 +128,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                                         Icon(
                                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                             contentDescription = if (isExpanded) "Recolher" else "Expandir",
-                                            tint = TextSecondary
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -155,7 +155,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                                 // Expandable exercises list
                                 AnimatedVisibility(
@@ -165,7 +165,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                                 ) {
                                     Column(modifier = Modifier.padding(top = 12.dp)) {
                                         if (template.exercises.isEmpty()) {
-                                            Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                            Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         } else {
                                             template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
                                                 Row(
@@ -193,7 +193,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                                                         Text(
                                                             "${ex.defaultSets}x${ex.defaultReps} reps · ${ex.defaultRestSeconds}s descanso",
                                                             style = MaterialTheme.typography.bodySmall,
-                                                            color = TextSecondary
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
                                                 }
@@ -263,7 +263,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                             readOnly = true,
                             label = { Text("Selecionar Aluno") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                         )
                         ExposedDropdownMenu(expanded = alunoExpanded, onDismissRequest = { alunoExpanded = false }) {
                             alunoOptions.forEach { student ->
@@ -280,7 +280,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                         onValueChange = { startsAt = it },
                         label = { Text("Data início (YYYY-MM-DD)") },
                         modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                 }
             },
@@ -374,7 +374,7 @@ private fun EditTemplateDialog(
         title = { Text("Editar Treino") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
 
                 var typeExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
@@ -382,7 +382,7 @@ private fun EditTemplateDialog(
                         value = type, onValueChange = {}, readOnly = true,
                         label = { Text("Tipo") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                     ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
                         typeOptions.forEach { t -> DropdownMenuItem(text = { Text(t) }, onClick = { type = t; typeExpanded = false }) }
@@ -395,14 +395,14 @@ private fun EditTemplateDialog(
                         value = difficulty, onValueChange = {}, readOnly = true,
                         label = { Text("Dificuldade") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = diffExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                     ExposedDropdownMenu(expanded = diffExpanded, onDismissRequest = { diffExpanded = false }) {
                         diffOptions.forEach { d -> DropdownMenuItem(text = { Text(d) }, onClick = { difficulty = d; diffExpanded = false }) }
                     }
                 }
 
-                OutlinedTextField(value = totalSessions, onValueChange = { totalSessions = it }, label = { Text("Total de Sessões") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                OutlinedTextField(value = totalSessions, onValueChange = { totalSessions = it }, label = { Text("Total de Sessões") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
 
                 // Exercise list
                 Text("Exercícios (${exerciseEntries.size})", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
@@ -418,7 +418,7 @@ private fun EditTemplateDialog(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(entry.exerciseName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
-                                Text("${entry.defaultSets}x${entry.defaultReps} · ${entry.defaultRestSeconds}s", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                Text("${entry.defaultSets}x${entry.defaultReps} · ${entry.defaultRestSeconds}s", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             IconButton(onClick = {
                                 exerciseEntries = exerciseEntries.toMutableList().also { it.removeAt(idx) }
@@ -508,7 +508,7 @@ private fun AddExerciseToTemplateDialog(
                     label = { Text("Buscar exercício...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                 )
 
                 var exerciseExpanded by remember { mutableStateOf(false) }
@@ -518,7 +518,7 @@ private fun AddExerciseToTemplateDialog(
                         onValueChange = {}, readOnly = true,
                         label = { Text("Exercício") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exerciseExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                     ExposedDropdownMenu(expanded = exerciseExpanded, onDismissRequest = { exerciseExpanded = false }) {
                         available.forEach { ex ->
@@ -531,10 +531,10 @@ private fun AddExerciseToTemplateDialog(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = setsText, onValueChange = { setsText = it }, label = { Text("Séries") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
-                    OutlinedTextField(value = repsText, onValueChange = { repsText = it }, label = { Text("Reps") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                    OutlinedTextField(value = setsText, onValueChange = { setsText = it }, label = { Text("Séries") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
+                    OutlinedTextField(value = repsText, onValueChange = { repsText = it }, label = { Text("Reps") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
                 }
-                OutlinedTextField(value = restText, onValueChange = { restText = it }, label = { Text("Descanso (seg)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                OutlinedTextField(value = restText, onValueChange = { restText = it }, label = { Text("Descanso (seg)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
             }
         },
         confirmButton = {

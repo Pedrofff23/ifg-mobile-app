@@ -50,7 +50,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                 )
                 Text(
                     text = "Acompanhe sua evolução",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -160,13 +160,13 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                                 ) {
                                     Text(
                                         text = day.first().toString(),
-                                        style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary)
+                                        style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = day,
-                                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
                         }
@@ -201,7 +201,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                         )
                         Text(
                             text = session.startedAt?.take(10) ?: "N/A",
-                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
                     if (session.finishedAt != null) {
@@ -246,7 +246,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                             )
                             Text(
                                 text = measurement.measuredAt.take(10),
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                             )
                         }
                         Text(
@@ -296,7 +296,7 @@ private fun ProgressStatCard(
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
             )
         }
     }

@@ -38,7 +38,7 @@ fun StudentWorkoutsScreen(
         )
         Text(
             text = "Treinos atribuídos pelo seu treinador",
-            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
+            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         )
 
@@ -95,12 +95,12 @@ fun StudentWorkoutsScreen(
                                     Icons.Default.FitnessCenter,
                                     contentDescription = null,
                                     modifier = Modifier.size(48.dp),
-                                    tint = TextSecondary
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "Nenhum treino atribuído",
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary)
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
                         }
@@ -154,7 +154,7 @@ private fun WorkoutCard(
                 if (assignment.startsAt.isNotBlank()) {
                     Badge(
                         containerColor = LightSurfaceVariant,
-                        contentColor = TextSecondary
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ) { Text("Início: ${assignment.startsAt.take(10)}") }
                 }
             }

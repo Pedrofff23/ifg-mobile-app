@@ -25,6 +25,7 @@ import com.example.gymapp.ui.theme.*
 @Composable
 fun StudentProfileScreen(
     viewModel: StudentViewModel,
+    themeManager: ThemeManager,
     onLogout: () -> Unit = {}
 ) {
     val profile by viewModel.profile.collectAsState()
@@ -34,8 +35,11 @@ fun StudentProfileScreen(
     val updateSuccess by viewModel.updateSuccess.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    val currentTheme by themeManager.themeScheme.collectAsState(initial = AppThemeScheme.DARK_ANTIGRAVITY)
+
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showLogWeightDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     val userEmail by viewModel.userEmail.collectAsState()
 
@@ -184,6 +188,29 @@ fun StudentProfileScreen(
                 }
             }
 
+            // Theme selection button
+            item {
+                OutlinedButton(
+                    onClick = { showThemeDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Default.Palette, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Tema do App")
+                        Text(
+                            text = currentTheme.displayName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             // Recent Measurements
             if (measurements.isNotEmpty()) {
                 item {
@@ -251,6 +278,141 @@ fun StudentProfileScreen(
             }
         )
     }
+
+    // Theme selection dialog
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = currentTheme,
+            onThemeSelected = { scheme ->
+                themeManager.setThemeSchemeAsync(scheme)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun ThemeSelectionDialog(
+    currentTheme: AppThemeScheme,
+    onThemeSelected: (AppThemeScheme) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val schemes = AppThemeScheme.entries
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Selecionar Tema") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Claro",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                schemes.filter { !it.isDark }.forEach { scheme ->
+                    ThemeOptionRow(
+                        scheme = scheme,
+                        isSelected = currentTheme == scheme,
+                        onClick = { onThemeSelected(scheme) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Escuro",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                schemes.filter { it.isDark }.forEach { scheme ->
+                    ThemeOptionRow(
+                        scheme = scheme,
+                        isSelected = currentTheme == scheme,
+                        onClick = { onThemeSelected(scheme) }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Concluído") }
+        }
+    )
+}
+
+@Composable
+private fun ThemeOptionRow(
+    scheme: AppThemeScheme,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val bgColor = when (scheme) {
+        AppThemeScheme.LIGHT_FOREST -> LightForestBg
+        AppThemeScheme.LIGHT_OCEAN -> LightOceanBg
+        AppThemeScheme.LIGHT_SAND -> LightSandBg
+        AppThemeScheme.DARK_ANTIGRAVITY -> DarkAntigravityBg
+        AppThemeScheme.DARK_MIDNIGHT -> DarkMidnightBg
+        AppThemeScheme.DARK_OBSIDIAN -> DarkObsidianBg
+    }
+    val accentColor = when (scheme) {
+        AppThemeScheme.LIGHT_FOREST -> LightForestPrimary
+        AppThemeScheme.LIGHT_OCEAN -> LightOceanPrimary
+        AppThemeScheme.LIGHT_SAND -> LightSandPrimary
+        AppThemeScheme.DARK_ANTIGRAVITY -> DarkAntigravityPrimary
+        AppThemeScheme.DARK_MIDNIGHT -> DarkMidnightPrimary
+        AppThemeScheme.DARK_OBSIDIAN -> DarkObsidianPrimary
+    }
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Color preview swatch
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(bgColor)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(accentColor)
+                        .align(Alignment.BottomEnd)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = scheme.displayName,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            if (isSelected) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = "Selecionado",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -275,7 +437,7 @@ private fun EditProfileDialog(
                 label = { Text("Peso (kg)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
                 OutlinedTextField(
                 value = heightText,
@@ -283,7 +445,7 @@ private fun EditProfileDialog(
                 label = { Text("Altura (cm)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
                 OutlinedTextField(
                 value = injuriesText,
@@ -292,7 +454,7 @@ private fun EditProfileDialog(
                 minLines = 2,
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
             }
         },
@@ -336,7 +498,7 @@ private fun LogWeightDialog(
                 label = { Text("Peso atual (kg)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
                 OutlinedTextField(
                 value = notesText,
@@ -345,7 +507,7 @@ private fun LogWeightDialog(
                 minLines = 2,
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                 )
             }
         },
@@ -383,14 +545,14 @@ private fun ProfileInfoRow(
         Icon(
             icon,
             contentDescription = null,
-            tint = TextSecondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
             )
             Text(
                 text = value,

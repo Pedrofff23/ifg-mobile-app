@@ -41,13 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.gymapp.ui.theme.Blue100
-import com.example.gymapp.ui.theme.Green100
-import com.example.gymapp.ui.theme.IfgGreen
-import com.example.gymapp.ui.theme.Orange100
-import com.example.gymapp.ui.theme.Orange600
-import com.example.gymapp.ui.theme.Purple100
-import com.example.gymapp.ui.theme.TextSecondary
+import com.example.gymapp.ui.theme.*
 
 @Composable
 fun ProfessorDashboardScreen(
@@ -86,7 +80,6 @@ fun ProfessorDashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Header
             Text(
                 text = "Painel do Professor",
                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -97,12 +90,11 @@ fun ProfessorDashboardScreen(
             Text(
                 text = "Visão geral da academia",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Stats Grid 2x2
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -111,16 +103,16 @@ fun ProfessorDashboardScreen(
                     title = "Total Alunos",
                     value = students.size.toString(),
                     icon = Icons.Default.People,
-                    iconBackgroundColor = Green100,
-                    iconTint = IfgGreen,
+                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    iconTint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = "Treinos Ativos",
                     value = templates.size.toString(),
                     icon = Icons.Default.FitnessCenter,
-                    iconBackgroundColor = Blue100,
-                    iconTint = Color(0xFF2563EB),
+                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    iconTint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -135,23 +127,22 @@ fun ProfessorDashboardScreen(
                     title = "Exercícios",
                     value = exercises.size.toString(),
                     icon = Icons.AutoMirrored.Filled.MenuBook,
-                    iconBackgroundColor = Purple100,
-                    iconTint = Color(0xFF7C3AED),
+                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    iconTint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = "Avisos",
                     value = announcements.size.toString(),
                     icon = Icons.Default.Notifications,
-                    iconBackgroundColor = Orange100,
-                    iconTint = Orange600,
+                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    iconTint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Quick Actions Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -176,15 +167,15 @@ fun ProfessorDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         QuickActionButton(
-                            label = "Criar Treino",
+                            label = "Treinos",
                             icon = Icons.Default.FitnessCenter,
-                            onClick = { onNavigate("create_workout") },
+                            onClick = { onNavigate("workouts") },
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionButton(
-                            label = "Gerenciar Treinos",
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
-                            onClick = { onNavigate("manage_workouts") },
+                            label = "Ver Alunos",
+                            icon = Icons.Default.People,
+                            onClick = { onNavigate("students") },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -196,15 +187,15 @@ fun ProfessorDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         QuickActionButton(
-                            label = "Ver Alunos",
-                            icon = Icons.Default.People,
-                            onClick = { onNavigate("students") },
+                            label = "Novo Aviso",
+                            icon = Icons.Default.AddCircle,
+                            onClick = { onNavigate("announcements") },
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionButton(
-                            label = "Novo Aviso",
-                            icon = Icons.Default.AddCircle,
-                            onClick = { onNavigate("create_announcement") },
+                            label = "Exercícios",
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
+                            onClick = { onNavigate("exercises") },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -213,7 +204,6 @@ fun ProfessorDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Recent Activity Section
             Text(
                 text = "Atividade Recente",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -224,12 +214,11 @@ fun ProfessorDashboardScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Recent templates
             if (templates.isNotEmpty()) {
                 Text(
                     text = "Treinos",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 templates.take(3).forEach { template ->
@@ -242,13 +231,12 @@ fun ProfessorDashboardScreen(
                 }
             }
 
-            // Recent announcements
             if (announcements.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Avisos",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 announcements.take(3).forEach { announcement ->
@@ -272,7 +260,7 @@ fun ProfessorDashboardScreen(
                     Text(
                         text = "Nenhuma atividade recente",
                         modifier = Modifier.padding(24.dp),
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -318,7 +306,9 @@ private fun StatCard(
                     modifier = Modifier.size(22.dp)
                 )
             }
+
             Spacer(modifier = Modifier.height(10.dp))
+
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -327,11 +317,13 @@ private fun StatCard(
                 fontSize = 28.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
+
             Spacer(modifier = Modifier.height(2.dp))
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -350,7 +342,7 @@ private fun QuickActionButton(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = IfgGreen.copy(alpha = 0.08f)
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -364,7 +356,7 @@ private fun QuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = IfgGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -373,7 +365,7 @@ private fun QuickActionButton(
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = IfgGreen,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1
             )
         }
@@ -410,11 +402,13 @@ private fun RecentActivityItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -427,7 +421,7 @@ private fun RecentActivityItem(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }

@@ -58,13 +58,13 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                 }
             }
         },
-        containerColor = LightBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             if (showCreateForm) {
                 // Create form
                 Text("Novo Aviso", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-                Text("Crie um aviso para os alunos", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text("Crie um aviso para os alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Card(
@@ -79,7 +79,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                         label = { Text("Título") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                         )
                         OutlinedTextField(
                         value = content,
@@ -87,7 +87,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                         label = { Text("Conteúdo") },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                         maxLines = 6,
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                         )
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
@@ -115,7 +115,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
             } else {
                 // Announcements list
                 Text("Mural de Avisos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-                Text("Gerencie os avisos da academia", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text("Gerencie os avisos da academia", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (isLoading) {
@@ -125,9 +125,9 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                 } else if (announcements.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                            Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Nenhum aviso publicado", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                            Text("Nenhum aviso publicado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {
@@ -151,15 +151,15 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(announcement.content, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                                    Text(announcement.content, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row {
                                         if (announcement.authorName != null) {
-                                            Text("Por: ${announcement.authorName}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("Por: ${announcement.authorName}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             Spacer(modifier = Modifier.width(16.dp))
                                         }
                                         if (announcement.publishedAt != null) {
-                                            Text(announcement.publishedAt, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text(announcement.publishedAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }
