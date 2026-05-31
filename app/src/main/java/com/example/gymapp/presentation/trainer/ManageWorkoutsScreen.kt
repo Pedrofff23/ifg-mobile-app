@@ -1,0 +1,566 @@
+package com.example.gymapp.presentation.trainer
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.gymapp.domain.model.*
+import com.example.gymapp.ui.theme.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
+    val templates by viewModel.templates.collectAsState()
+    val students by viewModel.students.collectAsState()
+    val exercises by viewModel.exercises.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var showAssignDialog by remember { mutableStateOf(false) }
+    var selectedTemplate by remember { mutableStateOf<WorkoutTemplate?>(null) }
+    var selectedAlunoId by remember { mutableStateOf("") }
+    var startsAt by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var templateToDelete by remember { mutableStateOf<WorkoutTemplate?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var templateToEdit by remember { mutableStateOf<WorkoutTemplate?>(null) }
+    var expandedTemplateId by remember { mutableStateOf<String?>(null) }
+
+    val filteredTemplates = templates.filter {
+        it.name.contains(searchQuery, ignoreCase = true) || it.type.contains(searchQuery, ignoreCase = true)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadTemplates()
+        viewModel.loadStudents()
+        viewModel.loadExercises()
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccessMessage()
+        }
+    }
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = LightBackground
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            Text("Gerenciar Treinos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Buscar treino...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = IfgGreen)
+                }
+            } else if (filteredTemplates.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Nenhum treino encontrado", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                    }
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(filteredTemplates) { template ->
+                        val isExpanded = expandedTemplateId == template.id
+
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Header row with expand toggle
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = IfgGreen, modifier = Modifier.size(24.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        template.name,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(onClick = {
+                                        expandedTemplateId = if (isExpanded) null else template.id
+                                    }) {
+                                        Icon(
+                                            if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = if (isExpanded) "Recolher" else "Expandir",
+                                            tint = TextSecondary
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Badges
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Badge(containerColor = Green100) { Text(template.type, color = IfgGreen, style = MaterialTheme.typography.labelSmall) }
+                                    Badge(containerColor = when (template.difficulty) {
+                                        "Iniciante" -> Green100
+                                        "Intermediário" -> Color(0xFFFFF3E0)
+                                        else -> Color(0xFFFFEBEE)
+                                    }) {
+                                        Text(template.difficulty, color = when (template.difficulty) {
+                                            "Iniciante" -> IfgGreen
+                                            "Intermediário" -> Color(0xFFE65100)
+                                            else -> Color(0xFFC62828)
+                                        }, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                    Badge(containerColor = Color(0xFFE3F2FD)) {
+                                        Text("${template.exercises.size} exercícios", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+
+                                // Expandable exercises list
+                                AnimatedVisibility(
+                                    visible = isExpanded,
+                                    enter = expandVertically(),
+                                    exit = shrinkVertically()
+                                ) {
+                                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                                        if (template.exercises.isEmpty()) {
+                                            Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                        } else {
+                                            template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    // Number badge
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(28.dp)
+                                                            .clip(RoundedCornerShape(6.dp))
+                                                            .background(Green100),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text("${idx + 1}", style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen, fontWeight = FontWeight.Bold))
+                                                    }
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            ex.exerciseName ?: "Exercício",
+                                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                                                        )
+                                                        Text(
+                                                            "${ex.defaultSets}x${ex.defaultReps} reps · ${ex.defaultRestSeconds}s descanso",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = TextSecondary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Action buttons
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = { selectedTemplate = template; showAssignDialog = true },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                                    ) {
+                                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Atribuir")
+                                    }
+                                    OutlinedButton(
+                                        onClick = { templateToEdit = template; showEditDialog = true },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Editar")
+                                    }
+                                    OutlinedButton(
+                                        onClick = { templateToDelete = template; showDeleteDialog = true },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828))
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Excluir")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Assign dialog
+    if (showAssignDialog && selectedTemplate != null) {
+        AlertDialog(
+            onDismissRequest = { showAssignDialog = false; selectedAlunoId = ""; startsAt = "" },
+            title = { Text("Atribuir Treino") },
+            text = {
+                Column {
+                    Text("Atribuir \"${selectedTemplate!!.name}\" a um aluno", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    var alunoExpanded by remember { mutableStateOf(false) }
+                    val alunoOptions = students
+                    ExposedDropdownMenuBox(expanded = alunoExpanded, onExpandedChange = { alunoExpanded = !alunoExpanded }) {
+                        OutlinedTextField(
+                            value = alunoOptions.find { it.id == selectedAlunoId }?.fullName ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Selecionar Aluno") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoExpanded) },
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                        )
+                        ExposedDropdownMenu(expanded = alunoExpanded, onDismissRequest = { alunoExpanded = false }) {
+                            alunoOptions.forEach { student ->
+                                DropdownMenuItem(
+                                    text = { Text(student.fullName ?: "") },
+                                    onClick = { selectedAlunoId = student.id; alunoExpanded = false }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = startsAt,
+                        onValueChange = { startsAt = it },
+                        label = { Text("Data início (YYYY-MM-DD)") },
+                        modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (selectedAlunoId.isNotBlank() && startsAt.isNotBlank()) {
+                            viewModel.assignWorkout(AssignWorkoutRequest(selectedAlunoId, selectedTemplate!!.id, startsAt))
+                            showAssignDialog = false
+                            selectedAlunoId = ""
+                            startsAt = ""
+                        }
+                    },
+                    enabled = selectedAlunoId.isNotBlank() && startsAt.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                ) { Text("Atribuir") }
+            },
+            dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedAlunoId = ""; startsAt = "" }) { Text("Cancelar") } }
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && templateToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false; templateToDelete = null },
+            title = { Text("Excluir Treino") },
+            text = { Text("Tem certeza que deseja excluir o treino \"${templateToDelete!!.name}\"? Esta ação não pode ser desfeita.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteTemplate(templateToDelete!!.id)
+                        showDeleteDialog = false
+                        templateToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
+                ) { Text("Excluir") }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false; templateToDelete = null }) { Text("Cancelar") } }
+        )
+    }
+
+    // Edit template dialog
+    if (showEditDialog && templateToEdit != null) {
+        EditTemplateDialog(
+            template = templateToEdit!!,
+            allExercises = exercises,
+            onDismiss = { showEditDialog = false; templateToEdit = null },
+            onSave = { id, request ->
+                viewModel.updateTemplate(id, request)
+                showEditDialog = false
+                templateToEdit = null
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditTemplateDialog(
+    template: WorkoutTemplate,
+    allExercises: List<Exercise>,
+    onDismiss: () -> Unit,
+    onSave: (id: String, request: CreateTemplateRequest) -> Unit
+) {
+    var name by remember { mutableStateOf(template.name) }
+    var type by remember { mutableStateOf(template.type) }
+    var difficulty by remember { mutableStateOf(template.difficulty) }
+    var totalSessions by remember { mutableStateOf(template.totalSessions.toString()) }
+
+    // Mutable list of exercise entries for editing
+    var exerciseEntries by remember {
+        mutableStateOf(
+            template.exercises.sortedBy { it.orderIndex }.map { ex ->
+                ExerciseEntry(
+                    exerciseId = ex.exerciseId,
+                    exerciseName = ex.exerciseName ?: "",
+                    defaultSets = ex.defaultSets,
+                    defaultReps = ex.defaultReps,
+                    defaultRestSeconds = ex.defaultRestSeconds
+                )
+            }
+        )
+    }
+    var showAddExercise by remember { mutableStateOf(false) }
+
+    val typeOptions = listOf("Força", "Hipertrofia", "Resistência", "Funcional", "Mobilidade")
+    val diffOptions = listOf("Iniciante", "Intermediário", "Avançado")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Treino") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+
+                var typeExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
+                    OutlinedTextField(
+                        value = type, onValueChange = {}, readOnly = true,
+                        label = { Text("Tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    )
+                    ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
+                        typeOptions.forEach { t -> DropdownMenuItem(text = { Text(t) }, onClick = { type = t; typeExpanded = false }) }
+                    }
+                }
+
+                var diffExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = diffExpanded, onExpandedChange = { diffExpanded = !diffExpanded }) {
+                    OutlinedTextField(
+                        value = difficulty, onValueChange = {}, readOnly = true,
+                        label = { Text("Dificuldade") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = diffExpanded) },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    )
+                    ExposedDropdownMenu(expanded = diffExpanded, onDismissRequest = { diffExpanded = false }) {
+                        diffOptions.forEach { d -> DropdownMenuItem(text = { Text(d) }, onClick = { difficulty = d; diffExpanded = false }) }
+                    }
+                }
+
+                OutlinedTextField(value = totalSessions, onValueChange = { totalSessions = it }, label = { Text("Total de Sessões") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+
+                // Exercise list
+                Text("Exercícios (${exerciseEntries.size})", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+
+                exerciseEntries.forEachIndexed { idx, entry ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(entry.exerciseName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+                                Text("${entry.defaultSets}x${entry.defaultReps} · ${entry.defaultRestSeconds}s", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            }
+                            IconButton(onClick = {
+                                exerciseEntries = exerciseEntries.toMutableList().also { it.removeAt(idx) }
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = { showAddExercise = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Adicionar Exercício")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val sessions = totalSessions.toIntOrNull() ?: 0
+                    val request = CreateTemplateRequest(
+                        name = name,
+                        type = type,
+                        difficulty = difficulty,
+                        totalSessions = sessions,
+                        exercises = exerciseEntries.mapIndexed { idx, entry ->
+                            TemplateExerciseInput(
+                                exerciseId = entry.exerciseId,
+                                orderIndex = idx,
+                                defaultSets = entry.defaultSets,
+                                defaultReps = entry.defaultReps,
+                                defaultRestSeconds = entry.defaultRestSeconds
+                            )
+                        }
+                    )
+                    onSave(template.id, request)
+                },
+                enabled = name.isNotBlank() && exerciseEntries.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+            ) { Text("Salvar", color = Color.White) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+
+    // Add exercise sub-dialog
+    if (showAddExercise) {
+        AddExerciseToTemplateDialog(
+            allExercises = allExercises,
+            existingIds = exerciseEntries.map { it.exerciseId }.toSet(),
+            onAdd = { entry ->
+                exerciseEntries = exerciseEntries + entry
+                showAddExercise = false
+            },
+            onDismiss = { showAddExercise = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddExerciseToTemplateDialog(
+    allExercises: List<Exercise>,
+    existingIds: Set<String>,
+    onAdd: (ExerciseEntry) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedExerciseId by remember { mutableStateOf("") }
+    var setsText by remember { mutableStateOf("3") }
+    var repsText by remember { mutableStateOf("10") }
+    var restText by remember { mutableStateOf("60") }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val available = allExercises.filter { it.id !in existingIds && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Adicionar Exercício") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = searchQuery, onValueChange = { searchQuery = it },
+                    label = { Text("Buscar exercício...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                )
+
+                var exerciseExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = exerciseExpanded, onExpandedChange = { exerciseExpanded = !exerciseExpanded }) {
+                    OutlinedTextField(
+                        value = available.find { it.id == selectedExerciseId }?.name ?: "",
+                        onValueChange = {}, readOnly = true,
+                        label = { Text("Exercício") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exerciseExpanded) },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen),
+                    )
+                    ExposedDropdownMenu(expanded = exerciseExpanded, onDismissRequest = { exerciseExpanded = false }) {
+                        available.forEach { ex ->
+                            DropdownMenuItem(
+                                text = { Text("${ex.name} (${ex.muscleGroup})") },
+                                onClick = { selectedExerciseId = ex.id; exerciseExpanded = false }
+                            )
+                        }
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = setsText, onValueChange = { setsText = it }, label = { Text("Séries") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                    OutlinedTextField(value = repsText, onValueChange = { repsText = it }, label = { Text("Reps") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+                }
+                OutlinedTextField(value = restText, onValueChange = { restText = it }, label = { Text("Descanso (seg)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = IfgGreen))
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val exercise = allExercises.find { it.id == selectedExerciseId } ?: return@Button
+                    onAdd(ExerciseEntry(
+                        exerciseId = selectedExerciseId,
+                        exerciseName = exercise.name,
+                        defaultSets = setsText.toIntOrNull() ?: 3,
+                        defaultReps = repsText.toIntOrNull() ?: 10,
+                        defaultRestSeconds = restText.toIntOrNull() ?: 60
+                    ))
+                },
+                enabled = selectedExerciseId.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+            ) { Text("Adicionar", color = Color.White) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+private data class ExerciseEntry(
+    val exerciseId: String,
+    val exerciseName: String,
+    val defaultSets: Int,
+    val defaultReps: Int,
+    val defaultRestSeconds: Int
+)
