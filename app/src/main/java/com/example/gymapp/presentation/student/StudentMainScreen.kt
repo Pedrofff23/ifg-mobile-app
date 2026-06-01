@@ -43,8 +43,7 @@ fun StudentMainScreen(
 
     val tabs = listOf(
         StudentTab("home", "Home", Icons.Default.Home),
-        StudentTab("workouts", "Treinos", Icons.Default.FitnessCenter),
-        StudentTab("exercises", "Exercícios", Icons.AutoMirrored.Filled.MenuBook),
+        StudentTab("workout_hub", "Treinos", Icons.Default.FitnessCenter),
         StudentTab("progress", "Progresso", Icons.AutoMirrored.Filled.TrendingUp),
         StudentTab("communication", "Conteúdo", Icons.AutoMirrored.Filled.Chat),
         StudentTab("profile", "Perfil", Icons.Default.Person)
@@ -67,11 +66,8 @@ fun StudentMainScreen(
                     }
                 })
             }
-            composable("workouts") {
-                StudentWorkoutsScreen(viewModel = viewModel, onStartWorkout = onStartWorkout)
-            }
-            composable("exercises") {
-                StudentExercisesScreen(viewModel = viewModel)
+            composable("workout_hub") {
+                StudentWorkoutHubScreen(viewModel = viewModel, onStartWorkout = onStartWorkout)
             }
             composable("progress") {
                 StudentProgressScreen(viewModel = viewModel)

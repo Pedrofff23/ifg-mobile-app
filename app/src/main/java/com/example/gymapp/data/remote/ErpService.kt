@@ -21,15 +21,27 @@ interface ErpService {
         @Path("id") id: String
     ): ApiResponse<Exercise>
 
+    @Multipart
     @POST("exercises")
     suspend fun createExercise(
-        @Body request: CreateExerciseRequest
+        @Part("name") name: okhttp3.RequestBody,
+        @Part("description") description: okhttp3.RequestBody?,
+        @Part("muscle_group") muscleGroup: okhttp3.RequestBody,
+        @Part("uses_weight") usesWeight: okhttp3.RequestBody,
+        @Part("video_url") videoUrl: okhttp3.RequestBody?,
+        @Part file: okhttp3.MultipartBody.Part?
     ): ApiResponse<Exercise>
 
+    @Multipart
     @PUT("exercises/{id}")
     suspend fun updateExercise(
         @Path("id") id: String,
-        @Body request: CreateExerciseRequest
+        @Part("name") name: okhttp3.RequestBody,
+        @Part("description") description: okhttp3.RequestBody?,
+        @Part("muscle_group") muscleGroup: okhttp3.RequestBody,
+        @Part("uses_weight") usesWeight: okhttp3.RequestBody,
+        @Part("video_url") videoUrl: okhttp3.RequestBody?,
+        @Part file: okhttp3.MultipartBody.Part?
     ): ApiResponse<Exercise>
 
     @DELETE("exercises/{id}")

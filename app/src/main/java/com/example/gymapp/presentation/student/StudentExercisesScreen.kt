@@ -14,6 +14,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
+import android.os.Build
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.ui.theme.*
 
@@ -178,6 +188,51 @@ private fun ExerciseCard(exercise: Exercise) {
                         containerColor = Blue100,
                         contentColor = Color(0xFF2563EB)
                     ) { Text("Com peso") }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val context = LocalContext.current
+            if (exercise.mediaPath != null) {
+                if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
+                    val mediaUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(mediaUrl)
+                            .decoderFactory(
+                                if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                                else GifDecoder.Factory()
+                            )
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Mídia do Exercício",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.05f))
+                    )
+                } else if (exercise.mediaType == "video") {
+                    val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Assistir Vídeo Anexado")
+                    }
+                }
+            } else if (exercise.videoUrl != null) {
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(exercise.videoUrl))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Assistir Vídeo (Link Externo)")
                 }
             }
         }

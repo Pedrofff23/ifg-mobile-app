@@ -4,9 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
+import android.os.Build
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
 
@@ -99,7 +111,9 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
 
                 // Muscle group filter chips
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 FilterChip(
@@ -210,17 +224,59 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                                     style = MaterialTheme.typography.labelSmall
                                                 )
                                             }
-                                            if (exercise.videoUrl != null) {
-                                                Badge(containerColor = Purple100) {
-                                                    Text(
-                                                        "Vídeo",
-                                                        color = Color(0xFF6B21A8),
-                                                        style = MaterialTheme.typography.labelSmall
-                                                    )
+                                        }
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        // Mídia
+                                        val context = LocalContext.current
+                                        if (exercise.mediaPath != null) {
+                                            if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
+                                                val mediaUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                                                AsyncImage(
+                                                    model = ImageRequest.Builder(context)
+                                                        .data(mediaUrl)
+                                                        .decoderFactory(
+                                                            if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                                                            else GifDecoder.Factory()
+                                                        )
+                                                        .crossfade(true)
+                                                        .build(),
+                                                    contentDescription = "Mídia do Exercício",
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(200.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(Color.Black.copy(alpha = 0.05f))
+                                                )
+                                            } else if (exercise.mediaType == "video") {
+                                                val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                                                        context.startActivity(intent)
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text("Assistir Vídeo Anexado")
                                                 }
                                             }
+                                        } else if (exercise.videoUrl != null) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(exercise.videoUrl))
+                                                    context.startActivity(intent)
+                                                },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Icon(Icons.Default.Link, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Assistir Vídeo (Link Externo)")
+                                            }
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Spacer(modifier = Modifier.height(12.dp))
 
                                         // Action buttons
                                         Row(
@@ -258,14 +314,16 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
         }
     }
 
+    val context = LocalContext.current
+
     // Create exercise dialog
     if (showCreateDialog) {
         ExerciseFormDialog(
             title = "Novo Exercício",
             initialExercise = null,
             onDismiss = { showCreateDialog = false },
-            onSave = { request ->
-                viewModel.createExercise(request)
+            onSave = { name, desc, muscle, weight, video, fileUri ->
+                viewModel.createExercise(context, name, desc, muscle, weight, video, fileUri)
                 showCreateDialog = false
             }
         )
@@ -277,8 +335,8 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
             title = "Editar Exercício",
             initialExercise = showEditDialog,
             onDismiss = { showEditDialog = null },
-            onSave = { request ->
-                viewModel.updateExercise(showEditDialog!!.id, request)
+            onSave = { name, desc, muscle, weight, video, fileUri ->
+                viewModel.updateExercise(showEditDialog!!.id, context, name, desc, muscle, weight, video, fileUri)
                 showEditDialog = null
             }
         )
@@ -312,13 +370,18 @@ private fun ExerciseFormDialog(
     title: String,
     initialExercise: Exercise?,
     onDismiss: () -> Unit,
-    onSave: (CreateExerciseRequest) -> Unit
+    onSave: (name: String, desc: String?, muscle: String, weight: Boolean, video: String?, fileUri: Uri?) -> Unit
 ) {
     var name by remember { mutableStateOf(initialExercise?.name ?: "") }
     var description by remember { mutableStateOf(initialExercise?.description ?: "") }
     var muscleGroup by remember { mutableStateOf(initialExercise?.muscleGroup ?: "Peito") }
     var usesWeight by remember { mutableStateOf(initialExercise?.usesWeight ?: true) }
     var videoUrl by remember { mutableStateOf(initialExercise?.videoUrl ?: "") }
+    var selectedMediaUri by remember { mutableStateOf<Uri?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedMediaUri = uri
+    }
 
     val muscleGroups = listOf("Peito", "Costas", "Ombros", "Bíceps", "Tríceps", "Pernas", "Glúteos", "Core", "Cardio")
 
@@ -383,29 +446,39 @@ private fun ExerciseFormDialog(
                     )
                 }
 
-                OutlinedTextField(
-                value = videoUrl,
-                onValueChange = { videoUrl = it },
-                label = { Text("URL do vídeo (opcional)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-                )
+                OutlinedButton(
+                    onClick = { launcher.launch("*/*") }, // Allow any media type
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                ) {
+                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
+                }
+
+                if (selectedMediaUri == null) {
+                    OutlinedTextField(
+                        value = videoUrl,
+                        onValueChange = { videoUrl = it },
+                        label = { Text("URL de Vídeo Externo (Opcional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     onSave(
-                        CreateExerciseRequest(
-                            name = name,
-                            description = description,
-                            muscleGroup = muscleGroup,
-                            usesWeight = usesWeight,
-                            videoUrl = videoUrl.ifBlank { null },
-                            mediaType = null,
-                            mediaPath = null
-                        )
+                        name,
+                        description.ifBlank { null },
+                        muscleGroup,
+                        usesWeight,
+                        if (selectedMediaUri == null) videoUrl.ifBlank { null } else null,
+                        selectedMediaUri
                     )
                 },
                 enabled = name.isNotBlank() && muscleGroup.isNotBlank(),

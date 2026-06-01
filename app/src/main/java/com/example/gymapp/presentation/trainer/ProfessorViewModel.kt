@@ -7,8 +7,9 @@ import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.UserService
 import com.example.gymapp.domain.model.Announcement
 import com.example.gymapp.domain.model.AssignWorkoutRequest
+import android.content.Context
+import android.net.Uri
 import com.example.gymapp.domain.model.CreateAnnouncementRequest
-import com.example.gymapp.domain.model.CreateExerciseRequest
 import com.example.gymapp.domain.model.CreateTemplateRequest
 import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.domain.model.TemplateExerciseInput
@@ -22,6 +23,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
+import java.io.FileOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -193,36 +200,111 @@ class ProfessorViewModel @Inject constructor(
     }
     }
 
-    fun createExercise(request: CreateExerciseRequest) {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
-    try {
-    erpService.createExercise(request)
-    _successMessage.value = "Exercício criado com sucesso"
-    loadExercises()
-    } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to create exercise"
-    } finally {
-    _isLoading.value = false
-    }
-    }
+    fun createExercise(
+        context: Context,
+        name: String,
+        description: String?,
+        muscleGroup: String,
+        usesWeight: Boolean,
+        videoUrl: String?,
+        fileUri: Uri?
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val namePart = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                val descPart = description?.toRequestBody("text/plain".toMediaTypeOrNull())
+                val mappedMuscle = mapMuscleGroup(muscleGroup)
+                val musclePart = mappedMuscle.toRequestBody("text/plain".toMediaTypeOrNull())
+                val weightPart = usesWeight.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+                val videoUrlPart = videoUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+                var filePart: MultipartBody.Part? = null
+                if (fileUri != null) {
+                    val file = getFileFromUri(context, fileUri)
+                    if (file != null) {
+                        val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+                        filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                    }
+                }
+
+                erpService.createExercise(namePart, descPart, musclePart, weightPart, videoUrlPart, filePart)
+                _successMessage.value = "Exercício criado com sucesso"
+                loadExercises()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to create exercise"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
-    fun updateExercise(id: String, request: CreateExerciseRequest) {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
-    try {
-    erpService.updateExercise(id, request)
-    _successMessage.value = "Exercício atualizado com sucesso"
-    loadExercises()
-    } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to update exercise"
-    } finally {
-    _isLoading.value = false
+    fun updateExercise(
+        id: String,
+        context: Context,
+        name: String,
+        description: String?,
+        muscleGroup: String,
+        usesWeight: Boolean,
+        videoUrl: String?,
+        fileUri: Uri?
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val namePart = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                val descPart = description?.toRequestBody("text/plain".toMediaTypeOrNull())
+                val mappedMuscle = mapMuscleGroup(muscleGroup)
+                val musclePart = mappedMuscle.toRequestBody("text/plain".toMediaTypeOrNull())
+                val weightPart = usesWeight.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+                val videoUrlPart = videoUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+                var filePart: MultipartBody.Part? = null
+                if (fileUri != null) {
+                    val file = getFileFromUri(context, fileUri)
+                    if (file != null) {
+                        val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+                        filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                    }
+                }
+
+                erpService.updateExercise(id, namePart, descPart, musclePart, weightPart, videoUrlPart, filePart)
+                _successMessage.value = "Exercício atualizado com sucesso"
+                loadExercises()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update exercise"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
+
+    private fun getFileFromUri(context: Context, uri: Uri): File? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val tempFile = File.createTempFile("upload_", ".tmp", context.cacheDir)
+            val outputStream = FileOutputStream(tempFile)
+            inputStream.copyTo(outputStream)
+            inputStream.close()
+            outputStream.close()
+            tempFile
+        } catch (e: Exception) {
+            null
+        }
     }
+
+    private fun mapMuscleGroup(muscleGroup: String): String {
+        return when (muscleGroup.lowercase()) {
+            "peito" -> "peito"
+            "costas" -> "costas"
+            "ombros" -> "ombros"
+            "bíceps", "tríceps", "braços" -> "bracos"
+            "pernas", "glúteos" -> "pernas"
+            "core", "abdômen", "abdomen" -> "abdomen"
+            else -> "peito"
+        }
     }
 
     fun deleteExercise(id: String) {

@@ -169,13 +169,13 @@ fun ProfessorDashboardScreen(
                         QuickActionButton(
                             label = "Treinos",
                             icon = Icons.Default.FitnessCenter,
-                            onClick = { onNavigate("workouts") },
+                            onClick = { onNavigate("workout_hub") },
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionButton(
-                            label = "Ver Alunos",
+                            label = "Alunos",
                             icon = Icons.Default.People,
-                            onClick = { onNavigate("students") },
+                            onClick = { onNavigate("students_hub") },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -195,7 +195,7 @@ fun ProfessorDashboardScreen(
                         QuickActionButton(
                             label = "Exercícios",
                             icon = Icons.AutoMirrored.Filled.MenuBook,
-                            onClick = { onNavigate("exercises") },
+                            onClick = { onNavigate("workout_hub") },
                             modifier = Modifier.weight(1f)
                         )
                     }

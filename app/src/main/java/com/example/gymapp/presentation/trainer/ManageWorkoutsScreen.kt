@@ -25,6 +25,18 @@ import com.example.gymapp.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            ManageWorkoutsContent(viewModel = viewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
     val templates by viewModel.templates.collectAsState()
     val students by viewModel.students.collectAsState()
     val exercises by viewModel.exercises.collectAsState()
@@ -67,175 +79,170 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Text("Gerenciar Treinos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-            Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(16.dp))
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Gerenciar Treinos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+        Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Buscar treino...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Buscar treino...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = IfgGreen)
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = IfgGreen)
+            }
+        } else if (filteredTemplates.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Nenhum treino encontrado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            } else if (filteredTemplates.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Nenhum treino encontrado", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filteredTemplates) { template ->
-                        val isExpanded = expandedTemplateId == template.id
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(filteredTemplates) { template ->
+                    val isExpanded = expandedTemplateId == template.id
 
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                // Header row with expand toggle
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = IfgGreen, modifier = Modifier.size(24.dp))
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        template.name,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        modifier = Modifier.weight(1f)
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Header row with expand toggle
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = IfgGreen, modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    template.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(onClick = {
+                                    expandedTemplateId = if (isExpanded) null else template.id
+                                }) {
+                                    Icon(
+                                        if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = if (isExpanded) "Recolher" else "Expandir",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    IconButton(onClick = {
-                                        expandedTemplateId = if (isExpanded) null else template.id
-                                    }) {
-                                        Icon(
-                                            if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                            contentDescription = if (isExpanded) "Recolher" else "Expandir",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                                // Badges
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Badge(containerColor = Green100) { Text(template.type, color = IfgGreen, style = MaterialTheme.typography.labelSmall) }
-                                    Badge(containerColor = when (template.difficulty) {
-                                        "Iniciante" -> Green100
-                                        "Intermediário" -> Color(0xFFFFF3E0)
-                                        else -> Color(0xFFFFEBEE)
-                                    }) {
-                                        Text(template.difficulty, color = when (template.difficulty) {
-                                            "Iniciante" -> IfgGreen
-                                            "Intermediário" -> Color(0xFFE65100)
-                                            else -> Color(0xFFC62828)
-                                        }, style = MaterialTheme.typography.labelSmall)
-                                    }
-                                    Badge(containerColor = Color(0xFFE3F2FD)) {
-                                        Text("${template.exercises.size} exercícios", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelSmall)
-                                    }
+                            // Badges
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Badge(containerColor = Green100) { Text(template.type, color = IfgGreen, style = MaterialTheme.typography.labelSmall) }
+                                Badge(containerColor = when (template.difficulty) {
+                                    "Iniciante" -> Green100
+                                    "Intermediário" -> Color(0xFFFFF3E0)
+                                    else -> Color(0xFFFFEBEE)
+                                }) {
+                                    Text(template.difficulty, color = when (template.difficulty) {
+                                        "Iniciante" -> IfgGreen
+                                        "Intermediário" -> Color(0xFFE65100)
+                                        else -> Color(0xFFC62828)
+                                    }, style = MaterialTheme.typography.labelSmall)
                                 }
+                                Badge(containerColor = Color(0xFFE3F2FD)) {
+                                    Text("${template.exercises.size} exercícios", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
 
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                                // Expandable exercises list
-                                AnimatedVisibility(
-                                    visible = isExpanded,
-                                    enter = expandVertically(),
-                                    exit = shrinkVertically()
-                                ) {
-                                    Column(modifier = Modifier.padding(top = 12.dp)) {
-                                        if (template.exercises.isEmpty()) {
-                                            Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        } else {
-                                            template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
-                                                Row(
+                            // Expandable exercises list
+                            AnimatedVisibility(
+                                visible = isExpanded,
+                                enter = expandVertically(),
+                                exit = shrinkVertically()
+                            ) {
+                                Column(modifier = Modifier.padding(top = 12.dp)) {
+                                    if (template.exercises.isEmpty()) {
+                                        Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    } else {
+                                        template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                // Number badge
+                                                Box(
                                                     modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 4.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
+                                                        .size(28.dp)
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(Green100),
+                                                    contentAlignment = Alignment.Center
                                                 ) {
-                                                    // Number badge
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(28.dp)
-                                                            .clip(RoundedCornerShape(6.dp))
-                                                            .background(Green100),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Text("${idx + 1}", style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen, fontWeight = FontWeight.Bold))
-                                                    }
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            ex.exerciseName ?: "Exercício",
-                                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
-                                                        )
-                                                        Text(
-                                                            "${ex.defaultSets}x${ex.defaultReps} reps · ${ex.defaultRestSeconds}s descanso",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
+                                                    Text("${idx + 1}", style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen, fontWeight = FontWeight.Bold))
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        ex.exerciseName ?: "Exercício",
+                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                                                    )
+                                                    Text(
+                                                        "${ex.defaultSets}x${ex.defaultReps} reps · ${ex.defaultRestSeconds}s descanso",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
                                                 }
                                             }
                                         }
                                     }
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                                // Action buttons
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = { selectedTemplate = template; showAssignDialog = true },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
-                                    ) {
-                                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Atribuir")
-                                    }
-                                    OutlinedButton(
-                                        onClick = { templateToEdit = template; showEditDialog = true },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Editar")
-                                    }
-                                    OutlinedButton(
-                                        onClick = { templateToDelete = template; showDeleteDialog = true },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828))
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Excluir")
-                                    }
+                            // Action buttons
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = { selectedTemplate = template; showAssignDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                                ) {
+                                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Atribuir")
+                                }
+                                OutlinedButton(
+                                    onClick = { templateToEdit = template; showEditDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Editar")
+                                }
+                                OutlinedButton(
+                                    onClick = { templateToDelete = template; showDeleteDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828))
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Excluir")
                                 }
                             }
                         }
@@ -263,7 +270,8 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                             readOnly = true,
                             label = { Text("Selecionar Aluno") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.menuAnchor(),
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                         )
                         ExposedDropdownMenu(expanded = alunoExpanded, onDismissRequest = { alunoExpanded = false }) {
                             alunoOptions.forEach { student ->
@@ -280,7 +288,7 @@ fun ManageWorkoutsScreen(viewModel: ProfessorViewModel) {
                         onValueChange = { startsAt = it },
                         label = { Text("Data início (YYYY-MM-DD)") },
                         modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                 }
             },

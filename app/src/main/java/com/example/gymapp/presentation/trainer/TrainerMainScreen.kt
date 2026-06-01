@@ -34,25 +34,18 @@ fun TrainerMainScreen(
     val navController = rememberNavController()
 
     val tabs = listOf(
-        TrainerTab("dashboard", "Dashboard", Icons.Default.Home),
-        TrainerTab("workouts", "Treinos", Icons.Default.FitnessCenter),
-        TrainerTab("exercises", "Exercícios", Icons.Default.ViewModule),
-        TrainerTab("students", "Alunos", Icons.Default.People),
+        TrainerTab("dashboard", "Início", Icons.Default.Home),
+        TrainerTab("workout_hub", "Treinos", Icons.Default.FitnessCenter),
+        TrainerTab("students_hub", "Alunos", Icons.Default.People),
         TrainerTab("announcements", "Avisos", Icons.Default.Notifications),
         TrainerTab("profile", "Perfil", Icons.Default.Person)
     )
 
     val isAdmin by viewModel.isAdmin.collectAsState()
 
-    val visibleTabs = if (isAdmin) {
-        tabs + TrainerTab("admin", "Admin", Icons.Default.AdminPanelSettings)
-    } else {
-        tabs
-    }
-
     Scaffold(
         topBar = { TrainerHeader(isAdmin = isAdmin) },
-        bottomBar = { TrainerBottomBar(navController = navController, tabs = visibleTabs) },
+        bottomBar = { TrainerBottomBar(navController = navController, tabs = tabs) },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
@@ -74,14 +67,24 @@ fun TrainerMainScreen(
                     }
                 )
             }
-            composable("workouts") {
-                WorkoutHubScreen(viewModel = viewModel)
+            composable("workout_hub") {
+                TrainerWorkoutHubScreen(
+                    viewModel = viewModel,
+                    onNavigateToCreateWorkout = {
+                        navController.navigate("create_workout") {
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
-            composable("exercises") {
-                ManageExercisesScreen(viewModel = viewModel)
+            composable("create_workout") {
+                CreateWorkoutScreen(viewModel = viewModel)
             }
-            composable("students") {
-                StudentsOverviewScreen(viewModel = viewModel)
+            composable("students_hub") {
+                TrainerStudentsHubScreen(
+                    viewModel = viewModel,
+                    isAdmin = isAdmin
+                )
             }
             composable("announcements") {
                 CreateAnnouncementScreen(viewModel = viewModel)
@@ -92,9 +95,6 @@ fun TrainerMainScreen(
                     themeManager = viewModel.themeManager,
                     onLogout = onLogout
                 )
-            }
-            composable("admin") {
-                AdminScreen(viewModel = viewModel)
             }
         }
     }

@@ -238,7 +238,7 @@ fun StudentHomeScreen(
                     }
                     }
                         OutlinedButton(
-                        onClick = { onNavigate("exercises") },
+                        onClick = { onNavigate("workout_hub") },
                         modifier = Modifier
                         .weight(1f)
                         .height(80.dp),
