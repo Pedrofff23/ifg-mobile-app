@@ -29,7 +29,9 @@ fun StudentHomeScreen(
     onNavigate: (String) -> Unit = {}
 ) {
     val assignments by viewModel.assignments.collectAsState()
+    val currentAssignment by viewModel.currentAssignment.collectAsState()
     val sessions by viewModel.sessions.collectAsState()
+    val stats by viewModel.stats.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -111,9 +113,9 @@ fun StudentHomeScreen(
                     )
 
                     if (assignments.isNotEmpty()) {
-                        val activeAssignment = assignments.firstOrNull { assignment ->
-                            assignment.endsAt == null
-                        } ?: assignments.firstOrNull()
+                    val activeAssignment = currentAssignment
+                    ?: assignments.firstOrNull { it.endsAt == null }
+                    ?: assignments.firstOrNull()
 
                         if (activeAssignment != null) {
                             // Workout summary row
@@ -122,7 +124,7 @@ fun StudentHomeScreen(
                                     .fillMaxWidth()
                                     .padding(16.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(LightSurfaceVariant)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .padding(16.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -133,8 +135,8 @@ fun StudentHomeScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                                     )
                                     Text(
-                                        text = "${sessions.size} sessões realizadas",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                    text = "${stats?.completedSessions ?: 0} sessões realizadas",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
                                 }
@@ -171,7 +173,7 @@ fun StudentHomeScreen(
         ) {
         StatCard(
         modifier = Modifier.weight(1f),
-        value = "${sessions.size}",
+        value = "${stats?.totalSessions ?: 0}",
         label = "Treinos",
         icon = Icons.Default.FitnessCenter,
         iconBgColor = Green100,
@@ -179,13 +181,12 @@ fun StudentHomeScreen(
         )
         StatCard(
         modifier = Modifier.weight(1f),
-        value = "${sessions.count { it.finishedAt != null }}",
+        value = "${stats?.completedSessions ?: 0}",
         label = "Concluídos",
         icon = Icons.Default.CheckCircle,
         iconBgColor = Green100,
         iconTint = IfgGreen
         )
-        }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Row(
@@ -194,12 +195,35 @@ fun StudentHomeScreen(
         ) {
         StatCard(
         modifier = Modifier.weight(1f),
-        value = "${assignments.size}",
+        value = "${stats?.activeAssignments ?: 0}",
         label = "Treinos Atribuídos",
         icon = Icons.Default.CalendarToday,
         iconBgColor = Purple100,
         iconTint = Color(0xFF7C3AED)
         )
+        StatCard(
+        modifier = Modifier.weight(1f),
+        value = "${stats?.currentStreak ?: 0} dias",
+        label = "Sequência",
+        icon = Icons.Default.LocalFireDepartment,
+        iconBgColor = Orange100,
+        iconTint = Orange600
+        )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+        StatCard(
+        modifier = Modifier.weight(1f),
+        value = String.format("%.1f", stats?.weeklyFrequency ?: 0.0),
+        label = "Freq. Semanal",
+        icon = Icons.Default.DateRange,
+        iconBgColor = Blue100,
+        iconTint = Blue600
+        )
+        }
         }
         }
 

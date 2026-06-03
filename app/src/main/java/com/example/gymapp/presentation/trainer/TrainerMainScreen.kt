@@ -34,11 +34,12 @@ fun TrainerMainScreen(
     val navController = rememberNavController()
 
     val tabs = listOf(
-        TrainerTab("dashboard", "Início", Icons.Default.Home),
-        TrainerTab("workout_hub", "Treinos", Icons.Default.FitnessCenter),
-        TrainerTab("students_hub", "Alunos", Icons.Default.People),
-        TrainerTab("announcements", "Avisos", Icons.Default.Notifications),
-        TrainerTab("profile", "Perfil", Icons.Default.Person)
+    	TrainerTab("dashboard", "Início", Icons.Default.Home),
+    	TrainerTab("workout_hub", "Treinos", Icons.Default.FitnessCenter),
+    	TrainerTab("students_hub", "Alunos", Icons.Default.People),
+    	TrainerTab("groups", "Grupos", Icons.Default.Group),
+    	TrainerTab("announcements", "Avisos", Icons.Default.Notifications),
+    	TrainerTab("profile", "Perfil", Icons.Default.Person)
     )
 
     val isAdmin by viewModel.isAdmin.collectAsState()
@@ -81,10 +82,13 @@ fun TrainerMainScreen(
                 CreateWorkoutScreen(viewModel = viewModel)
             }
             composable("students_hub") {
-                TrainerStudentsHubScreen(
-                    viewModel = viewModel,
-                    isAdmin = isAdmin
-                )
+            	TrainerStudentsHubScreen(
+            		viewModel = viewModel,
+            		isAdmin = isAdmin
+            	)
+            }
+            composable("groups") {
+            	ManageGroupsScreen(viewModel = viewModel)
             }
             composable("announcements") {
                 CreateAnnouncementScreen(viewModel = viewModel)

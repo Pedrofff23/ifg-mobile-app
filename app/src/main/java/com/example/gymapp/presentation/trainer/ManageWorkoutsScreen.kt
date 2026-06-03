@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -49,6 +50,9 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
     var selectedTemplate by remember { mutableStateOf<WorkoutTemplate?>(null) }
     var selectedAlunoId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    
     var showDeleteDialog by remember { mutableStateOf(false) }
     var templateToDelete by remember { mutableStateOf<WorkoutTemplate?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -56,7 +60,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
     var expandedTemplateId by remember { mutableStateOf<String?>(null) }
 
     val filteredTemplates = templates.filter {
-        it.name.contains(searchQuery, ignoreCase = true) || it.type.contains(searchQuery, ignoreCase = true)
+        it.name.contains(searchQuery, ignoreCase = true) || (it.type ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     LaunchedEffect(Unit) {
@@ -145,20 +149,20 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
 
                             // Badges
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Badge(containerColor = Green100) { Text(template.type, color = IfgGreen, style = MaterialTheme.typography.labelSmall) }
+                                Badge(containerColor = Green100) { Text(template.type ?: "Geral", color = IfgGreen, style = MaterialTheme.typography.labelSmall) }
                                 Badge(containerColor = when (template.difficulty) {
                                     "Iniciante" -> Green100
                                     "Intermediário" -> Color(0xFFFFF3E0)
                                     else -> Color(0xFFFFEBEE)
                                 }) {
-                                    Text(template.difficulty, color = when (template.difficulty) {
+                                    Text(template.difficulty ?: "Nível", color = when (template.difficulty) {
                                         "Iniciante" -> IfgGreen
                                         "Intermediário" -> Color(0xFFE65100)
                                         else -> Color(0xFFC62828)
                                     }, style = MaterialTheme.typography.labelSmall)
                                 }
                                 Badge(containerColor = Color(0xFFE3F2FD)) {
-                                    Text("${template.exercises.size} exercícios", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelSmall)
+                                    Text("${template.exercises?.size ?: 0} exercícios", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelSmall)
                                 }
                             }
 
@@ -172,7 +176,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                                 exit = shrinkVertically()
                             ) {
                                 Column(modifier = Modifier.padding(top = 12.dp)) {
-                                    if (template.exercises.isEmpty()) {
+                                    if (template.exercises.isNullOrEmpty()) {
                                         Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     } else {
                                         template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
@@ -285,11 +289,41 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = startsAt,
-                        onValueChange = { startsAt = it },
-                        label = { Text("Data início (YYYY-MM-DD)") },
-                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Data início") },
+                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = "Selecionar Data")
+                            }
+                        },
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
+
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val selectedDate = datePickerState.selectedDateMillis?.let {
+                                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                        sdf.format(java.util.Date(it))
+                                    }
+                                    if (selectedDate != null) {
+                                        startsAt = selectedDate
+                                    }
+                                    showDatePicker = false
+                                }) { Text("OK") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                            }
+                        ) {
+                            DatePicker(state = datePickerState)
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -360,16 +394,16 @@ private fun EditTemplateDialog(
 
     // Mutable list of exercise entries for editing
     var exerciseEntries by remember {
-        mutableStateOf(
-            template.exercises.sortedBy { it.orderIndex }.map { ex ->
+        mutableStateOf<List<ExerciseEntry>>(
+            template.exercises?.sortedBy { it.orderIndex ?: 0 }?.map { ex ->
                 ExerciseEntry(
                     exerciseId = ex.exerciseId,
                     exerciseName = ex.exerciseName ?: "",
-                    defaultSets = ex.defaultSets,
-                    defaultReps = ex.defaultReps,
-                    defaultRestSeconds = ex.defaultRestSeconds
+                    defaultSets = ex.defaultSets ?: 3,
+                    defaultReps = ex.defaultReps ?: 12,
+                    defaultRestSeconds = ex.defaultRestSeconds ?: 60
                 )
-            }
+            } ?: emptyList()
         )
     }
     var showAddExercise by remember { mutableStateOf(false) }
@@ -387,7 +421,7 @@ private fun EditTemplateDialog(
                 var typeExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
                     OutlinedTextField(
-                        value = type, onValueChange = {}, readOnly = true,
+                        value = type ?: "", onValueChange = {}, readOnly = true,
                         label = { Text("Tipo") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
@@ -400,7 +434,7 @@ private fun EditTemplateDialog(
                 var diffExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = diffExpanded, onExpandedChange = { diffExpanded = !diffExpanded }) {
                     OutlinedTextField(
-                        value = difficulty, onValueChange = {}, readOnly = true,
+                        value = difficulty ?: "", onValueChange = {}, readOnly = true,
                         label = { Text("Dificuldade") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = diffExpanded) },
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
@@ -454,8 +488,8 @@ private fun EditTemplateDialog(
                     val sessions = totalSessions.toIntOrNull() ?: 0
                     val request = CreateTemplateRequest(
                         name = name,
-                        type = type,
-                        difficulty = difficulty,
+                        type = type ?: "Força",
+                        difficulty = difficulty ?: "Iniciante",
                         totalSessions = sessions,
                         exercises = exerciseEntries.mapIndexed { idx, entry ->
                             TemplateExerciseInput(

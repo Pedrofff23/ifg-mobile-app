@@ -31,6 +31,7 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import android.os.Build
+import androidx.core.net.toUri
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
 
@@ -185,7 +186,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                         containerColor = Green100
                                     ) {
                                         Text(
-                                            exercise.muscleGroup,
+                                            exercise.muscleGroup ?: "Geral",
                                             color = IfgGreen,
                                             style = MaterialTheme.typography.labelSmall
                                         )
@@ -208,7 +209,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                     exit = shrinkVertically()
                                 ) {
                                     Column(modifier = Modifier.padding(top = 8.dp)) {
-                                        if (exercise.description.isNotBlank()) {
+                                        if (!(exercise.description.isNullOrBlank())) {
                                             Text(
                                                 exercise.description,
                                                 style = MaterialTheme.typography.bodySmall,
@@ -217,10 +218,10 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                             Spacer(modifier = Modifier.height(4.dp))
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Badge(containerColor = if (exercise.usesWeight) Blue100 else Orange100) {
+                                            Badge(containerColor = if (exercise.usesWeight == true) Blue100 else Orange100) {
                                                 Text(
-                                                    if (exercise.usesWeight) "Com peso" else "Sem peso",
-                                                    color = if (exercise.usesWeight) Color(0xFF1565C0) else Orange600,
+                                                    if (exercise.usesWeight == true) "Com peso" else "Sem peso",
+                                                    color = if (exercise.usesWeight == true) Color(0xFF1565C0) else Orange600,
                                                     style = MaterialTheme.typography.labelSmall
                                                 )
                                             }
@@ -252,7 +253,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                                 val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
                                                 OutlinedButton(
                                                     onClick = {
-                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                                                        val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())
                                                         context.startActivity(intent)
                                                     },
                                                     modifier = Modifier.fillMaxWidth()
@@ -265,7 +266,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                         } else if (exercise.videoUrl != null) {
                                             OutlinedButton(
                                                 onClick = {
-                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(exercise.videoUrl))
+                                                    val intent = Intent(Intent.ACTION_VIEW, exercise.videoUrl.toUri())
                                                     context.startActivity(intent)
                                                 },
                                                 modifier = Modifier.fillMaxWidth()
@@ -321,7 +322,9 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
         ExerciseFormDialog(
             title = "Novo Exercício",
             initialExercise = null,
-            onDismiss = { showCreateDialog = false },
+            onDismiss = { 
+                showCreateDialog = false 
+            },
             onSave = { name, desc, muscle, weight, video, fileUri ->
                 viewModel.createExercise(context, name, desc, muscle, weight, video, fileUri)
                 showCreateDialog = false
@@ -336,7 +339,18 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
             initialExercise = showEditDialog,
             onDismiss = { showEditDialog = null },
             onSave = { name, desc, muscle, weight, video, fileUri ->
-                viewModel.updateExercise(showEditDialog!!.id, context, name, desc, muscle, weight, video, fileUri)
+                viewModel.updateExercise(
+                    showEditDialog!!.id, 
+                    context, 
+                    name, 
+                    desc, 
+                    muscle, 
+                    weight, 
+                    video, 
+                    showEditDialog!!.mediaPath, 
+                    showEditDialog!!.mediaType, 
+                    fileUri
+                )
                 showEditDialog = null
             }
         )

@@ -17,8 +17,8 @@ Este é o aplicativo Android do sistema Antigravity ERP, voltado tanto para **Al
 
 - `di/`: Módulos de injeção de dependência do Hilt (Configuração do Retrofit, DataStore).
 - `data/`: 
-  - `remote/`: Serviços do Retrofit (AuthService, ErpService, etc) e Interceptors.
-  - `local/`: Gerenciamento do DataStore local.
+ - `remote/`: Serviços do Retrofit (AuthService, ErpService, GroupService, ProfileService, UserService) e Interceptors.
+ - `local/`: Gerenciamento do DataStore local.
 - `domain/`: Modelos de Dados (DTOs, Entidades) como `ErpModels.kt`.
 - `presentation/`: Interfaces de Usuário em Compose (Telas separadas por `student`, `trainer`, `auth`, etc) e seus respectivos ViewModels.
 - `ui/theme/`: Definições globais de Design System, cores flexíveis, tipografia e temas.

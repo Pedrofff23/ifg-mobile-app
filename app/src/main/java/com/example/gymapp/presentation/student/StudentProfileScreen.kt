@@ -40,6 +40,7 @@ fun StudentProfileScreen(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showLogWeightDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
 
     val userEmail by viewModel.userEmail.collectAsState()
 
@@ -57,12 +58,10 @@ fun StudentProfileScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Profile Header Card
@@ -108,22 +107,31 @@ fun StudentProfileScreen(
 
             // Personal Information Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Informações Pessoais",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        ProfileInfoRow(icon = Icons.Default.Person, label = "Nome", value = (userName ?: "").ifBlank { "N/A" })
-                        ProfileInfoRow(icon = Icons.Default.Email, label = "Email", value = (userEmail ?: "").ifBlank { "N/A" })
-                        ProfileInfoRow(icon = Icons.Default.CalendarToday, label = "Membro desde", value = profile?.createdAt?.take(10) ?: "N/A")
-                    }
-                }
+            	Card(
+            		modifier = Modifier.fillMaxWidth(),
+            		elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            		shape = RoundedCornerShape(12.dp)
+            	) {
+            		Column(modifier = Modifier.padding(16.dp)) {
+            			Row(
+            				modifier = Modifier.fillMaxWidth(),
+            				horizontalArrangement = Arrangement.SpaceBetween,
+            				verticalAlignment = Alignment.CenterVertically
+            			) {
+            				Text(
+            					text = "Informações Pessoais",
+            					style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            					modifier = Modifier.padding(bottom = 12.dp)
+            				)
+            				IconButton(onClick = { showEditNameDialog = true }) {
+            					Icon(Icons.Default.Edit, contentDescription = "Editar nome", tint = IfgGreen, modifier = Modifier.size(20.dp))
+            				}
+            			}
+            			ProfileInfoRow(icon = Icons.Default.Person, label = "Nome", value = (userName ?: "").ifBlank { "N/A" })
+            			ProfileInfoRow(icon = Icons.Default.Email, label = "Email", value = (userEmail ?: "").ifBlank { "N/A" })
+            			ProfileInfoRow(icon = Icons.Default.CalendarToday, label = "Membro desde", value = profile?.createdAt?.take(10) ?: "N/A")
+            		}
+            	}
             }
 
             // Physical Data Card with Edit button
@@ -160,7 +168,8 @@ fun StudentProfileScreen(
                         )
                         val bmi = if (profile != null && (profile?.currentWeightKg ?: 0.0) > 0.0 && (profile?.heightCm ?: 0.0) > 0.0) {
                             val h = (profile?.heightCm ?: 0.0) / 100.0
-                            String.format("%.1f", (profile?.currentWeightKg ?: 0.0) / (h * h))
+                            val weight = profile?.currentWeightKg ?: 0.0
+                            String.format("%.1f", weight / (h * h))
                         } else "N/A"
                         ProfileInfoRow(icon = Icons.Default.Analytics, label = "IMC", value = bmi)
                         if (!profile?.injuryHistory.isNullOrBlank()) {
@@ -171,20 +180,6 @@ fun StudentProfileScreen(
                             )
                         }
                     }
-                }
-            }
-
-            // Log Weight Button
-            item {
-                OutlinedButton(
-                    onClick = { showLogWeightDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
-                ) {
-                    Icon(Icons.Default.MonitorWeight, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Registrar Peso")
                 }
             }
 
@@ -211,32 +206,6 @@ fun StudentProfileScreen(
                 }
             }
 
-            // Recent Measurements
-            if (measurements.isNotEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Medições Recentes",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            measurements.take(5).forEach { m ->
-                                ProfileInfoRow(
-                                    icon = Icons.Default.Straighten,
-                                    label = m.measuredAt?.take(10) ?: "Medição",
-                                    value = "${m.weightKg} kg"
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
             // Logout Button
             item {
                 Button(
@@ -252,6 +221,11 @@ fun StudentProfileScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+        )
     }
 
     // Edit Profile Dialog
@@ -281,16 +255,29 @@ fun StudentProfileScreen(
 
     // Theme selection dialog
     if (showThemeDialog) {
-        ThemeSelectionDialog(
-            currentTheme = currentTheme,
-            onThemeSelected = { scheme ->
-                themeManager.setThemeSchemeAsync(scheme)
-                showThemeDialog = false
-            },
-            onDismiss = { showThemeDialog = false }
-        )
+    	ThemeSelectionDialog(
+    		currentTheme = currentTheme,
+    		onThemeSelected = { scheme ->
+    			themeManager.setThemeSchemeAsync(scheme)
+    			showThemeDialog = false
+    		},
+    		onDismiss = { showThemeDialog = false }
+    	)
     }
-}
+
+    // Edit Name Dialog
+    if (showEditNameDialog) {
+    	EditNameDialog(
+    		currentName = userName ?: "",
+    		isUpdating = isUpdating,
+    		onDismiss = { showEditNameDialog = false },
+    		onSave = { fullName, instituto ->
+    			viewModel.updateUserName(fullName, instituto)
+    			showEditNameDialog = false
+    		}
+    	)
+    }
+    }
 
 @Composable
 private fun ThemeSelectionDialog(
@@ -528,6 +515,67 @@ private fun LogWeightDialog(
             TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
+}
+
+@Composable
+private fun EditNameDialog(
+	currentName: String,
+	isUpdating: Boolean,
+	onDismiss: () -> Unit,
+	onSave: (fullName: String, instituto: String?) -> Unit
+) {
+	var nameText by remember { mutableStateOf(currentName) }
+	var institutoText by remember { mutableStateOf("") }
+
+	AlertDialog(
+		onDismissRequest = onDismiss,
+		title = { Text("Editar Nome") },
+		text = {
+			Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+				OutlinedTextField(
+					value = nameText,
+					onValueChange = { nameText = it },
+					label = { Text("Nome completo") },
+					singleLine = true,
+					modifier = Modifier.fillMaxWidth(),
+					colors = OutlinedTextFieldDefaults.colors(
+						focusedTextColor = MaterialTheme.colorScheme.onSurface,
+						unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+						cursorColor = MaterialTheme.colorScheme.primary
+					)
+				)
+				OutlinedTextField(
+					value = institutoText,
+					onValueChange = { institutoText = it },
+					label = { Text("Instituto (opcional)") },
+					singleLine = true,
+					modifier = Modifier.fillMaxWidth(),
+					colors = OutlinedTextFieldDefaults.colors(
+						focusedTextColor = MaterialTheme.colorScheme.onSurface,
+						unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+						cursorColor = MaterialTheme.colorScheme.primary
+					)
+				)
+			}
+		},
+		confirmButton = {
+			Button(
+				onClick = {
+					if (nameText.isNotBlank()) {
+						onSave(nameText.trim(), institutoText.ifBlank { null })
+					}
+				},
+				enabled = !isUpdating && nameText.isNotBlank(),
+				colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+			) {
+				if (isUpdating) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+				else Text("Salvar", color = Color.White)
+			}
+		},
+		dismissButton = {
+			TextButton(onClick = onDismiss) { Text("Cancelar") }
+		}
+	)
 }
 
 @Composable

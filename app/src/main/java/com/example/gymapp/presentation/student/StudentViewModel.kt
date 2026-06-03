@@ -1,10 +1,12 @@
 package com.example.gymapp.presentation.student
 
 import androidx.lifecycle.ViewModel
+import com.example.gymapp.utils.ErrorUtils
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.ProfileService
+import com.example.gymapp.data.remote.UserService
 import com.example.gymapp.domain.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,17 +14,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
 class StudentViewModel @Inject constructor(
-    private val erpService: ErpService,
-    private val profileService: ProfileService,
-    private val tokenManager: TokenManager
+	private val erpService: ErpService,
+	private val profileService: ProfileService,
+	private val userService: UserService,
+	private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _assignments = MutableStateFlow<List<WorkoutAssignment>>(emptyList())
     val assignments: StateFlow<List<WorkoutAssignment>> = _assignments.asStateFlow()
+
+    private val _currentAssignment = MutableStateFlow<WorkoutAssignment?>(null)
+    val currentAssignment: StateFlow<WorkoutAssignment?> = _currentAssignment.asStateFlow()
 
     private val _sessions = MutableStateFlow<List<WorkoutSession>>(emptyList())
     val sessions: StateFlow<List<WorkoutSession>> = _sessions.asStateFlow()
@@ -57,6 +64,9 @@ class StudentViewModel @Inject constructor(
     private val _updateSuccess = MutableStateFlow<String?>(null)
     val updateSuccess: StateFlow<String?> = _updateSuccess.asStateFlow()
 
+    private val _stats = MutableStateFlow<AlunoStats?>(null)
+    val stats: StateFlow<AlunoStats?> = _stats.asStateFlow()
+
     init {
         loadUserData()
     }
@@ -69,19 +79,31 @@ class StudentViewModel @Inject constructor(
     }
 
     fun loadAssignments() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            try {
-                val userId = tokenManager.getUserIdSync() ?: return@launch
-                val response = erpService.getAssignmentsByAluno(userId)
-                _assignments.value = response.data ?: emptyList()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao carregar treinos"
-            } finally {
-                _isLoading.value = false
-            }
-        }
+    viewModelScope.launch {
+    _isLoading.value = true
+    _error.value = null
+    try {
+    val userId = tokenManager.getUserIdSync() ?: return@launch
+    // Load all assignments (non-paginated endpoint)
+    val response = erpService.getAssignmentsByAluno(userId)
+    _assignments.value = (response.data ?: emptyList()).sortedByDescending { it.startsAt }
+    // Load current assignment in the same coroutine so isLoading covers both
+    try {
+    val currentResp = erpService.getCurrentAssignment(userId)
+    _currentAssignment.value = currentResp.data
+    } catch (e: HttpException) {
+    if (e.code() == 404) {
+    _currentAssignment.value = null
+    } else {
+    throw e // re-throw non-404 HTTP errors
+    }
+    }
+    } catch (e: Exception) {
+    _error.value = ErrorUtils.parseErrorMessage(e)
+    } finally {
+    _isLoading.value = false
+    }
+    }
     }
 
     fun loadSessions() {
@@ -91,7 +113,7 @@ class StudentViewModel @Inject constructor(
                 val response = erpService.getSessionsByAluno(userId)
                 _sessions.value = response.data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao carregar sessões"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             }
         }
     }
@@ -102,7 +124,7 @@ class StudentViewModel @Inject constructor(
                 val response = erpService.getAnnouncements()
                 _announcements.value = response.data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao carregar avisos"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             }
         }
     }
@@ -110,10 +132,22 @@ class StudentViewModel @Inject constructor(
     fun loadExercises(search: String? = null, muscleGroup: String? = null) {
         viewModelScope.launch {
             try {
-                val response = erpService.getExercises(search = search, muscleGroup = muscleGroup)
+                val mappedMuscle = muscleGroup?.let {
+                    when (it.lowercase()) {
+                        "peito" -> "peito"
+                        "costas" -> "costas"
+                        "ombros" -> "ombros"
+                        "bíceps", "biceps", "tríceps", "triceps", "braços", "bracos" -> "bracos"
+                        "pernas", "glúteos", "gluteos" -> "pernas"
+                        "core", "abdômen", "abdomen" -> "abdomen"
+                        "cardio" -> "cardio"
+                        else -> it
+                    }
+                }
+                val response = erpService.getExercises(search = search, muscleGroup = mappedMuscle)
                 _exercises.value = response.data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao carregar exercícios"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             }
         }
     }
@@ -127,15 +161,33 @@ class StudentViewModel @Inject constructor(
                 val measResp = profileService.getMeasurements(userId)
                 _measurements.value = measResp.data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao carregar perfil"
+                if (e is HttpException && e.code() == 404) {
+                    _profile.value = null
+                    _measurements.value = emptyList()
+                } else {
+                    _error.value = ErrorUtils.parseErrorMessage(e)
+                }
             }
         }
     }
 
     fun loadStudentData() {
-        loadAssignments()
-        loadSessions()
-        loadAnnouncements()
+    loadAssignments()
+    loadSessions()
+    loadAnnouncements()
+    loadStats()
+    }
+
+    fun loadStats() {
+    viewModelScope.launch {
+    try {
+    val userId = tokenManager.getUserIdSync() ?: return@launch
+    val response = erpService.getAlunoStats(userId)
+    _stats.value = response.data
+    } catch (e: Exception) {
+    // Stats are supplementary — don't override error state
+    }
+    }
     }
 
     fun updateProfile(heightCm: Double, currentWeightKg: Double, injuryHistory: String?) {
@@ -154,7 +206,7 @@ class StudentViewModel @Inject constructor(
                 loadProfile()
                 _updateSuccess.value = "Perfil atualizado com sucesso!"
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao atualizar perfil"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isUpdating.value = false
             }
@@ -167,7 +219,15 @@ class StudentViewModel @Inject constructor(
             _error.value = null
             _updateSuccess.value = null
             try {
-                val now = java.time.LocalDate.now().toString()
+                // Get current date in ISO format (yyyy-MM-dd)
+                val now = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    java.time.OffsetDateTime.now().format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                } else {
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                    sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    sdf.format(java.util.Date())
+                }
+
                 profileService.addMeasurement(
                     AddMeasurementRequest(
                         weightKg = weightKg,
@@ -178,21 +238,34 @@ class StudentViewModel @Inject constructor(
                 loadProfile()
                 _updateSuccess.value = "Medição registrada com sucesso!"
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao registrar medição"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isUpdating.value = false
             }
         }
     }
 
+    fun updateUserName(fullName: String, instituto: String?) {
+    	viewModelScope.launch {
+    		_isUpdating.value = true
+    		_error.value = null
+    		_updateSuccess.value = null
+    		try {
+    			val userId = tokenManager.getUserIdSync() ?: return@launch
+    			userService.updateProfile(userId, UpdateUserRequest(fullName = fullName, instituto = instituto))
+    			_userName.value = fullName
+    				tokenManager.saveUserName(fullName)
+    			_updateSuccess.value = "Nome atualizado com sucesso!"
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isUpdating.value = false
+    		}
+    	}
+    }
+
     fun clearUpdateStatus() {
         _updateSuccess.value = null
         _error.value = null
-    }
-
-    fun logout() {
-        viewModelScope.launch {
-            tokenManager.clearSession()
-        }
     }
 }

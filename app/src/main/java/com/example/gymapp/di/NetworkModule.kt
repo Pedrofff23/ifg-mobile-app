@@ -3,6 +3,7 @@ package com.example.gymapp.di
 import com.example.gymapp.data.remote.AuthInterceptor
 import com.example.gymapp.data.remote.AuthService
 import com.example.gymapp.data.remote.ErpService
+import com.example.gymapp.data.remote.GroupService
 import com.example.gymapp.data.remote.ProfileService
 import com.example.gymapp.data.remote.UserService
 import dagger.Module
@@ -65,5 +66,11 @@ object NetworkModule {
  @Singleton
  fun provideProfileService(retrofit: Retrofit): ProfileService {
  return retrofit.create(ProfileService::class.java)
+ }
+
+ @Provides
+ @Singleton
+ fun provideGroupService(retrofit: Retrofit): GroupService {
+ return retrofit.create(GroupService::class.java)
  }
 }

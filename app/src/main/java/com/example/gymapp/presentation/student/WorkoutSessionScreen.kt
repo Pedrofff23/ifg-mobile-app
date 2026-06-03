@@ -1,6 +1,7 @@
 package com.example.gymapp.presentation.student
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -75,13 +76,16 @@ fun WorkoutSessionScreen(
 
     // Load exercise history when current exercise changes
     LaunchedEffect(currentExerciseIndex) {
-    val sessionEx = sessionExercises.getOrNull(currentExerciseIndex)
-    val templateEx = templateExercises.getOrNull(currentExerciseIndex)
-    val exerciseId = sessionEx?.exerciseId ?: templateEx?.exerciseId
-    if (exerciseId != null) {
-    viewModel.loadExerciseHistory(exerciseId)
+    	val sessionEx = sessionExercises.getOrNull(currentExerciseIndex)
+    	val templateEx = templateExercises.getOrNull(currentExerciseIndex)
+    	val exerciseId = sessionEx?.exerciseId ?: templateEx?.exerciseId
+    	if (exerciseId != null) {
+    		viewModel.loadExerciseHistory(exerciseId)
+    	}
     }
-    }
+
+    // Exercise selector state
+    var showExerciseSelector by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Bar
@@ -113,24 +117,39 @@ fun WorkoutSessionScreen(
         }
         }
 
-        // Progress Bar
+        // Progress Bar + Exercise Selector
         if (totalExercises > 0) {
-            LinearProgressIndicator(
-                progress = { (currentExerciseIndex + 1).toFloat() / totalExercises.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = IfgGreen,
-                trackColor = LightSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Exercício ${currentExerciseIndex + 1} de $totalExercises",
-                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+        	LinearProgressIndicator(
+        		progress = { (currentExerciseIndex + 1).toFloat() / totalExercises.toFloat() },
+        		modifier = Modifier
+        			.fillMaxWidth()
+        			.padding(horizontal = 16.dp)
+        			.height(8.dp)
+        			.clip(RoundedCornerShape(4.dp)),
+        		color = IfgGreen,
+        		trackColor = MaterialTheme.colorScheme.surfaceVariant
+        	)
+        	Spacer(modifier = Modifier.height(4.dp))
+        	// Clickable exercise indicator — opens selector
+        	Row(
+        		modifier = Modifier
+        			.fillMaxWidth()
+        			.padding(horizontal = 16.dp)
+        			.clickable { showExerciseSelector = true },
+        		verticalAlignment = Alignment.CenterVertically
+        	) {
+        		Text(
+        			text = "Exercício ${currentExerciseIndex + 1} de $totalExercises",
+        			style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+        		)
+        		Spacer(modifier = Modifier.width(4.dp))
+        		Icon(
+        			Icons.Default.ArrowDropDown,
+        			contentDescription = "Selecionar exercício",
+        			modifier = Modifier.size(16.dp),
+        			tint = MaterialTheme.colorScheme.onSurfaceVariant
+        		)
+        	}
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -142,16 +161,22 @@ fun WorkoutSessionScreen(
             val exerciseName = sessionEx?.exerciseName ?: templateEx?.exerciseName ?: "Exercício"
             val defaultSets = templateEx?.defaultSets ?: sessionEx?.sets?.size ?: 3
             val defaultReps = templateEx?.defaultReps ?: 12
+            val isCardio = sessionEx?.muscleGroup.equals("cardio", ignoreCase = true)
 
             WorkoutExerciseContent(
             exerciseName = exerciseName,
             defaultSets = defaultSets,
             defaultReps = defaultReps,
+            isCardio = isCardio,
             currentSet = currentSet,
             currentExerciseIndex = currentExerciseIndex,
             totalExercises = totalExercises,
             loadHistory = loadHistory,
-            onCompleteSet = { setNum, weight -> viewModel.completeSet(setNum, weight, defaultReps) },
+            onCompleteSet = { setNum, weight, duration, distance ->
+            	val durSec = duration?.let { (it * 60).toInt() } // min -> seconds
+            	val distM = distance?.let { it * 1000.0 } // km -> meters
+            	viewModel.completeSet(setNum, weight, defaultReps, durSec, distM)
+            },
             onPrevious = { viewModel.previousExercise() },
             onNext = { viewModel.nextExercise() },
             onFinish = { viewModel.showRating() }
@@ -160,15 +185,29 @@ fun WorkoutSessionScreen(
 
         // Rating Dialog
         if (showRatingDialog) {
-            RatingDialog(
-                onDismiss = { viewModel.dismissRating() },
-                onConfirm = { rating, feedback ->
-                    viewModel.finishWorkout(rating, feedback)
-                    onFinish()
-                }
-            )
+        	RatingDialog(
+        		onDismiss = { viewModel.dismissRating() },
+        		onConfirm = { rating, feedback ->
+        			viewModel.finishWorkout(rating, feedback)
+        			onFinish()
+        		}
+        	)
         }
-    }
+
+        // Exercise Selector Dialog — allows free exercise selection
+        if (showExerciseSelector && sessionExercises.isNotEmpty()) {
+        	ExerciseSelectorDialog(
+        		sessionExercises = sessionExercises,
+        		templateExercises = templateExercises,
+        		currentIndex = currentExerciseIndex,
+        		onSelect = { index ->
+        			viewModel.selectExercise(index)
+        			showExerciseSelector = false
+        		},
+        		onDismiss = { showExerciseSelector = false }
+        	)
+        }
+        }
 }
 
 @Composable
@@ -176,11 +215,12 @@ private fun ColumnScope.WorkoutExerciseContent(
  exerciseName: String,
  defaultSets: Int,
  defaultReps: Int,
+ isCardio: Boolean,
  currentSet: Int,
  currentExerciseIndex: Int,
  totalExercises: Int,
- loadHistory: List<ExerciseLoadHistory>,
- onCompleteSet: (Int, Double?) -> Unit,
+ loadHistory: List<ExerciseProgressPoint>,
+ onCompleteSet: (Int, Double?, Double?, Double?) -> Unit, // setNum, weightKg, durationMin, distanceKm
  onPrevious: () -> Unit,
  onNext: () -> Unit,
  onFinish: () -> Unit
@@ -207,25 +247,32 @@ private fun ColumnScope.WorkoutExerciseContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                text = "${defaultSets}x${defaultReps} reps",
-                style = MaterialTheme.typography.bodyLarge.copy(color = Color.White.copy(alpha = 0.8f))
+                	text = if (isCardio) "${defaultSets}x cardio" else "${defaultSets}x${defaultReps} reps",
+                	style = MaterialTheme.typography.bodyLarge.copy(color = Color.White.copy(alpha = 0.8f))
                 )
                 // Load history
                 if (loadHistory.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                text = "Histórico de Carga",
-                style = MaterialTheme.typography.labelMedium.copy(
-                color = Color.White.copy(alpha = 0.7f),
-                fontWeight = FontWeight.SemiBold
-                )
-                )
-                loadHistory.take(3).forEach { entry ->
-                Text(
-                text = "${(entry.sessionDate ?: "").take(10)}: ${entry.maxWeightKg} kg",
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.6f))
-                )
-                }
+                	Spacer(modifier = Modifier.height(8.dp))
+                	Text(
+                		text = if (isCardio) "Histórico de Cardio" else "Histórico de Carga",
+                		style = MaterialTheme.typography.labelMedium.copy(
+                			color = Color.White.copy(alpha = 0.7f),
+                			fontWeight = FontWeight.SemiBold
+                		)
+                	)
+                	loadHistory.take(3).forEach { entry ->
+                		val historyText = if (isCardio) {
+                			val durMin = entry.totalDurationSeconds?.let { "${it / 60}min" } ?: ""
+                			val distKm = entry.totalDistanceMeters?.let { "%.2f km".format(it / 1000.0) } ?: ""
+                			"${(entry.sessionDate ?: "").take(10)}: $durMin $distKm"
+                		} else {
+                			"${(entry.sessionDate ?: "").take(10)}: ${entry.maxWeightKg ?: 0.0} kg"
+                		}
+                		Text(
+                			text = historyText,
+                			style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.6f))
+                		)
+                	}
                 }
                 }
             }
@@ -233,14 +280,15 @@ private fun ColumnScope.WorkoutExerciseContent(
 
         // Sets
         items(defaultSets) { setIndex ->
-            val setNum = setIndex + 1
-            SetRow(
-                setNumber = setNum,
-                reps = defaultReps,
-                isCurrentSet = setNum == currentSet,
-                isCompleted = setNum < currentSet,
-                onComplete = { weight -> onCompleteSet(setNum, weight) }
-            )
+        	val setNum = setIndex + 1
+        	SetRow(
+        		setNumber = setNum,
+        		reps = defaultReps,
+        		isCardio = isCardio,
+        		isCurrentSet = setNum == currentSet,
+        		isCompleted = setNum < currentSet,
+        		onComplete = { weight, duration, distance -> onCompleteSet(setNum, weight, duration, distance) }
+        	)
         }
 
         // Navigation buttons
@@ -286,74 +334,107 @@ private fun ColumnScope.WorkoutExerciseContent(
 
 @Composable
 private fun SetRow(
-    setNumber: Int,
-    reps: Int,
-    isCurrentSet: Boolean,
-    isCompleted: Boolean,
-    onComplete: (Double?) -> Unit
+ setNumber: Int,
+ reps: Int,
+ isCardio: Boolean,
+ isCurrentSet: Boolean,
+ isCompleted: Boolean,
+ onComplete: (Double?, Double?, Double?) -> Unit // weightKg, durationMin, distanceKm
 ) {
-    var weightInput by remember { mutableStateOf("") }
+ var weightInput by remember { mutableStateOf("") }
+ var durationInput by remember { mutableStateOf("") }
+ var distanceInput by remember { mutableStateOf("") }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentSet) 4.dp else 1.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCurrentSet) Green100 else Color.White
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(if (isCompleted) IfgGreen else if (isCurrentSet) IfgGreenLight else LightSurfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isCompleted) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                } else {
-                    Text(
-                        text = "$setNumber",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCurrentSet) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                }
-            }
+ Card(
+	modifier = Modifier.fillMaxWidth(),
+	elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentSet) 4.dp else 1.dp),
+	shape = RoundedCornerShape(8.dp),
+	colors = CardDefaults.cardColors(
+		containerColor = if (isCurrentSet) Green100 else Color.White
+	)
+ ) {
+	Row(
+		modifier = Modifier.padding(12.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		Box(
+			modifier = Modifier
+				.size(32.dp)
+				.clip(CircleShape)
+				.background(if (isCompleted) IfgGreen else if (isCurrentSet) IfgGreenLight else LightSurfaceVariant),
+			contentAlignment = Alignment.Center
+		) {
+			if (isCompleted) {
+				Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+			} else {
+				Text(
+					text = "$setNumber",
+					style = MaterialTheme.typography.labelMedium.copy(
+						fontWeight = FontWeight.Bold,
+						color = if (isCurrentSet) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+					)
+				)
+			}
+		}
 
-            Spacer(modifier = Modifier.width(12.dp))
+		Spacer(modifier = Modifier.width(12.dp))
 
-            Text(
-                text = "$reps reps",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                modifier = Modifier.weight(1f)
-            )
+		Text(
+			text = if (isCardio) "Cardio" else "$reps reps",
+			style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+			modifier = Modifier.weight(0.4f)
+		)
 
-            if (isCurrentSet) {
-                OutlinedTextField(
-                value = weightInput,
-                onValueChange = { weightInput = it },
-                modifier = Modifier.width(80.dp),
-                placeholder = { Text("kg", style = MaterialTheme.typography.labelSmall) },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = { onComplete(weightInput.toDoubleOrNull()) },
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = IfgGreen)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = "Completar", tint = Color.White)
-                }
-            }
-        }
-    }
+		if (isCurrentSet) {
+			if (isCardio) {
+				// Cardio inputs: duration (min) and distance (km)
+				OutlinedTextField(
+					value = durationInput,
+					onValueChange = { durationInput = it },
+					modifier = Modifier.width(64.dp),
+					placeholder = { Text("min", style = MaterialTheme.typography.labelSmall) },
+					singleLine = true,
+					textStyle = MaterialTheme.typography.bodySmall,
+					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+				)
+				Spacer(modifier = Modifier.width(6.dp))
+				OutlinedTextField(
+					value = distanceInput,
+					onValueChange = { distanceInput = it },
+					modifier = Modifier.width(64.dp),
+					placeholder = { Text("km", style = MaterialTheme.typography.labelSmall) },
+					singleLine = true,
+					textStyle = MaterialTheme.typography.bodySmall,
+					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+				)
+			} else {
+				// Strength input: weight (kg)
+				OutlinedTextField(
+					value = weightInput,
+					onValueChange = { weightInput = it },
+					modifier = Modifier.width(80.dp),
+					placeholder = { Text("kg", style = MaterialTheme.typography.labelSmall) },
+					singleLine = true,
+					textStyle = MaterialTheme.typography.bodySmall,
+					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+				)
+			}
+			Spacer(modifier = Modifier.width(8.dp))
+			IconButton(
+				onClick = {
+					if (isCardio) {
+						onComplete(null, durationInput.toDoubleOrNull(), distanceInput.toDoubleOrNull())
+					} else {
+						onComplete(weightInput.toDoubleOrNull(), null, null)
+					}
+				},
+				colors = IconButtonDefaults.iconButtonColors(containerColor = IfgGreen)
+			) {
+				Icon(Icons.Default.Check, contentDescription = "Completar", tint = Color.White)
+			}
+		}
+	}
+ }
 }
 
 @Composable
@@ -407,7 +488,108 @@ private fun RatingDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        	TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
-    )
-}
+        )
+        }
+
+        @Composable
+        private fun ExerciseSelectorDialog(
+        sessionExercises: List<SessionExercise>,
+        templateExercises: List<TemplateExercise>,
+        currentIndex: Int,
+        onSelect: (Int) -> Unit,
+        onDismiss: () -> Unit
+        ) {
+        AlertDialog(
+        	onDismissRequest = onDismiss,
+        	title = { Text("Selecionar Exercício") },
+        	text = {
+        		LazyColumn(
+        			verticalArrangement = Arrangement.spacedBy(4.dp)
+        		) {
+        			items(sessionExercises.size) { index ->
+        				val sessionEx = sessionExercises[index]
+        				val templateEx = templateExercises.getOrNull(index)
+        				val name = sessionEx.exerciseName ?: templateEx?.exerciseName ?: "Exercício ${index + 1}"
+        				val isCompleted = sessionEx.status == "completed"
+        				val isCurrent = index == currentIndex
+
+        				Card(
+        					onClick = {
+        						onSelect(index)
+        					},
+        					modifier = Modifier.fillMaxWidth(),
+        					shape = RoundedCornerShape(8.dp),
+        					colors = CardDefaults.cardColors(
+        						containerColor = when {
+        							isCurrent -> Green100
+        							isCompleted -> MaterialTheme.colorScheme.surfaceVariant
+        							else -> MaterialTheme.colorScheme.surface
+        						}
+        					)
+        				) {
+        					Row(
+        						modifier = Modifier
+        							.fillMaxWidth()
+        							.padding(12.dp),
+        						verticalAlignment = Alignment.CenterVertically
+        					) {
+        						Box(
+        							modifier = Modifier
+        								.size(32.dp)
+        								.clip(CircleShape)
+        								.background(
+        									when {
+        										isCompleted -> IfgGreen
+        										isCurrent -> IfgGreenLight
+        										else -> LightSurfaceVariant
+        									}
+        								),
+        							contentAlignment = Alignment.Center
+        						) {
+        							if (isCompleted) {
+        								Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        							} else {
+        								Text(
+        									text = "${index + 1}",
+        									style = MaterialTheme.typography.labelMedium.copy(
+        										fontWeight = FontWeight.Bold,
+        										color = if (isCurrent) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+        									)
+        								)
+        							}
+        						}
+        						Spacer(modifier = Modifier.width(12.dp))
+        						Column(modifier = Modifier.weight(1f)) {
+        							Text(
+        								text = name,
+        								style = MaterialTheme.typography.bodyMedium.copy(
+        									fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+        								)
+        							)
+        							if (isCompleted) {
+        								Text(
+        									text = "Concluído",
+        									style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen)
+        								)
+        							}
+        						}
+        						if (isCurrent) {
+        							Icon(
+        								Icons.Default.PlayArrow,
+        								contentDescription = "Atual",
+        								tint = IfgGreen,
+        								modifier = Modifier.size(20.dp)
+        							)
+        						}
+        					}
+        				}
+        			}
+        		}
+        	},
+        	confirmButton = {
+        		TextButton(onClick = onDismiss) { Text("Fechar") }
+        	}
+        )
+        }

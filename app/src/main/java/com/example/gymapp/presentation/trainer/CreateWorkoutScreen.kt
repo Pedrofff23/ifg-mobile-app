@@ -220,7 +220,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
 
     // Exercise selection dialog
     if (showExerciseDialog) {
-        val filteredExercises = exercises.filter { it.name.contains(exerciseSearch, ignoreCase = true) || it.muscleGroup.contains(exerciseSearch, ignoreCase = true) }
+        val filteredExercises = exercises.filter { it.name.contains(exerciseSearch, ignoreCase = true) || (it.muscleGroup ?: "").contains(exerciseSearch, ignoreCase = true) }
         AlertDialog(
             onDismissRequest = { showExerciseDialog = false; exerciseSearch = "" },
             title = { Text("Selecionar Exercício") },
@@ -247,8 +247,8 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(exercise.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
-                                        Text(exercise.muscleGroup, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(exercise.name ?: "Sem nome", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+                                        Text(exercise.muscleGroup ?: "Geral", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     if (alreadySelected) {
                                         Icon(Icons.Default.CheckCircle, contentDescription = "Selecionado", tint = IfgGreen)
@@ -256,7 +256,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
                                         IconButton(onClick = {
                                             selectedExercises = selectedExercises + SelectedExercise(
                                                 exerciseId = exercise.id,
-                                                name = exercise.name,
+                                                name = exercise.name ?: "",
                                                 sets = 3,
                                                 reps = 12,
                                                 restSeconds = 60

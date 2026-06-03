@@ -1,22 +1,28 @@
 package com.example.gymapp.presentation.trainer
 
 import androidx.lifecycle.ViewModel
+import com.example.gymapp.utils.ErrorUtils
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.ErpService
+import com.example.gymapp.data.remote.GroupService
 import com.example.gymapp.data.remote.UserService
 import com.example.gymapp.domain.model.Announcement
 import com.example.gymapp.domain.model.AssignWorkoutRequest
+import com.example.gymapp.domain.model.AssignGroupWorkoutRequest
+import com.example.gymapp.domain.model.AddGroupMemberRequest
+import com.example.gymapp.domain.model.CreateGroupRequest
 import android.content.Context
 import android.net.Uri
 import com.example.gymapp.domain.model.CreateAnnouncementRequest
 import com.example.gymapp.domain.model.CreateTemplateRequest
 import com.example.gymapp.domain.model.Exercise
-import com.example.gymapp.domain.model.TemplateExerciseInput
 import com.example.gymapp.domain.model.UpdateRoleRequest
 import com.example.gymapp.domain.model.UpdateStatusRequest
+import com.example.gymapp.domain.model.UpdateUserRequest
 import com.example.gymapp.domain.model.User
 import com.example.gymapp.domain.model.WorkoutTemplate
+import com.example.gymapp.domain.model.StudentGroup
 import com.example.gymapp.ui.theme.ThemeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,14 +39,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfessorViewModel @Inject constructor(
-    private val erpService: ErpService,
-    private val userService: UserService,
-    private val tokenManager: TokenManager,
-    val themeManager: ThemeManager,
+	private val erpService: ErpService,
+	private val userService: UserService,
+	private val groupService: GroupService,
+	private val tokenManager: TokenManager,
+	val themeManager: ThemeManager,
 ) : ViewModel() {
 
     private val _students = MutableStateFlow<List<User>>(emptyList())
     val students: StateFlow<List<User>> = _students.asStateFlow()
+
+    private val _allStudents = MutableStateFlow<List<User>>(emptyList())
 
     private val _templates = MutableStateFlow<List<WorkoutTemplate>>(emptyList())
     val templates: StateFlow<List<WorkoutTemplate>> = _templates.asStateFlow()
@@ -69,6 +78,9 @@ class ProfessorViewModel @Inject constructor(
     private val _allUsers = MutableStateFlow<List<User>>(emptyList())
     val allUsers: StateFlow<List<User>> = _allUsers.asStateFlow()
 
+    private val _groups = MutableStateFlow<List<StudentGroup>>(emptyList())
+    val groups: StateFlow<List<StudentGroup>> = _groups.asStateFlow()
+
     init {
     loadUserName()
     loadUserRole()
@@ -92,7 +104,25 @@ class ProfessorViewModel @Inject constructor(
     }
 
     fun clearSuccessMessage() {
-        _successMessage.value = null
+    	_successMessage.value = null
+    }
+
+    fun updateUserName(fullName: String, instituto: String?) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			val userId = tokenManager.getUserIdSync() ?: return@launch
+    			userService.updateProfile(userId, UpdateUserRequest(fullName = fullName, instituto = instituto))
+    			_userName.value = fullName
+    			tokenManager.saveUserName(fullName)
+    			_successMessage.value = "Nome atualizado com sucesso!"
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
     }
 
     // ==================== DASHBOARD ====================
@@ -103,14 +133,16 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 val usersResponse = userService.getUsers()
-                _students.value = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
+                val studentsList = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
+                _allStudents.value = studentsList
+                _students.value = studentsList
 
                 _templates.value = erpService.getTemplates().data ?: emptyList()
                 _exercises.value = erpService.getExercises().data ?: emptyList()
                 _announcements.value = erpService.getAnnouncements().data ?: emptyList()
 
             } catch (e: Exception) {
-                _error.value = e.message ?: "An unexpected error occurred"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -126,7 +158,7 @@ class ProfessorViewModel @Inject constructor(
             try {
                 _templates.value = erpService.getTemplates().data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load templates"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -138,11 +170,15 @@ class ProfessorViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                erpService.createTemplate(request)
-                _successMessage.value = "Template created successfully"
+                val mappedRequest = request.copy(
+                    type = mapWorkoutType(request.type),
+                    difficulty = mapDifficulty(request.difficulty)
+                )
+                erpService.createTemplate(mappedRequest)
+                _successMessage.value = "Treino criado com sucesso"
                 loadTemplates()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to create template"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -158,7 +194,7 @@ class ProfessorViewModel @Inject constructor(
     _successMessage.value = "Template excluído com sucesso"
     loadTemplates()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to delete template"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -174,7 +210,7 @@ class ProfessorViewModel @Inject constructor(
     _successMessage.value = "Template atualizado com sucesso"
     loadTemplates()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to update template"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -193,7 +229,7 @@ class ProfessorViewModel @Inject constructor(
     muscleGroup = muscleGroup
     ).data ?: emptyList()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to load exercises"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -222,9 +258,10 @@ class ProfessorViewModel @Inject constructor(
 
                 var filePart: MultipartBody.Part? = null
                 if (fileUri != null) {
-                    val file = getFileFromUri(context, fileUri)
-                    if (file != null) {
-                        val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+                    val fileData = getFileFromUri(context, fileUri)
+                    if (fileData != null) {
+                        val (file, mimeType) = fileData
+                        val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
                         filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
                     }
                 }
@@ -233,7 +270,7 @@ class ProfessorViewModel @Inject constructor(
                 _successMessage.value = "Exercício criado com sucesso"
                 loadExercises()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to create exercise"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -248,6 +285,8 @@ class ProfessorViewModel @Inject constructor(
         muscleGroup: String,
         usesWeight: Boolean,
         videoUrl: String?,
+        mediaPath: String?,
+        mediaType: String?,
         fileUri: Uri?
     ) {
         viewModelScope.launch {
@@ -263,35 +302,87 @@ class ProfessorViewModel @Inject constructor(
 
                 var filePart: MultipartBody.Part? = null
                 if (fileUri != null) {
-                    val file = getFileFromUri(context, fileUri)
-                    if (file != null) {
-                        val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+                    val fileData = getFileFromUri(context, fileUri)
+                    if (fileData != null) {
+                        val (file, mimeType) = fileData
+                        val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
                         filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
                     }
                 }
 
-                erpService.updateExercise(id, namePart, descPart, musclePart, weightPart, videoUrlPart, filePart)
+                val mediaPathPart = mediaPath?.toRequestBody("text/plain".toMediaTypeOrNull())
+                val mediaTypePart = mediaType?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+                erpService.updateExercise(id, namePart, descPart, musclePart, weightPart, videoUrlPart, mediaPathPart, mediaTypePart, filePart)
                 _successMessage.value = "Exercício atualizado com sucesso"
                 loadExercises()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to update exercise"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    private fun getFileFromUri(context: Context, uri: Uri): File? {
+    private fun getFileFromUri(context: Context, uri: Uri): Pair<File, String>? {
         return try {
-            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-            val tempFile = File.createTempFile("upload_", ".tmp", context.cacheDir)
-            val outputStream = FileOutputStream(tempFile)
-            inputStream.copyTo(outputStream)
-            inputStream.close()
-            outputStream.close()
-            tempFile
+            val contentResolver = context.contentResolver
+            var extension = ".tmp"
+            var mimeType = "application/octet-stream"
+
+            // Tenta obter MIME type e extensão
+            try {
+                val type = contentResolver.getType(uri)
+                if (type != null) {
+                    mimeType = type
+                    val mimeExt = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(type)
+                    if (mimeExt != null) {
+                        extension = ".$mimeExt"
+                    }
+                }
+            } catch (_: Exception) {
+                // Ignora erro ao obter tipo
+            }
+
+            // Se não conseguiu extensão pelo MIME type, tenta pelo nome do arquivo
+            if (extension == ".tmp") {
+                try {
+                    val projection = arrayOf(android.provider.OpenableColumns.DISPLAY_NAME)
+                    contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val name = cursor.getString(0)
+                            if (name != null) {
+                                val lastDot = name.lastIndexOf('.')
+                                if (lastDot != -1) {
+                                    extension = name.substring(lastDot)
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                    // Ignora erro ao consultar metadados
+                }
+            }
+
+            // Tenta abrir o arquivo usando openInputStream, que é mais estável no Waydroid/Emuladores
+            val inputStream = contentResolver.openInputStream(uri)
+                ?: throw Exception("Não foi possível abrir o arquivo.")
+
+            val dir = context.cacheDir ?: context.filesDir
+            val tempFile = File(dir, "upload_${System.currentTimeMillis()}${extension.replace("/", "_")}")
+
+            inputStream.use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            Pair(tempFile, mimeType)
         } catch (e: Exception) {
-            null
+            // Log do erro real para depuração no Logcat
+            e.printStackTrace()
+            // Mensagem simplificada para o usuário
+            throw Exception("Falha ao processar o arquivo de mídia.")
         }
     }
 
@@ -307,6 +398,26 @@ class ProfessorViewModel @Inject constructor(
         }
     }
 
+    private fun mapWorkoutType(type: String): String {
+        return when (type.lowercase()) {
+            "força" -> "forca"
+            "hipertrofia" -> "hipertrofia"
+            "resistência" -> "resistencia"
+            "funcional" -> "funcional"
+            "cardio" -> "resistencia" // Fallback se selecionarem cardio e nao houver no enum
+            else -> "hipertrofia"
+        }
+    }
+
+    private fun mapDifficulty(difficulty: String): String {
+        return when (difficulty.lowercase()) {
+            "iniciante" -> "iniciante"
+            "intermediário", "intermediario" -> "intermediario"
+            "avançado", "avancado" -> "avancado"
+            else -> "iniciante"
+        }
+    }
+
     fun deleteExercise(id: String) {
     viewModelScope.launch {
     _isLoading.value = true
@@ -316,7 +427,7 @@ class ProfessorViewModel @Inject constructor(
     _successMessage.value = "Exercício excluído com sucesso"
     loadExercises()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to delete exercise"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -332,7 +443,7 @@ class ProfessorViewModel @Inject constructor(
             try {
                 _announcements.value = erpService.getAnnouncements().data ?: emptyList()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load announcements"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -348,7 +459,7 @@ class ProfessorViewModel @Inject constructor(
                 _successMessage.value = "Announcement created successfully"
                 loadAnnouncements()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to create announcement"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -364,7 +475,7 @@ class ProfessorViewModel @Inject constructor(
                 _successMessage.value = "Announcement deleted successfully"
                 loadAnnouncements()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to delete announcement"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -381,7 +492,7 @@ class ProfessorViewModel @Inject constructor(
                 erpService.assignWorkout(request)
                 _successMessage.value = "Workout assigned successfully"
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to assign workout"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -396,9 +507,11 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 val usersResponse = userService.getUsers()
-                _students.value = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
+                val studentsList = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
+                _allStudents.value = studentsList
+                _students.value = studentsList
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load students"
+                _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
@@ -406,15 +519,14 @@ class ProfessorViewModel @Inject constructor(
     }
 
     fun searchStudents(query: String) {
-    val currentStudents = _students.value
     if (query.isBlank()) {
-    loadStudents()
+    _students.value = _allStudents.value
     return
     }
     val lowerQuery = query.lowercase()
-    _students.value = currentStudents.filter { student ->
+    _students.value = _allStudents.value.filter { student ->
     (student.fullName ?: "").lowercase().contains(lowerQuery) ||
-    (student.email ?: "").lowercase().contains(lowerQuery)
+    student.email.lowercase().contains(lowerQuery)
     }
     }
 
@@ -427,7 +539,7 @@ class ProfessorViewModel @Inject constructor(
     try {
     _allUsers.value = userService.getUsers().data ?: emptyList()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to load users"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -439,11 +551,11 @@ class ProfessorViewModel @Inject constructor(
     _isLoading.value = true
     _error.value = null
     try {
-    userService.updateUserRole(userId, UpdateRoleRequest(newRole))
+    userService.updateRole(userId, UpdateRoleRequest(newRole))
     _successMessage.value = "Papel atualizado com sucesso"
     loadAllUsers()
     } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to update role"
+    _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {
     _isLoading.value = false
     }
@@ -451,18 +563,131 @@ class ProfessorViewModel @Inject constructor(
     }
 
     fun updateUserStatus(userId: String, isActive: Boolean) {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
-    try {
-    userService.updateUserStatus(userId, UpdateStatusRequest(isActive))
-    _successMessage.value = "Status atualizado com sucesso"
-    loadAllUsers()
-    } catch (e: Exception) {
-    _error.value = e.message ?: "Failed to update status"
-    } finally {
-    _isLoading.value = false
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			userService.updateStatus(userId, UpdateStatusRequest(isActive))
+    			_successMessage.value = "Status atualizado com sucesso"
+    			loadAllUsers()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
     }
+
+    // ==================== GROUPS ====================
+
+    fun loadGroups() {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			_groups.value = groupService.getGroups().data ?: emptyList()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
     }
+
+    fun createGroup(name: String, description: String?) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			groupService.createGroup(CreateGroupRequest(name, description))
+    			_successMessage.value = "Grupo criado com sucesso"
+    			loadGroups()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
+    }
+
+    fun updateGroup(groupId: String, name: String, description: String?) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			groupService.updateGroup(groupId, CreateGroupRequest(name, description))
+    			_successMessage.value = "Grupo atualizado com sucesso"
+    			loadGroups()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
+    }
+
+    fun deleteGroup(groupId: String) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			groupService.deleteGroup(groupId)
+    			_successMessage.value = "Grupo excluído com sucesso"
+    			loadGroups()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
+    }
+
+    fun addGroupMember(groupId: String, userId: String) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			groupService.addMember(groupId, AddGroupMemberRequest(userId))
+    			_successMessage.value = "Membro adicionado com sucesso"
+    			loadGroups()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
+    }
+
+    fun removeGroupMember(groupId: String, userId: String) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			groupService.removeMember(groupId, userId)
+    			_successMessage.value = "Membro removido com sucesso"
+    			loadGroups()
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
+    }
+
+    // ==================== GROUP ASSIGNMENTS ====================
+
+    fun assignWorkoutToGroup(request: AssignGroupWorkoutRequest) {
+    	viewModelScope.launch {
+    		_isLoading.value = true
+    		_error.value = null
+    		try {
+    			erpService.assignWorkoutToGroup(request)
+    			_successMessage.value = "Treino atribuído ao grupo com sucesso"
+    		} catch (e: Exception) {
+    			_error.value = ErrorUtils.parseErrorMessage(e)
+    		} finally {
+    			_isLoading.value = false
+    		}
+    	}
     }
     }

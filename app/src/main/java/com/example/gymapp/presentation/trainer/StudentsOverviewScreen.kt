@@ -1,6 +1,7 @@
 package com.example.gymapp.presentation.trainer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,19 +27,26 @@ import com.example.gymapp.ui.theme.*
 fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     val students by viewModel.students.collectAsState()
     val templates by viewModel.templates.collectAsState()
+    val groups by viewModel.groups.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var showAssignDialog by remember { mutableStateOf(false) }
+    var showGroupAssignDialog by remember { mutableStateOf(false) }
     var selectedStudent by remember { mutableStateOf<User?>(null) }
     var selectedTemplateId by remember { mutableStateOf("") }
+    var selectedGroupId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadStudents()
-        viewModel.loadTemplates()
+    viewModel.loadStudents()
+    viewModel.loadTemplates()
+    viewModel.loadGroups()
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -55,7 +63,18 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Scaffold(
+ floatingActionButton = {
+ FloatingActionButton(
+ onClick = { showGroupAssignDialog = true },
+ containerColor = IfgGreen
+ ) {
+ Icon(Icons.Default.Group, contentDescription = "Atribuir Treino a Grupo")
+ }
+ },
+ snackbarHost = { SnackbarHost(snackbarHostState) }
+ ) { padding ->
+ Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
         // Title
         Text("Meus Alunos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
         Text("Gerencie e acompanhe seus alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -135,62 +154,217 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
         }
     }
 
-    // Assign dialog
-    if (showAssignDialog && selectedStudent != null) {
-        AlertDialog(
-            onDismissRequest = { showAssignDialog = false; selectedTemplateId = ""; startsAt = "" },
-            title = { Text("Atribuir Treino") },
-            text = {
-                Column {
-                    Text("Atribuir treino a ${selectedStudent!!.fullName ?: ""}", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    var templateExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(expanded = templateExpanded, onExpandedChange = { templateExpanded = !templateExpanded }) {
-                        OutlinedTextField(
-                            value = templates.find { it.id == selectedTemplateId }?.name ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Selecionar Treino") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = templateExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                        )
-                        ExposedDropdownMenu(expanded = templateExpanded, onDismissRequest = { templateExpanded = false }) {
-                            templates.forEach { template ->
-                                DropdownMenuItem(
-                                    text = { Text("${template.name} (${template.type})") },
-                                    onClick = { selectedTemplateId = template.id; templateExpanded = false }
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = startsAt,
-                        onValueChange = { startsAt = it },
-                        label = { Text("Data início (YYYY-MM-DD)") },
-                        modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (selectedTemplateId.isNotBlank() && startsAt.isNotBlank()) {
-                            viewModel.assignWorkout(AssignWorkoutRequest(selectedStudent!!.id, selectedTemplateId, startsAt))
-                            showAssignDialog = false
-                            selectedTemplateId = ""
-                            startsAt = ""
-                        }
-                    },
-                    enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                ) { Text("Atribuir") }
-            },
-            dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
-        )
+    // Assign dialog (individual)
+    if (showAssignDialog && (selectedStudent != null)) {
+    AlertDialog(
+    onDismissRequest = {
+    showAssignDialog = false
+    selectedTemplateId = ""
+    startsAt = ""
+    },
+    title = { Text("Atribuir Treino") },
+    text = {
+    Column {
+    Text("Atribuir treino a ${selectedStudent!!.fullName ?: ""}", style = MaterialTheme.typography.bodyMedium)
+    Spacer(modifier = Modifier.height(12.dp))
+    var templateExpanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = templateExpanded, onExpandedChange = { templateExpanded = !templateExpanded }) {
+    OutlinedTextField(
+    value = templates.find { it.id == selectedTemplateId }?.name ?: "",
+    onValueChange = {},
+    readOnly = true,
+    label = { Text("Selecionar Treino") },
+    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = templateExpanded) },
+    modifier = Modifier.menuAnchor(),
+    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+    )
+    ExposedDropdownMenu(expanded = templateExpanded, onDismissRequest = { templateExpanded = false }) {
+    templates.forEach { template ->
+    DropdownMenuItem(
+    text = { Text("${template.name} (${template.type})") },
+    onClick = { selectedTemplateId = template.id; templateExpanded = false }
+    )
     }
-}
+    }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+    value = startsAt,
+    onValueChange = { },
+    readOnly = true,
+    label = { Text("Data início") },
+    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+    trailingIcon = {
+        IconButton(onClick = { showDatePicker = true }) {
+            Icon(Icons.Default.CalendarToday, contentDescription = "Selecionar Data")
+        }
+    },
+    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selectedDate = datePickerState.selectedDateMillis?.let {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        sdf.format(java.util.Date(it))
+                    }
+                    if (selectedDate != null) {
+                        startsAt = selectedDate
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+    }
+    },
+    confirmButton = {
+    Button(
+    onClick = {
+    if (selectedTemplateId.isNotBlank() && startsAt.isNotBlank()) {
+    viewModel.assignWorkout(AssignWorkoutRequest(selectedStudent!!.id, selectedTemplateId, startsAt))
+    showAssignDialog = false
+    selectedTemplateId = ""
+    startsAt = ""
+    }
+    },
+    enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
+    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+    ) { Text("Atribuir") }
+    },
+    dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
+    )
+    }
+
+    // Assign dialog (group)
+    if (showGroupAssignDialog) {
+    AlertDialog(
+    onDismissRequest = {
+    showGroupAssignDialog = false
+    selectedGroupId = ""
+    selectedTemplateId = ""
+    startsAt = ""
+    },
+    title = { Text("Atribuir Treino a Grupo") },
+    text = {
+    Column {
+    var groupExpanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = groupExpanded, onExpandedChange = { groupExpanded = !groupExpanded }) {
+    OutlinedTextField(
+    value = groups.find { it.id == selectedGroupId }?.name ?: "",
+    onValueChange = {},
+    readOnly = true,
+    label = { Text("Selecionar Grupo") },
+    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
+    modifier = Modifier.menuAnchor(),
+    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+    )
+    ExposedDropdownMenu(expanded = groupExpanded, onDismissRequest = { groupExpanded = false }) {
+    groups.forEach { group ->
+    DropdownMenuItem(
+    text = { Text(group.name) },
+    onClick = { selectedGroupId = group.id; groupExpanded = false }
+    )
+    }
+    }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    var groupTemplateExpanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = groupTemplateExpanded, onExpandedChange = { groupTemplateExpanded = !groupTemplateExpanded }) {
+    OutlinedTextField(
+    value = templates.find { it.id == selectedTemplateId }?.name ?: "",
+    onValueChange = {},
+    readOnly = true,
+    label = { Text("Selecionar Treino") },
+    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupTemplateExpanded) },
+    modifier = Modifier.menuAnchor(),
+    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+    )
+    ExposedDropdownMenu(expanded = groupTemplateExpanded, onDismissRequest = { groupTemplateExpanded = false }) {
+    templates.forEach { template ->
+    DropdownMenuItem(
+    text = { Text("${template.name} (${template.type})") },
+    onClick = { selectedTemplateId = template.id; groupTemplateExpanded = false }
+    )
+    }
+    }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+    value = startsAt,
+    onValueChange = { },
+    readOnly = true,
+    label = { Text("Data início") },
+    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+    trailingIcon = {
+        IconButton(onClick = { showDatePicker = true }) {
+            Icon(Icons.Default.CalendarToday, contentDescription = "Selecionar Data")
+        }
+    },
+    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selectedDate = datePickerState.selectedDateMillis?.let {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        sdf.format(java.util.Date(it))
+                    }
+                    if (selectedDate != null) {
+                        startsAt = selectedDate
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+    }
+    },
+    confirmButton = {
+    Button(
+    onClick = {
+    if (selectedGroupId.isNotBlank() && selectedTemplateId.isNotBlank() && startsAt.isNotBlank()) {
+    viewModel.assignWorkoutToGroup(AssignGroupWorkoutRequest(selectedGroupId, selectedTemplateId, startsAt))
+    showGroupAssignDialog = false
+    selectedGroupId = ""
+    selectedTemplateId = ""
+    startsAt = ""
+    }
+    },
+    enabled = selectedGroupId.isNotBlank() && selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
+    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+    ) { Text("Atribuir") }
+    },
+    dismissButton = {
+    TextButton(onClick = {
+    showGroupAssignDialog = false
+    selectedGroupId = ""
+    selectedTemplateId = ""
+    startsAt = ""
+    }) { Text("Cancelar") }
+    }
+    )
+    }
+    }
+    }
 
 @Composable
 private fun StatCardSmall(

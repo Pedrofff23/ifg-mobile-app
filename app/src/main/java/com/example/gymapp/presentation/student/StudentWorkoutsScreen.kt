@@ -23,6 +23,7 @@ fun StudentWorkoutsScreen(
     onStartWorkout: (WorkoutAssignment) -> Unit = {}
 ) {
     val assignments by viewModel.assignments.collectAsState()
+    val currentAssignment by viewModel.currentAssignment.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -78,10 +79,11 @@ fun StudentWorkoutsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(assignments) { assignment ->
-                    WorkoutCard(
-                        assignment = assignment,
-                        onStartClick = { onStartWorkout(assignment) }
-                    )
+                WorkoutCard(
+                assignment = assignment,
+                isActive = currentAssignment?.id == assignment.id,
+                onStartClick = { onStartWorkout(assignment) }
+                )
                 }
 
                 if (assignments.isEmpty()) {
@@ -113,8 +115,9 @@ fun StudentWorkoutsScreen(
 
 @Composable
 private fun WorkoutCard(
-    assignment: WorkoutAssignment,
-    onStartClick: () -> Unit
+ assignment: WorkoutAssignment,
+ isActive: Boolean,
+ onStartClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -146,14 +149,16 @@ private fun WorkoutCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (isActive || assignment.endsAt == null) {
                 Badge(
-                    containerColor = Green100,
-                    contentColor = IfgGreen
+                containerColor = Green100,
+                contentColor = IfgGreen
                 ) { Text("Ativo") }
+                }
 
-                if (assignment.startsAt.isNotBlank()) {
+                if (assignment.startsAt?.isNotBlank() == true) {
                     Badge(
-                        containerColor = LightSurfaceVariant,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ) { Text("Início: ${assignment.startsAt.take(10)}") }
                 }

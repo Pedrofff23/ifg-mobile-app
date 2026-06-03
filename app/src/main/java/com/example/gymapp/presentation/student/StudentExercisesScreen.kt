@@ -24,6 +24,7 @@ import coil.request.ImageRequest
 import android.os.Build
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
+import androidx.core.net.toUri
 import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.ui.theme.*
 
@@ -33,13 +34,25 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
     val error by viewModel.error.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todas") }
-
     val categories = listOf("Todas", "Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps")
 
-    LaunchedEffect(searchQuery, selectedCategory) {
-        val muscleGroup = if (selectedCategory == "Todas") null else selectedCategory.lowercase()
-        val search = searchQuery.ifBlank { null }
-        viewModel.loadExercises(search = search, muscleGroup = muscleGroup)
+    // Trigger initial load and update on category change
+    LaunchedEffect(selectedCategory) {
+        val muscleGroup = if (selectedCategory == "Todas") null else selectedCategory
+        viewModel.loadExercises(muscleGroup = muscleGroup)
+    }
+
+    // Apply client-side filtering for immediate results
+    val filteredExercises = remember(exercises, searchQuery) {
+        if (searchQuery.isBlank()) {
+            exercises
+        } else {
+            val query = searchQuery.lowercase().trim()
+            exercises.filter { 
+                it.name.lowercase().contains(query) || 
+                it.description?.lowercase()?.contains(query) == true 
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -95,8 +108,8 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             cursorColor = MaterialTheme.colorScheme.primary,
-            unfocusedContainerColor = LightSurfaceVariant,
-            focusedContainerColor = LightSurfaceVariant
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
 
@@ -135,11 +148,11 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(exercises) { exercise ->
+            items(filteredExercises) { exercise ->
                 ExerciseCard(exercise = exercise)
             }
 
-            if (exercises.isEmpty()) {
+            if (filteredExercises.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(48.dp),
@@ -169,7 +182,7 @@ private fun ExerciseCard(exercise: Exercise) {
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             Spacer(modifier = Modifier.height(4.dp))
-            if (exercise.description.isNotBlank()) {
+            if (exercise.description?.isNotBlank() == true) {
                 Text(
                     text = exercise.description,
                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
@@ -181,9 +194,9 @@ private fun ExerciseCard(exercise: Exercise) {
                 Badge(
                     containerColor = Green100,
                     contentColor = IfgGreen
-                ) { Text(exercise.muscleGroup) }
+                ) { Text(exercise.muscleGroup ?: "Geral") }
 
-                if (exercise.usesWeight) {
+                if (exercise.usesWeight == true) {
                     Badge(
                         containerColor = Blue100,
                         contentColor = Color(0xFF2563EB)
@@ -216,7 +229,7 @@ private fun ExerciseCard(exercise: Exercise) {
                     val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
                     OutlinedButton(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                            val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())
                             context.startActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -227,7 +240,7 @@ private fun ExerciseCard(exercise: Exercise) {
             } else if (exercise.videoUrl != null) {
                 OutlinedButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(exercise.videoUrl))
+                        val intent = Intent(Intent.ACTION_VIEW, exercise.videoUrl.toUri())
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()

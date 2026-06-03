@@ -1,6 +1,7 @@
 package com.example.gymapp.presentation.auth
 
 import androidx.lifecycle.ViewModel
+import com.example.gymapp.utils.ErrorUtils
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.AuthService
@@ -37,9 +38,6 @@ class AuthViewModel @Inject constructor(
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
-
-    private val _authDestination = MutableStateFlow<AuthDestination?>(null)
-    val authDestination: StateFlow<AuthDestination?> = _authDestination.asStateFlow()
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -98,9 +96,8 @@ class AuthViewModel @Inject constructor(
                     role = role
                 )
                 _authState.value = AuthState.Success(domainUser)
-                _authDestination.value = resolveDestination(role)
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Login falhou")
+                _authState.value = AuthState.Error(ErrorUtils.parseErrorMessage(e, "Login falhou"))
             }
         }
     }
@@ -162,9 +159,8 @@ class AuthViewModel @Inject constructor(
                     role = role
                 )
                 _authState.value = AuthState.Success(domainUser)
-                _authDestination.value = resolveDestination(role)
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Registro falhou")
+                _authState.value = AuthState.Error(ErrorUtils.parseErrorMessage(e, "Registro falhou"))
             }
         }
     }
@@ -173,7 +169,6 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             tokenManager.clearSession()
             _authState.value = AuthState.Idle
-            _authDestination.value = AuthDestination.LOGIN
         }
     }
 
@@ -187,7 +182,7 @@ class AuthViewModel @Inject constructor(
 
         return try {
             val meResponse = authService.getMe()
-            val meData = meResponse.data
+            val meData = meResponse.data ?: throw Exception("Me data is null")
             // Update stored session with fresh data from /auth/me
             tokenManager.saveSession(
                 accessToken = token,
@@ -207,7 +202,6 @@ class AuthViewModel @Inject constructor(
 
     fun resetState() {
         _authState.value = AuthState.Idle
-        _authDestination.value = null
     }
 
     private fun resolveDestination(role: String): AuthDestination {
@@ -217,7 +211,4 @@ class AuthViewModel @Inject constructor(
             AuthDestination.STUDENT_HOME
         }
     }
-
-    // Helper to get current role from token manager (for navigation use)
-    suspend fun getCurrentRole(): String? = tokenManager.getUserRoleSync()
 }

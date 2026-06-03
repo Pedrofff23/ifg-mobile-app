@@ -66,9 +66,15 @@ class TokenManager @Inject constructor(
     }
 
     suspend fun clearSession() {
-        context.dataStore.edit { prefs ->
-            prefs.clear()
-        }
+    	context.dataStore.edit { prefs ->
+    		prefs.clear()
+    	}
+    }
+
+    suspend fun saveUserName(name: String) {
+    	context.dataStore.edit { prefs ->
+    		prefs[KEY_USER_NAME] = name
+    	}
     }
 
     suspend fun getAccessTokenSync(): String? = accessToken.first()

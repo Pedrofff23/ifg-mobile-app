@@ -37,8 +37,8 @@ class WorkoutSessionViewModel @Inject constructor(
  private val _showRatingDialog = MutableStateFlow(false)
  val showRatingDialog: StateFlow<Boolean> = _showRatingDialog.asStateFlow()
 
- private val _loadHistory = MutableStateFlow<List<ExerciseLoadHistory>>(emptyList())
- val loadHistory: StateFlow<List<ExerciseLoadHistory>> = _loadHistory.asStateFlow()
+ private val _loadHistory = MutableStateFlow<List<ExerciseProgressPoint>>(emptyList())
+ val loadHistory: StateFlow<List<ExerciseProgressPoint>> = _loadHistory.asStateFlow()
 
  var session: WorkoutSession? = null
  private set
@@ -52,38 +52,43 @@ class WorkoutSessionViewModel @Inject constructor(
  private set
 
  fun startWorkoutSession(assignmentId: String) {
- viewModelScope.launch {
- _sessionState.value = WorkoutSessionState.Loading
- try {
- val userId = tokenManager.getUserIdSync() ?: throw Exception("Not logged in")
+ 	viewModelScope.launch {
+ 		_sessionState.value = WorkoutSessionState.Loading
+ 		try {
+ 			val userId = tokenManager.getUserIdSync() ?: throw Exception("Not logged in")
 
- // Start session — backend creates SessionExercises + SessionSets
- // If an interrupted session exists for this assignment, backend returns it
- val startResp = erpService.startSession(StartSessionRequest(assignmentId))
- session = startResp.data
- sessionExercises = (startResp.data.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 			// Start session — backend creates SessionExercises + SessionSets
+ 			// If an interrupted session exists for this assignment, backend returns it
+ 			val startResp = erpService.startSession(StartSessionRequest(assignmentId))
+ 			session = startResp.data
+ 			sessionExercises = (startResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
 
- // Load template for exercise metadata (name, description, defaultSets, defaultReps)
- val assignmentsResp = erpService.getAssignmentsByAluno(userId)
- val assignment = (assignmentsResp.data ?: emptyList()).find { it.id == assignmentId }
- val templateId = assignment?.templateId ?: assignmentId
- val templateResp = erpService.getTemplate(templateId)
- template = templateResp.data
- templateExercises = (templateResp.data.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 			// Load template — use assignment directly from getCurrentAssignment
+ 			val currentResp = erpService.getCurrentAssignment(userId)
+ 			val assignment = currentResp.data?.takeIf { it.id == assignmentId }
+ 				// Fallback: if current assignment doesn't match, fetch all
+ 				?: run {
+ 					val assignmentsResp = erpService.getAssignmentsByAluno(userId)
+ 					assignmentsResp.data?.find { it.id == assignmentId }
+ 				}
+ 			val templateId = assignment?.templateId ?: assignmentId
+ 			val templateResp = erpService.getTemplate(templateId)
+ 			template = templateResp.data
+ 			templateExercises = (templateResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex }
 
- // Auto-resume: find the first incomplete exercise and set
- resumeFromProgress()
+ 			// Auto-resume: find the first incomplete exercise and set
+ 			resumeFromProgress()
 
- _sessionState.value = WorkoutSessionState.Active
- } catch (e: Exception) {
- _sessionState.value = WorkoutSessionState.Error
- }
- }
+ 			_sessionState.value = WorkoutSessionState.Active
+ 		} catch (_: Exception) {
+ 			_sessionState.value = WorkoutSessionState.Error
+ 		}
+ 	}
  }
 
  /**
  * Resume an interrupted session: find the first exercise that is not
- * completed/skipped, and within that exercise find the first incomplete set.
+ * completed, and within that exercise find the first incomplete set.
  * If all exercises are completed, stay on the last one.
  */
  private fun resumeFromProgress() {
@@ -91,7 +96,7 @@ class WorkoutSessionViewModel @Inject constructor(
 
  // Find first incomplete exercise
  val incompleteExIdx = sessionExercises.indexOfFirst { ex ->
- ex.status != "completed" && ex.status != "skipped"
+ 	ex.status != "completed"
  }
 
  if (incompleteExIdx >= 0) {
@@ -99,11 +104,12 @@ class WorkoutSessionViewModel @Inject constructor(
 
  // Find first incomplete set within that exercise
  val ex = sessionExercises[incompleteExIdx]
- val incompleteSet = ex.sets.sortedBy { it.setNumber }.indexOfFirst { set ->
- !set.isCompleted
+ val sortedSets = (ex.sets ?: emptyList()).sortedBy { it.setNumber ?: 0 }
+ val incompleteSet = sortedSets.indexOfFirst { set ->
+ set.isCompleted != true
  }
  _currentSet.value = if (incompleteSet >= 0) {
- ex.sets.sortedBy { it.setNumber }[incompleteSet].setNumber
+ sortedSets[incompleteSet].setNumber ?: 1
  } else {
  1
  }
@@ -120,63 +126,70 @@ class WorkoutSessionViewModel @Inject constructor(
  * Returns the session ID if a resumable session was found, null otherwise.
  */
  fun tryResumeSession(assignmentId: String) {
- viewModelScope.launch {
- _sessionState.value = WorkoutSessionState.Loading
- try {
- val userId = tokenManager.getUserIdSync() ?: throw Exception("Not logged in")
+ 	viewModelScope.launch {
+ 		_sessionState.value = WorkoutSessionState.Loading
+ 		try {
+ 			val userId = tokenManager.getUserIdSync() ?: throw Exception("Not logged in")
 
- // Check for existing sessions for this aluno
- val sessionsResp = erpService.getSessionsByAluno(userId)
- val inProgressSession = (sessionsResp.data ?: emptyList()).find {
- it.assignmentId == assignmentId && it.finishedAt == null
- }
+ 			// Check for existing sessions for this aluno
+ 			val sessionsResp = erpService.getSessionsByAluno(userId)
+ 			val inProgressSession = sessionsResp.data?.find {
+ 				it.assignmentId == assignmentId && it.finishedAt == null
+ 			}
 
- if (inProgressSession != null) {
- // Resume: fetch full session with exercises/sets
- val sessionResp = erpService.getSession(inProgressSession.id)
- session = sessionResp.data
- sessionExercises = (sessionResp.data.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 			if (inProgressSession != null) {
+ 				// Resume: fetch full session with exercises/sets
+ 				val sessionResp = erpService.getSession(inProgressSession.id)
+ 				session = sessionResp.data
+ 				sessionExercises = (sessionResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
 
- // Load template
- val assignmentsResp = erpService.getAssignmentsByAluno(userId)
- val assignment = (assignmentsResp.data ?: emptyList()).find { it.id == assignmentId }
- val templateId = assignment?.templateId ?: assignmentId
- val templateResp = erpService.getTemplate(templateId)
- template = templateResp.data
- templateExercises = (templateResp.data.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 				// Load template — use getCurrentAssignment first
+ 				val currentResp = erpService.getCurrentAssignment(userId)
+ 				val assignment = currentResp.data?.takeIf { it.id == assignmentId }
+ 					?: run {
+ 						val assignmentsResp = erpService.getAssignmentsByAluno(userId)
+ 						assignmentsResp.data?.find { it.id == assignmentId }
+ 					}
+ 				val templateId = assignment?.templateId ?: assignmentId
+ 				val templateResp = erpService.getTemplate(templateId)
+ 				template = templateResp.data
+ 				templateExercises = (templateResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex }
 
- resumeFromProgress()
- _sessionState.value = WorkoutSessionState.Resumed
- } else {
- // No session to resume — start a fresh one
- startWorkoutSession(assignmentId)
- }
- } catch (e: Exception) {
- _sessionState.value = WorkoutSessionState.Error
- }
- }
+ 				resumeFromProgress()
+ 				_sessionState.value = WorkoutSessionState.Resumed
+ 			} else {
+ 				// No session to resume — start a fresh one
+ 				startWorkoutSession(assignmentId)
+ 			}
+ 		} catch (_: Exception) {
+ 			_sessionState.value = WorkoutSessionState.Error
+ 		}
+ 	}
  }
 
  /**
-  * Complete a set: persist weight/reps to backend, then advance to next set or exercise.
+  * Complete a set: persist weight/reps or cardio data to backend, then advance to next set or exercise.
   */
- fun completeSet(setNumber: Int, weightKg: Double?, repsCompleted: Int = 0) {
+ fun completeSet(setNumber: Int, weightKg: Double?, repsCompleted: Int = 0, durationSeconds: Int? = null, distanceMeters: Double? = null) {
  viewModelScope.launch {
  try {
  val exIdx = _currentExerciseIndex.value
  val sessionEx = sessionExercises.getOrNull(exIdx) ?: return@launch
- val set = sessionEx.sets.find { it.setNumber == setNumber } ?: return@launch
+ val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
 
  // Persist set data to backend
  erpService.updateSet(set.id, UpdateSetRequest(
  repsCompleted = repsCompleted,
  weightKg = weightKg,
+ durationSeconds = durationSeconds,
+ distanceMeters = distanceMeters,
+ notes = null,
  isCompleted = true
  ))
 
  // Advance: if more sets in this exercise, go to next set; else mark exercise done and advance
  val templateEx = templateExercises.getOrNull(exIdx)
- val totalSets = templateEx?.defaultSets ?: sessionEx.sets.size
+ val totalSets = templateEx?.defaultSets ?: (sessionEx.sets.size)
 
  if (setNumber < totalSets) {
  _currentSet.value = setNumber + 1
@@ -197,31 +210,47 @@ class WorkoutSessionViewModel @Inject constructor(
  }
 
  fun nextExercise() {
- val exIdx = _currentExerciseIndex.value
- val sessionEx = sessionExercises.getOrNull(exIdx) ?: return
-
- // Mark current exercise as skipped if not completed
- if (sessionEx.status != "completed") {
- viewModelScope.launch {
- try {
- erpService.updateExerciseStatus(sessionEx.id, UpdateExerciseStatusRequest(status = "skipped"))
- } catch (_: Exception) { }
- }
- }
-
- val nextIdx = exIdx + 1
- if (nextIdx < sessionExercises.size) {
- _currentExerciseIndex.value = nextIdx
- _currentSet.value = 1
- }
+ 	val nextIdx = _currentExerciseIndex.value + 1
+ 	if (nextIdx < sessionExercises.size) {
+ 		selectExercise(nextIdx)
+ 	}
  }
 
  fun previousExercise() {
- val prevIdx = _currentExerciseIndex.value - 1
- if (prevIdx >= 0) {
- _currentExerciseIndex.value = prevIdx
- _currentSet.value = 1
+ 	val prevIdx = _currentExerciseIndex.value - 1
+ 	if (prevIdx >= 0) {
+ 		selectExercise(prevIdx)
+ 	}
  }
+
+ /**
+  * Select any exercise freely — the student can choose which exercise
+  * to do regardless of the workout order.
+  * Marks the selected exercise as in_progress if it hasn't been started yet.
+  */
+ fun selectExercise(index: Int) {
+ 	if (index < 0 || index >= sessionExercises.size) return
+ 	_currentExerciseIndex.value = index
+
+ 	val sessionEx = sessionExercises.getOrNull(index) ?: return
+
+ 	// Find first incomplete set within that exercise
+ 	val sortedSets = (sessionEx.sets ?: emptyList()).sortedBy { it.setNumber ?: 0 }
+ 	val incompleteSet = sortedSets.indexOfFirst { set -> set.isCompleted != true }
+ 	_currentSet.value = if (incompleteSet >= 0) {
+ 		sortedSets[incompleteSet].setNumber ?: 1
+ 	} else {
+ 		1
+ 	}
+
+ 	// Mark exercise as in_progress if not started yet
+ 	if (sessionEx.status == "not_started") {
+ 		viewModelScope.launch {
+ 			try {
+ 				erpService.updateExerciseStatus(sessionEx.id, UpdateExerciseStatusRequest(status = "in_progress"))
+ 			} catch (_: Exception) { }
+ 		}
+ 	}
  }
 
  fun showRating() {
@@ -259,7 +288,7 @@ class WorkoutSessionViewModel @Inject constructor(
  fun loadExerciseHistory(exerciseId: String) {
  viewModelScope.launch {
  try {
- val resp = erpService.getExerciseLoadHistory(exerciseId)
+ val resp = erpService.getExerciseProgress(exerciseId)
  _loadHistory.value = resp.data ?: emptyList()
  } catch (_: Exception) {
  _loadHistory.value = emptyList()

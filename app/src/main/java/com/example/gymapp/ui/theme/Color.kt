@@ -20,6 +20,7 @@ val Red100 = Color(0xFFfee2e2)
 // ==================== Semantic ====================
 val Red500 = Color(0xFFD4183D)
 val Orange600 = Color(0xFFea580c)
+val Blue600 = Color(0xFF2563eb)
 
 // ==================== LIGHT SCHEMES ====================
 

@@ -16,11 +16,6 @@ interface ErpService {
         @Query("search") search: String? = null
     ): PaginatedResponse<Exercise>
 
-    @GET("exercises/{id}")
-    suspend fun getExercise(
-        @Path("id") id: String
-    ): ApiResponse<Exercise>
-
     @Multipart
     @POST("exercises")
     suspend fun createExercise(
@@ -41,6 +36,8 @@ interface ErpService {
         @Part("muscle_group") muscleGroup: okhttp3.RequestBody,
         @Part("uses_weight") usesWeight: okhttp3.RequestBody,
         @Part("video_url") videoUrl: okhttp3.RequestBody?,
+        @Part("media_path") mediaPath: okhttp3.RequestBody?,
+        @Part("media_type") mediaType: okhttp3.RequestBody?,
         @Part file: okhttp3.MultipartBody.Part?
     ): ApiResponse<Exercise>
 
@@ -82,20 +79,23 @@ interface ErpService {
 
     @GET("assignments/aluno/{aluno_id}")
     suspend fun getAssignmentsByAluno(
-        @Path("aluno_id") alunoId: String,
-        @Query("limit") limit: Int? = null,
-        @Query("offset") offset: Int? = null
-    ): PaginatedResponse<WorkoutAssignment>
+    @Path("aluno_id") alunoId: String
+    ): ApiResponse<List<WorkoutAssignment>>
 
     @GET("assignments/aluno/{aluno_id}/current")
     suspend fun getCurrentAssignment(
-        @Path("aluno_id") alunoId: String
-    ): ApiResponse<WorkoutAssignment>
+    	@Path("aluno_id") alunoId: String
+    ): ApiResponse<WorkoutAssignment?>
 
     @POST("assignments")
     suspend fun assignWorkout(
-        @Body request: AssignWorkoutRequest
+    @Body request: AssignWorkoutRequest
     ): ApiResponse<WorkoutAssignment>
+
+    @POST("assignments/group")
+    suspend fun assignWorkoutToGroup(
+    @Body request: AssignGroupWorkoutRequest
+    ): ApiResponse<List<WorkoutAssignment>>
 
     // ==================== SESSIONS ====================
 
@@ -134,10 +134,15 @@ interface ErpService {
         @Body request: FinishSessionRequest
     ): ApiResponse<WorkoutSession>
 
-    @GET("sessions/history/{exerciseId}")
-    suspend fun getExerciseLoadHistory(
+    @GET("sessions/exercises/{exerciseId}/progress")
+    suspend fun getExerciseProgress(
     @Path("exerciseId") exerciseId: String
-    ): ApiResponse<List<ExerciseLoadHistory>>
+    ): ApiResponse<List<ExerciseProgressPoint>>
+
+    @GET("sessions/aluno/{aluno_id}/stats")
+    suspend fun getAlunoStats(
+    	@Path("aluno_id") alunoId: String
+    ): ApiResponse<AlunoStats>
 
     // ==================== ANNOUNCEMENTS ====================
 
@@ -146,11 +151,6 @@ interface ErpService {
         @Query("limit") limit: Int? = null,
         @Query("offset") offset: Int? = null
     ): PaginatedResponse<Announcement>
-
-    @GET("announcements/{id}")
-    suspend fun getAnnouncement(
-        @Path("id") id: String
-    ): ApiResponse<Announcement>
 
     @POST("announcements")
     suspend fun createAnnouncement(
