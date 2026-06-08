@@ -124,7 +124,8 @@ data class StudentGroup(
 	@SerializedName("created_by") val createdBy: String?,
 	@SerializedName("created_at") val createdAt: String?,
 	@SerializedName("updated_at") val updatedAt: String?,
-	val members: List<GroupMember>? = emptyList()
+	val members: List<GroupMember>? = emptyList(),
+	@SerializedName("assigned_workout") val assignedWorkout: GroupWorkoutInfo? = null
 )
 
 data class GroupMember(
@@ -132,6 +133,13 @@ data class GroupMember(
 	@SerializedName("user_id") val userId: String,
 	@SerializedName("full_name") val fullName: String?,
 	@SerializedName("joined_at") val joinedAt: String?
+)
+
+data class GroupWorkoutInfo(
+	@SerializedName("template_id") val templateId: String,
+	@SerializedName("template_name") val templateName: String?,
+	@SerializedName("starts_at") val startsAt: String?,
+	@SerializedName("member_count") val memberCount: Int?
 )
 
 // ==================== ALUNO PROFILE ====================

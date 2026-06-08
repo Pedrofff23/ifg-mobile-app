@@ -9,7 +9,8 @@ interface GroupService {
 	@GET("groups")
 	suspend fun getGroups(
 		@Query("limit") limit: Int? = null,
-		@Query("offset") offset: Int? = null
+		@Query("offset") offset: Int? = null,
+		@Query("__with_users") withUsers: Boolean? = null
 	): PaginatedResponse<StudentGroup>
 
 	@GET("groups/{id}")

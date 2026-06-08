@@ -7,9 +7,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -20,7 +22,7 @@ import com.example.gymapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
+fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) {
     val exercises by viewModel.exercises.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -55,7 +57,32 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
         }
     }
 
+    // Auto-navigate back after a successful creation
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            if (it.contains("criado", ignoreCase = true)) {
+                kotlinx.coroutines.delay(1200)
+                onBack()
+            }
+        }
+    }
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                },
+                title = { Text("Criar Novo Treino", color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = IfgGreen,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -185,34 +212,46 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel) {
             // Save button
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        val request = CreateTemplateRequest(
-                            name = name,
-                            type = type,
-                            difficulty = difficulty,
-                            totalSessions = totalSessions.toIntOrNull() ?: 8,
-                            exercises = selectedExercises.mapIndexed { index, ex ->
-                                TemplateExerciseInput(
-                                    exerciseId = ex.exerciseId,
-                                    orderIndex = index,
-                                    defaultSets = ex.sets,
-                                    defaultReps = ex.reps,
-                                    defaultRestSeconds = ex.restSeconds
-                                )
-                            }
-                        )
-                        viewModel.createTemplate(request)
-                        name = ""
-                        selectedExercises = emptyList()
-                    },
-                    enabled = name.isNotBlank() && selectedExercises.isNotEmpty() && !isLoading,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (isLoading) CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(24.dp))
-                    else Text("Criar Treino", style = MaterialTheme.typography.titleMedium)
+                    OutlinedButton(
+                        onClick = onBack,
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Cancelar")
+                    }
+                    Button(
+                        onClick = {
+                            val request = CreateTemplateRequest(
+                                name = name,
+                                type = type,
+                                difficulty = difficulty,
+                                totalSessions = totalSessions.toIntOrNull() ?: 8,
+                                exercises = selectedExercises.mapIndexed { index, ex ->
+                                    TemplateExerciseInput(
+                                        exerciseId = ex.exerciseId,
+                                        orderIndex = index,
+                                        defaultSets = ex.sets,
+                                        defaultReps = ex.reps,
+                                        defaultRestSeconds = ex.restSeconds
+                                    )
+                                }
+                            )
+                            viewModel.createTemplate(request)
+                            name = ""
+                            selectedExercises = emptyList()
+                        },
+                        enabled = name.isNotBlank() && selectedExercises.isNotEmpty() && !isLoading,
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                    ) {
+                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        else Text("Criar Treino", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
         }

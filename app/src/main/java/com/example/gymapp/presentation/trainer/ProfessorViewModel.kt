@@ -7,6 +7,7 @@ import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.GroupService
 import com.example.gymapp.data.remote.UserService
+import com.example.gymapp.data.remote.ProfileService
 import com.example.gymapp.domain.model.Announcement
 import com.example.gymapp.domain.model.AssignWorkoutRequest
 import com.example.gymapp.domain.model.AssignGroupWorkoutRequest
@@ -23,6 +24,11 @@ import com.example.gymapp.domain.model.UpdateUserRequest
 import com.example.gymapp.domain.model.User
 import com.example.gymapp.domain.model.WorkoutTemplate
 import com.example.gymapp.domain.model.StudentGroup
+import com.example.gymapp.domain.model.WorkoutAssignment
+import com.example.gymapp.domain.model.WorkoutSession
+import com.example.gymapp.domain.model.AlunoProfile
+import com.example.gymapp.domain.model.BodyMeasurement
+import com.example.gymapp.domain.model.AlunoStats
 import com.example.gymapp.ui.theme.ThemeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +48,7 @@ class ProfessorViewModel @Inject constructor(
 	private val erpService: ErpService,
 	private val userService: UserService,
 	private val groupService: GroupService,
+	private val profileService: ProfileService,
 	private val tokenManager: TokenManager,
 	val themeManager: ThemeManager,
 ) : ViewModel() {
@@ -80,6 +87,29 @@ class ProfessorViewModel @Inject constructor(
 
     private val _groups = MutableStateFlow<List<StudentGroup>>(emptyList())
     val groups: StateFlow<List<StudentGroup>> = _groups.asStateFlow()
+
+    // ---------- Student Detail State ----------
+    private val _selectedStudentDetail = MutableStateFlow<User?>(null)
+    val selectedStudentDetail: StateFlow<User?> = _selectedStudentDetail.asStateFlow()
+
+    private val _studentProfile = MutableStateFlow<AlunoProfile?>(null)
+    val studentProfile: StateFlow<AlunoProfile?> = _studentProfile.asStateFlow()
+
+    private val _studentMeasurements = MutableStateFlow<List<BodyMeasurement>>(emptyList())
+    val studentMeasurements: StateFlow<List<BodyMeasurement>> = _studentMeasurements.asStateFlow()
+
+    private val _studentAssignments = MutableStateFlow<List<WorkoutAssignment>>(emptyList())
+    val studentAssignments: StateFlow<List<WorkoutAssignment>> = _studentAssignments.asStateFlow()
+
+    private val _studentSessions = MutableStateFlow<List<WorkoutSession>>(emptyList())
+    val studentSessions: StateFlow<List<WorkoutSession>> = _studentSessions.asStateFlow()
+
+    private val _studentStats = MutableStateFlow<AlunoStats?>(null)
+    val studentStats: StateFlow<AlunoStats?> = _studentStats.asStateFlow()
+
+    // ---------- Student Groups State ----------
+    private val _studentGroups = MutableStateFlow<List<StudentGroup>>(emptyList())
+    val studentGroups: StateFlow<List<StudentGroup>> = _studentGroups.asStateFlow()
 
     init {
     loadUserName()
@@ -137,7 +167,7 @@ class ProfessorViewModel @Inject constructor(
                 _allStudents.value = studentsList
                 _students.value = studentsList
 
-                _templates.value = erpService.getTemplates().data ?: emptyList()
+                _templates.value = erpService.getTemplates(withExercises = true).data ?: emptyList()
                 _exercises.value = erpService.getExercises().data ?: emptyList()
                 _announcements.value = erpService.getAnnouncements().data ?: emptyList()
 
@@ -156,7 +186,9 @@ class ProfessorViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                _templates.value = erpService.getTemplates().data ?: emptyList()
+                _templates.value = erpService.getTemplates(
+                    withExercises = true
+                ).data ?: emptyList()
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
@@ -186,19 +218,22 @@ class ProfessorViewModel @Inject constructor(
     }
 
     fun deleteTemplate(id: String) {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
-    try {
-    erpService.deleteTemplate(id)
-    _successMessage.value = "Template excluído com sucesso"
-    loadTemplates()
-    } catch (e: Exception) {
-    _error.value = ErrorUtils.parseErrorMessage(e)
-    } finally {
-    _isLoading.value = false
-    }
-    }
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val response = erpService.deleteTemplate(id)
+                if (!response.isSuccessful) {
+                    throw Exception("Erro ao excluir treino: ${response.code()}")
+                }
+                _successMessage.value = "Treino excluído com sucesso"
+                loadTemplates()
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun updateTemplate(id: String, request: CreateTemplateRequest) {
@@ -456,7 +491,7 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 erpService.createAnnouncement(request)
-                _successMessage.value = "Announcement created successfully"
+                _successMessage.value = "Aviso criado com sucesso"
                 loadAnnouncements()
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
@@ -472,7 +507,7 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 erpService.deleteAnnouncement(id)
-                _successMessage.value = "Announcement deleted successfully"
+                _successMessage.value = "Aviso excluído com sucesso"
                 loadAnnouncements()
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
@@ -490,7 +525,7 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 erpService.assignWorkout(request)
-                _successMessage.value = "Workout assigned successfully"
+                _successMessage.value = "Treino atribuído com sucesso"
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
@@ -585,7 +620,7 @@ class ProfessorViewModel @Inject constructor(
     		_isLoading.value = true
     		_error.value = null
     		try {
-    			_groups.value = groupService.getGroups().data ?: emptyList()
+    			_groups.value = groupService.getGroups(withUsers = true).data ?: emptyList()
     		} catch (e: Exception) {
     			_error.value = ErrorUtils.parseErrorMessage(e)
     		} finally {
@@ -672,6 +707,76 @@ class ProfessorViewModel @Inject constructor(
     			_isLoading.value = false
     		}
     	}
+    }
+
+    // ---------------------------------------------------------------------
+    // Fetch detailed group information (including members) for a single group.
+    // The result is delivered via a callback to keep the UI composable simple.
+    // ---------------------------------------------------------------------
+    fun fetchGroupDetail(groupId: String, onResult: (StudentGroup?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = groupService.getGroup(groupId)
+                onResult(response.data)
+            } catch (e: Exception) {
+                onResult(null)
+            }
+        }
+    }
+
+    // ==================== STUDENT DETAIL ====================
+    fun loadStudentDetail(studentId: String) {
+    viewModelScope.launch {
+    _isLoading.value = true
+    _error.value = null
+    try {
+    // Load basic user info
+    val userResp = userService.getUser(studentId)
+    _selectedStudentDetail.value = userResp.data
+
+    // Load profile and measurements
+    try {
+    val profileResp = profileService.getProfile(studentId)
+    _studentProfile.value = profileResp.data
+    val measResp = profileService.getMeasurements(studentId)
+    _studentMeasurements.value = measResp.data ?: emptyList()
+    } catch (e: Exception) {
+    // If profile endpoint fails (e.g., 404), clear data
+    _studentProfile.value = null
+    _studentMeasurements.value = emptyList()
+    }
+
+    // Load assignments
+    val assignResp = erpService.getAssignmentsByAluno(studentId)
+    _studentAssignments.value = assignResp.data ?: emptyList()
+
+    // Load sessions
+    val sessionsResp = erpService.getSessionsByAluno(studentId)
+    _studentSessions.value = sessionsResp.data ?: emptyList()
+
+    // Load groups that this student belongs to
+    try {
+        val allGroups = groupService.getGroups().data ?: emptyList()
+        _studentGroups.value = allGroups.filter { group ->
+            group.members?.any { it.userId == studentId } == true
+        }
+    } catch (_: Exception) {
+        _studentGroups.value = emptyList()
+    }
+
+    // Load stats (optional)
+    try {
+    val statsResp = erpService.getAlunoStats(studentId)
+    _studentStats.value = statsResp.data
+    } catch (e: Exception) {
+    _studentStats.value = null
+    }
+    } catch (e: Exception) {
+    _error.value = ErrorUtils.parseErrorMessage(e)
+    } finally {
+    _isLoading.value = false
+    }
+    }
     }
 
     // ==================== GROUP ASSIGNMENTS ====================

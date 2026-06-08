@@ -39,9 +39,11 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     var selectedTemplateId by remember { mutableStateOf("") }
     var selectedGroupId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
+    // State for navigating to the student detail screen
+    var showStudentDetail by remember { mutableStateOf(false) }
+    var selectedDetailStudentId by remember { mutableStateOf("") }
     
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
+
 
     LaunchedEffect(Unit) {
     viewModel.loadStudents()
@@ -63,6 +65,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
  floatingActionButton = {
  FloatingActionButton(
@@ -121,8 +124,14 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clickable {
+                                selectedDetailStudentId = student.id
+                                showStudentDetail = true
+                            },
+                        verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Avatar circle with initials
                             Box(
@@ -157,14 +166,19 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     // Assign dialog (individual)
     if (showAssignDialog && (selectedStudent != null)) {
     AlertDialog(
+    // Reset all dialog‑related state, including the selected student, when dismissed
     onDismissRequest = {
-    showAssignDialog = false
-    selectedTemplateId = ""
-    startsAt = ""
+        showAssignDialog = false
+        selectedStudent = null
+        selectedTemplateId = ""
+        startsAt = ""
     },
     title = { Text("Atribuir Treino") },
     text = {
-    Column {
+        // Date picker state is scoped to this dialog to avoid leaking when the dialog closes
+        var showDatePicker by remember { mutableStateOf(false) }
+        val datePickerState = rememberDatePickerState()
+        Column {
     Text("Atribuir treino a ${selectedStudent!!.fullName ?: ""}", style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(12.dp))
     var templateExpanded by remember { mutableStateOf(false) }
@@ -231,17 +245,30 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     Button(
     onClick = {
     if (selectedTemplateId.isNotBlank() && startsAt.isNotBlank()) {
-    viewModel.assignWorkout(AssignWorkoutRequest(selectedStudent!!.id, selectedTemplateId, startsAt))
-    showAssignDialog = false
-    selectedTemplateId = ""
-    startsAt = ""
+        viewModel.assignWorkout(
+            AssignWorkoutRequest(
+                selectedStudent!!.id,
+                selectedTemplateId,
+                startsAt
+            )
+        )
+        // Reset dialog state after successful assignment
+        showAssignDialog = false
+        selectedStudent = null
+        selectedTemplateId = ""
+        startsAt = ""
     }
     },
     enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
     ) { Text("Atribuir") }
     },
-    dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
+    dismissButton = { TextButton(onClick = {
+        showAssignDialog = false
+        selectedStudent = null
+        selectedTemplateId = ""
+        startsAt = ""
+    }) { Text("Cancelar") } }
     )
     }
 
@@ -256,7 +283,10 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     },
     title = { Text("Atribuir Treino a Grupo") },
     text = {
-    Column {
+        // Date picker state is scoped to this dialog to avoid leaking when the dialog closes
+        var showDatePicker by remember { mutableStateOf(false) }
+        val datePickerState = rememberDatePickerState()
+        Column {
     var groupExpanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = groupExpanded, onExpandedChange = { groupExpanded = !groupExpanded }) {
     OutlinedTextField(
@@ -365,6 +395,16 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     }
     }
     }
+
+    // Student detail overlay
+    if (showStudentDetail && selectedDetailStudentId.isNotBlank()) {
+        StudentDetailScreen(
+            studentId = selectedDetailStudentId,
+            viewModel = viewModel,
+            onBack = { showStudentDetail = false }
+        )
+    }
+}
 
 @Composable
 private fun StatCardSmall(

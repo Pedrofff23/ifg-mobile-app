@@ -74,12 +74,18 @@ fun TrainerMainScreen(
                     onNavigateToCreateWorkout = {
                         navController.navigate("create_workout") {
                             launchSingleTop = true
+                            popUpTo("workout_hub") { saveState = true }
                         }
                     }
                 )
             }
             composable("create_workout") {
-                CreateWorkoutScreen(viewModel = viewModel)
+                CreateWorkoutScreen(
+                    viewModel = viewModel,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
             composable("students_hub") {
             	TrainerStudentsHubScreen(
@@ -155,11 +161,9 @@ private fun TrainerBottomBar(
                 selected = currentRoute == tab.route,
                 onClick = {
                     navController.navigate(tab.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
+                        popUpTo(0) { saveState = false }
                         launchSingleTop = true
-                        restoreState = true
+                        restoreState = false
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(

@@ -51,7 +51,8 @@ interface ErpService {
     @GET("templates")
     suspend fun getTemplates(
         @Query("limit") limit: Int? = null,
-        @Query("offset") offset: Int? = null
+        @Query("offset") offset: Int? = null,
+        @Query("__with_exercises") withExercises: Boolean? = null
     ): PaginatedResponse<WorkoutTemplate>
 
     @GET("templates/{id}")

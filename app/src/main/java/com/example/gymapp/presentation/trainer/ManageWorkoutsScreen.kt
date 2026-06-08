@@ -50,8 +50,6 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
     var selectedTemplate by remember { mutableStateOf<WorkoutTemplate?>(null) }
     var selectedAlunoId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
     var templateToDelete by remember { mutableStateOf<WorkoutTemplate?>(null) }
@@ -258,11 +256,20 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
 
     // Assign dialog
     if (showAssignDialog && selectedTemplate != null) {
-        AlertDialog(
-            onDismissRequest = { showAssignDialog = false; selectedAlunoId = ""; startsAt = "" },
-            title = { Text("Atribuir Treino") },
-            text = {
-                Column {
+    AlertDialog(
+        // Reset all state, including the selected template, when the dialog is dismissed
+        onDismissRequest = {
+            showAssignDialog = false
+            selectedTemplate = null
+            selectedAlunoId = ""
+            startsAt = ""
+        },
+        title = { Text("Atribuir Treino") },
+        text = {
+            // Date picker state is scoped to the dialog so it does not leak when the dialog closes
+            var showDatePicker by remember { mutableStateOf(false) }
+            val datePickerState = rememberDatePickerState()
+            Column {
                     Text("Atribuir \"${selectedTemplate!!.name}\" a um aluno", style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.height(12.dp))
                     var alunoExpanded by remember { mutableStateOf(false) }
@@ -330,8 +337,16 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                 Button(
                     onClick = {
                         if (selectedAlunoId.isNotBlank() && startsAt.isNotBlank()) {
-                            viewModel.assignWorkout(AssignWorkoutRequest(selectedAlunoId, selectedTemplate!!.id, startsAt))
+                            viewModel.assignWorkout(
+                                AssignWorkoutRequest(
+                                    selectedAlunoId,
+                                    selectedTemplate!!.id,
+                                    startsAt
+                                )
+                            )
+                            // Reset dialog state after successful assignment
                             showAssignDialog = false
+                            selectedTemplate = null
                             selectedAlunoId = ""
                             startsAt = ""
                         }
@@ -340,7 +355,12 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
                 ) { Text("Atribuir") }
             },
-            dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedAlunoId = ""; startsAt = "" }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { 
+                showAssignDialog = false
+                selectedTemplate = null
+                selectedAlunoId = ""
+                startsAt = ""
+            }) { Text("Cancelar") } }
         )
     }
 
@@ -419,28 +439,66 @@ private fun EditTemplateDialog(
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
 
                 var typeExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
+                ExposedDropdownMenuBox(
+                    expanded = typeExpanded,
+                    onExpandedChange = { typeExpanded = !typeExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
-                        value = type ?: "", onValueChange = {}, readOnly = true,
+                        value = type ?: "",
+                        onValueChange = {},
+                        readOnly = true,
                         label = { Text("Tipo") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                    ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
-                        typeOptions.forEach { t -> DropdownMenuItem(text = { Text(t) }, onClick = { type = t; typeExpanded = false }) }
+                    ExposedDropdownMenu(
+                        expanded = typeExpanded,
+                        onDismissRequest = { typeExpanded = false }
+                    ) {
+                        typeOptions.forEach { t ->
+                            DropdownMenuItem(
+                                text = { Text(t) },
+                                onClick = { type = t; typeExpanded = false }
+                            )
+                        }
                     }
                 }
 
                 var diffExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = diffExpanded, onExpandedChange = { diffExpanded = !diffExpanded }) {
+                ExposedDropdownMenuBox(
+                    expanded = diffExpanded,
+                    onExpandedChange = { diffExpanded = !diffExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
-                        value = difficulty ?: "", onValueChange = {}, readOnly = true,
+                        value = difficulty ?: "",
+                        onValueChange = {},
+                        readOnly = true,
                         label = { Text("Dificuldade") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = diffExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                    ExposedDropdownMenu(expanded = diffExpanded, onDismissRequest = { diffExpanded = false }) {
-                        diffOptions.forEach { d -> DropdownMenuItem(text = { Text(d) }, onClick = { difficulty = d; diffExpanded = false }) }
+                    ExposedDropdownMenu(
+                        expanded = diffExpanded,
+                        onDismissRequest = { diffExpanded = false }
+                    ) {
+                        diffOptions.forEach { d ->
+                            DropdownMenuItem(
+                                text = { Text(d) },
+                                onClick = { difficulty = d; diffExpanded = false }
+                            )
+                        }
                     }
                 }
 
@@ -532,69 +590,85 @@ private fun AddExerciseToTemplateDialog(
     onAdd: (ExerciseEntry) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var selectedExerciseId by remember { mutableStateOf("") }
-    var setsText by remember { mutableStateOf("3") }
-    var repsText by remember { mutableStateOf("10") }
-    var restText by remember { mutableStateOf("60") }
+    // State for the search query used to filter the exercise list.
     var searchQuery by remember { mutableStateOf("") }
 
-    val available = allExercises.filter { it.id !in existingIds && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)) }
+    // Filtered list based on the search term (keeps already‑selected exercises so we can show them disabled).
+    val filtered = allExercises.filter { searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Adicionar Exercício") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Search field at the top
                 OutlinedTextField(
-                    value = searchQuery, onValueChange = { searchQuery = it },
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
                     label = { Text("Buscar exercício...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
-                var exerciseExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = exerciseExpanded, onExpandedChange = { exerciseExpanded = !exerciseExpanded }) {
-                    OutlinedTextField(
-                        value = available.find { it.id == selectedExerciseId }?.name ?: "",
-                        onValueChange = {}, readOnly = true,
-                        label = { Text("Exercício") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exerciseExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                    )
-                    ExposedDropdownMenu(expanded = exerciseExpanded, onDismissRequest = { exerciseExpanded = false }) {
-                        available.forEach { ex ->
-                            DropdownMenuItem(
-                                text = { Text("${ex.name} (${ex.muscleGroup})") },
-                                onClick = { selectedExerciseId = ex.id; exerciseExpanded = false }
-                            )
+                // Scrollable list of exercises
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(filtered) { ex ->
+                        val alreadyAdded = ex.id in existingIds
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (!alreadyAdded) Modifier.clickable {
+                                        // Immediately add with default values and dismiss
+                                        onAdd(
+                                            ExerciseEntry(
+                                                exerciseId = ex.id,
+                                                exerciseName = ex.name,
+                                                defaultSets = 3,
+                                                defaultReps = 10,
+                                                defaultRestSeconds = 60
+                                            )
+                                        )
+                                        onDismiss()
+                                    } else Modifier
+                                ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (alreadyAdded) Color.LightGray else MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (alreadyAdded) 0.dp else 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(text = ex.name, style = MaterialTheme.typography.bodyLarge)
+                                    Text(text = ex.muscleGroup ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (alreadyAdded) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = setsText, onValueChange = { setsText = it }, label = { Text("Séries") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
-                    OutlinedTextField(value = repsText, onValueChange = { repsText = it }, label = { Text("Reps") }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
-                }
-                OutlinedTextField(value = restText, onValueChange = { restText = it }, label = { Text("Descanso (seg)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
             }
         },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val exercise = allExercises.find { it.id == selectedExerciseId } ?: return@Button
-                    onAdd(ExerciseEntry(
-                        exerciseId = selectedExerciseId,
-                        exerciseName = exercise.name,
-                        defaultSets = setsText.toIntOrNull() ?: 3,
-                        defaultReps = repsText.toIntOrNull() ?: 10,
-                        defaultRestSeconds = restText.toIntOrNull() ?: 60
-                    ))
-                },
-                enabled = selectedExerciseId.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Adicionar", color = Color.White) }
-        },
+        // No explicit confirm button – selection happens on tap.
+        confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
