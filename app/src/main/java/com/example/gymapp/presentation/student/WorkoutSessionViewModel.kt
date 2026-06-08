@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.util.Log
 
 enum class WorkoutSessionState {
  Loading, Active, Resumed, Error
@@ -205,7 +206,9 @@ class WorkoutSessionViewModel @Inject constructor(
  }
  // If this was the last exercise, user should tap "Finalizar"
  }
- } catch (_: Exception) { }
+ } catch (e: Exception) {
+        Log.e("GymApp/Error", "An error occurred", e)
+    }
  }
  }
 
@@ -248,7 +251,9 @@ class WorkoutSessionViewModel @Inject constructor(
  		viewModelScope.launch {
  			try {
  				erpService.updateExerciseStatus(sessionEx.id, UpdateExerciseStatusRequest(status = "in_progress"))
- 			} catch (_: Exception) { }
+ 			} catch (e: Exception) {
+        Log.e("GymApp/Error", "An error occurred", e)
+    }
  		}
  	}
  }
@@ -267,7 +272,9 @@ class WorkoutSessionViewModel @Inject constructor(
  try {
  val sessionId = session?.id ?: return@launch
  erpService.finishSession(sessionId, FinishSessionRequest(rating, feedback.ifBlank { null }))
- } catch (_: Exception) { } finally {
+ } catch (e: Exception) {
+        Log.e("GymApp/Error", "An error occurred", e)
+    } finally {
  _isFinishing.value = false
  _showRatingDialog.value = false
  }

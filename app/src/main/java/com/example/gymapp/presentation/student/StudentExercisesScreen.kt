@@ -25,6 +25,7 @@ import android.os.Build
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.core.net.toUri
+import com.example.gymapp.BuildConfig
 import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.ui.theme.*
 
@@ -208,7 +209,7 @@ private fun ExerciseCard(exercise: Exercise) {
             val context = LocalContext.current
             if (exercise.mediaPath != null) {
                 if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
-                    val mediaUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                    val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(mediaUrl)
@@ -226,7 +227,7 @@ private fun ExerciseCard(exercise: Exercise) {
                             .background(Color.Black.copy(alpha = 0.05f))
                     )
                 } else if (exercise.mediaType == "video") {
-                    val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                    val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
                     OutlinedButton(
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())

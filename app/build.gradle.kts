@@ -21,6 +21,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "BASE_URL", "\"http://192.168.240.1:8080/\"")
+        buildConfigField("String", "SUPABASE_URL", "\"http://192.168.240.1:8000/storage/v1/object/public/exercises/\"")
     }
 
     buildTypes {
@@ -38,9 +41,15 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     lint {
         abortOnError = false
+    }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
     }
 }
 

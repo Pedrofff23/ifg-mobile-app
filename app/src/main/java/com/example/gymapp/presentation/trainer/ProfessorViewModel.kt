@@ -42,6 +42,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
+import android.util.Log
 
 @HiltViewModel
 class ProfessorViewModel @Inject constructor(
@@ -375,7 +376,8 @@ class ProfessorViewModel @Inject constructor(
                         extension = ".$mimeExt"
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("GymApp/Error", "Failed to get MIME type", e)
                 // Ignora erro ao obter tipo
             }
 
@@ -394,7 +396,8 @@ class ProfessorViewModel @Inject constructor(
                             }
                         }
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("GymApp/Error", "Failed to query metadata", e)
                     // Ignora erro ao consultar metadados
                 }
             }
@@ -760,7 +763,8 @@ class ProfessorViewModel @Inject constructor(
         _studentGroups.value = allGroups.filter { group ->
             group.members?.any { it.userId == studentId } == true
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        Log.e("GymApp/Error", "Failed to load student groups", e)
         _studentGroups.value = emptyList()
     }
 

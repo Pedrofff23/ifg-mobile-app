@@ -33,6 +33,7 @@ import coil.request.ImageRequest
 import android.os.Build
 import androidx.core.net.toUri
 import com.example.gymapp.domain.model.*
+import com.example.gymapp.BuildConfig
 import com.example.gymapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -232,7 +233,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                         val context = LocalContext.current
                                         if (exercise.mediaPath != null) {
                                             if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
-                                                val mediaUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                                                val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
                                                 AsyncImage(
                                                     model = ImageRequest.Builder(context)
                                                         .data(mediaUrl)
@@ -250,7 +251,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                                         .background(Color.Black.copy(alpha = 0.05f))
                                                 )
                                             } else if (exercise.mediaType == "video") {
-                                                val videoUrl = "http://192.168.240.1:8000/storage/v1/object/public/exercises/${exercise.mediaPath}"
+                                                val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
                                                 OutlinedButton(
                                                     onClick = {
                                                         val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())

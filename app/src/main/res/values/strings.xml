@@ -1,3 +1,288 @@
 <resources>
-    <string name="app_name">Gym app</string>
+    <string name="app_name">Gym App</string>
+
+    <!-- Auth -->
+    <string name="login_title">Academia IFG Anápolis</string>
+    <string name="login_subtitle">Instituto Federal de Goiás</string>
+    <string name="login_email_hint">seu.email@ifg.edu.br</string>
+    <string name="login_password_hint">Digite sua senha</string>
+    <string name="login_button">Entrar</string>
+    <string name="login_no_account">Não tem conta?</string>
+    <string name="login_create_account">Criar Conta</string>
+    <string name="login_show_password">Mostrar senha</string>
+    <string name="login_hide_password">Ocultar senha</string>
+
+    <!-- Register -->
+    <string name="register_title">Criar Conta</string>
+    <string name="register_subtitle">Preencha seus dados para se registrar</string>
+    <string name="register_name_label">Nome Completo</string>
+    <string name="register_name_hint">João da Silva</string>
+    <string name="register_email_label">E-mail</string>
+    <string name="register_password_label">Senha</string>
+    <string name="register_password_hint">Mínimo 6 caracteres</string>
+    <string name="register_button">Criar Conta</string>
+    <string name="register_has_account">Já tem uma conta?</string>
+    <string name="register_login_link">Entre aqui</string>
+
+    <!-- Student Navigation -->
+    <string name="student_tab_home">Home</string>
+    <string name="student_tab_workouts">Treinos</string>
+    <string name="student_tab_progress">Progresso</string>
+    <string name="student_tab_content">Conteúdo</string>
+    <string name="student_tab_profile">Perfil</string>
+
+    <!-- Student Home -->
+    <string name="student_welcome">Bem-vindo, %s!</string>
+    <string name="student_continue_workout">Continue seu treino de hoje</string>
+    <string name="student_today_workout">Treino de Hoje</string>
+    <string name="student_start_workout">Iniciar</string>
+    <string name="student_no_workout">Nenhum treino atribuído</string>
+    <string name="student_sessions_done">%d sessões realizadas</string>
+    <string name="student_stats">Estatísticas</string>
+    <string name="student_quick_actions">Ações Rápidas</string>
+    <string name="student_view_progress">Ver Progresso</string>
+    <string name="student_view_exercises">Exercícios</string>
+
+    <!-- Student Workouts -->
+    <string name="student_my_workouts">Meus Treinos</string>
+    <string name="student_workout_assigned">Treinos atribuídos pelo seu treinador</string>
+    <string name="student_no_workouts_found">Nenhum treino atribuído</string>
+    <string name="student_start_workout_full">Iniciar Treino</string>
+
+    <!-- Student Exercises -->
+    <string name="student_exercise_library">Biblioteca de Exercícios</string>
+    <string name="student_exercise_explore">Explore todos os exercícios disponíveis</string>
+    <string name="student_exercise_search">Buscar exercícios...</string>
+    <string name="student_exercise_all">Todas</string>
+    <string name="student_exercise_no_results">Nenhum exercício encontrado</string>
+    <string name="student_exercise_with_weight">Com peso</string>
+    <string name="student_exercise_watch_video">Assistir Vídeo Anexado</string>
+    <string name="student_exercise_watch_external">Assistir Vídeo (Link Externo)</string>
+
+    <!-- Student Progress -->
+    <string name="student_progress_title">Seu Progresso</string>
+    <string name="student_progress_subtitle">Acompanhe sua evolução</string>
+    <string name="student_progress_current_weight">Peso Atual</string>
+    <string name="student_progress_active_days">Dias Ativos</string>
+    <string name="student_progress_complete_workouts">Treinos Completos</string>
+    <string name="student_progress_active_workouts">Treinos Ativos</string>
+    <string name="student_progress_streak">Sequência Atual</string>
+    <string name="student_progress_weekly_freq">Freq. Semanal</string>
+    <string name="student_progress_exercises_done">Exercícios Concluídos</string>
+    <string name="student_progress_recent_sessions">Sessões Recentes</string>
+    <string name="student_progress_recent_measurements">Medições Recentes</string>
+    <string name="student_progress_session">Sessão %s</string>
+    <string name="student_progress_completed">Concluída</string>
+    <string name="student_progress_in_progress">Em andamento</string>
+    <string name="student_progress_log_weight">Registrar Peso</string>
+    <string name="student_progress_weight_hint">Peso atual (kg)</string>
+    <string name="student_progress_notes_hint">Observações (opcional)</string>
+    <string name="student_progress_register">Registrar</string>
+    <string name="student_progress_cancel">Cancelar</string>
+    <string name="student_progress_weekly_activity">Atividade Semanal</string>
+
+    <!-- Student Communication -->
+    <string name="student_communication_title">Conteúdo</string>
+    <string name="student_communication_tab_board">Mural</string>
+    <string name="student_communication_tab_instructions">Instruções</string>
+    <string name="student_communication_tab_news">Notícias</string>
+    <string name="student_communication_no_announcements">Nenhum aviso no mural</string>
+    <string name="student_communication_no_news">Nenhuma notícia disponível</string>
+
+    <!-- Student Profile -->
+    <string name="student_profile_role">Estudante</string>
+    <string name="student_profile_status">Ativo</string>
+    <string name="student_profile_personal_info">Informações Pessoais</string>
+    <string name="student_profile_physical_data">Dados Físicos</string>
+    <string name="student_profile_weight">Peso</string>
+    <string name="student_profile_height">Altura</string>
+    <string name="student_profile_bmi">IMC</string>
+    <string name="student_profile_injuries">Histórico de Lesões</string>
+    <string name="student_profile_member_since">Membro desde</string>
+    <string name="student_profile_theme">Tema do App</string>
+    <string name="student_profile_logout">Sair da Conta</string>
+    <string name="student_profile_physical_edit_title">Editar Dados Físicos</string>
+    <string name="student_profile_weight_label">Peso (kg)</string>
+    <string name="student_profile_height_label">Altura (cm)</string>
+    <string name="student_profile_injuries_label">Histórico de Lesões</string>
+    <string name="student_profile_save">Salvar</string>
+    <string name="student_profile_edit_name_title">Editar Nome</string>
+
+    <!-- Workout Session -->
+    <string name="workout_session_title">Sessão de Treino</string>
+    <string name="workout_session_resumed">Retomada</string>
+    <string name="workout_session_loading">Carregando sessão...</string>
+    <string name="workout_session_error">Erro ao carregar sessão</string>
+    <string name="workout_session_back">Voltar</string>
+    <string name="workout_session_finish">Finalizar</string>
+    <string name="workout_session_exercise_progress">Exercício %d de %d</string>
+    <string name="workout_session_cardio">Cardio</string>
+    <string name="workout_session_reps">%d reps</string>
+    <string name="workout_session_minutes">min</string>
+    <string name="workout_session_km">km</string>
+    <string name="workout_session_kg">kg</string>
+    <string name="workout_session_previous">Anterior</string>
+    <string name="workout_session_next">Próximo</string>
+    <string name="workout_session_complete_set">Completar</string>
+    <string name="workout_session_rating_title">Avaliar Treino</string>
+    <string name="workout_session_rating_subtitle">Como foi seu treino?</string>
+    <string name="workout_session_rating_feedback_hint">Observações (opcional)</string>
+
+    <!-- Trainer Navigation -->
+    <string name="trainer_tab_dashboard">Início</string>
+    <string name="trainer_tab_workouts">Treinos</string>
+    <string name="trainer_tab_students">Alunos</string>
+    <string name="trainer_tab_groups">Grupos</string>
+    <string name="trainer_tab_announcements">Avisos</string>
+    <string name="trainer_tab_profile">Perfil</string>
+
+    <!-- Trainer Dashboard -->
+    <string name="trainer_dashboard_title">Painel do Professor</string>
+    <string name="trainer_dashboard_subtitle">Visão geral da academia</string>
+    <string name="trainer_dashboard_students">Total Alunos</string>
+    <string name="trainer_dashboard_active_workouts">Treinos Ativos</string>
+    <string name="trainer_dashboard_exercises">Exercícios</string>
+    <string name="trainer_dashboard_announcements_count">Avisos</string>
+    <string name="trainer_dashboard_quick_actions">Ações Rápidas</string>
+    <string name="trainer_dashboard_recent_activity">Atividade Recente</string>
+    <string name="trainer_dashboard_no_activity">Nenhuma atividade recente</string>
+    <string name="trainer_panel_admin">Painel do Admin</string>
+    <string name="trainer_panel_professor">Painel do Professor</string>
+
+    <!-- Trainer Students -->
+    <string name="trainer_students_title">Meus Alunos</string>
+    <string name="trainer_students_subtitle">Gerencie e acompanhe seus alunos</string>
+    <string name="trainer_students_search">Buscar aluno...</string>
+    <string name="trainer_students_total">Total</string>
+    <string name="trainer_students_active">Ativos</string>
+    <string name="trainer_students_new">Novos</string>
+    <string name="trainer_students_no_results">Nenhum aluno encontrado</string>
+    <string name="trainer_students_assign_workout">Atribuir Treino</string>
+    <string name="trainer_students_assign_group">Atribuir Treino a Grupo</string>
+    <string name="trainer_students_select_workout">Selecionar Treino</string>
+    <string name="trainer_students_select_student">Selecionar Aluno</string>
+    <string name="trainer_students_start_date">Data início</string>
+    <string name="trainer_students_select_date">Selecionar Data</string>
+    <string name="trainer_students_assign">Atribuir</string>
+
+    <!-- Trainer Workouts -->
+    <string name="trainer_workouts_title">Gerenciar Treinos</string>
+    <string name="trainer_workouts_subtitle">Edite e atribua treinos aos alunos</string>
+    <string name="trainer_workouts_search">Buscar treino...</string>
+    <string name="trainer_workouts_no_results">Nenhum treino encontrado</string>
+    <string name="trainer_workouts_create">Criar Novo Treino</string>
+    <string name="trainer_workouts_create_subtitle">Monte o treino do zero</string>
+    <string name="trainer_workouts_name_label">Nome do Treino</string>
+    <string name="trainer_workouts_type_label">Tipo</string>
+    <string name="trainer_workouts_difficulty_label">Dificuldade</string>
+    <string name="trainer_workouts_sessions_label">Total de Sessões</string>
+    <string name="trainer_workouts_add_exercise">Adicionar</string>
+    <string name="trainer_workouts_sets">Sets</string>
+    <string name="trainer_workouts_reps">Reps</string>
+    <string name="trainer_workouts_rest">Descanso(s)</string>
+    <string name="trainer_workouts_save">Criar Treino</string>
+    <string name="trainer_workouts_cancel">Cancelar</string>
+    <string name="trainer_workouts_edit_title">Editar Treino</string>
+    <string name="trainer_workouts_assign_to_student">Atribuir a Aluno</string>
+    <string name="trainer_workouts_assign_to_group">Atribuir a Grupo</string>
+
+    <!-- Trainer Exercises -->
+    <string name="trainer_exercises_title">Exercícios</string>
+    <string name="trainer_exercises_subtitle">Gerencie o catálogo de exercícios</string>
+    <string name="trainer_exercises_search">Buscar exercício...</string>
+    <string name="trainer_exercises_all">Todos</string>
+    <string name="trainer_exercises_no_results">Nenhum exercício encontrado</string>
+    <string name="trainer_exercises_new">Novo Exercício</string>
+    <string name="trainer_exercises_name_label">Nome</string>
+    <string name="trainer_exercises_description_label">Descrição</string>
+    <string name="trainer_exercises_muscle_group_label">Grupo Muscular</string>
+    <string name="trainer_exercises_uses_weight">Usa peso?</string>
+    <string name="trainer_exercises_attach_media">Anexar Mídia (GIF/Imagem/Vídeo)</string>
+    <string name="trainer_exercises_media_attached">Mídia Anexada!</string>
+    <string name="trainer_exercises_external_video">URL de Vídeo Externo (Opcional)</string>
+    <string name="trainer_exercises_edit_title">Editar Exercício</string>
+    <string name="trainer_exercises_delete_confirmation">Tem certeza que deseja excluir \"%s\"? Esta ação não pode ser desfeita.</string>
+    <string name="trainer_exercises_delete">Excluir</string>
+
+    <!-- Trainer Groups -->
+    <string name="trainer_groups_title">Grupos</string>
+    <string name="trainer_groups_subtitle">Gerencie grupos de alunos e treinos</string>
+    <string name="trainer_groups_no_results">Nenhum grupo encontrado</string>
+    <string name="trainer_groups_create_hint">Toque no + para criar um novo grupo</string>
+    <string name="trainer_groups_members_count">%d membro(s)</string>
+    <string name="trainer_groups_members">Membros</string>
+    <string name="trainer_groups_no_members">Nenhum membro neste grupo</string>
+    <string name="trainer_groups_add_member">Adicionar Membro</string>
+    <string name="trainer_groups_assign_workout_group">Atribuir Treino</string>
+    <string name="trainer_groups_create_title">Criar Grupo</string>
+    <string name="trainer_groups_edit_title">Editar Grupo</string>
+    <string name="trainer_groups_name_label">Nome do Grupo</string>
+    <string name="trainer_groups_description_label">Descrição (opcional)</string>
+    <string name="trainer_groups_create_button">Criar</string>
+    <string name="trainer_groups_save_button">Salvar</string>
+    <string name="trainer_groups_delete_confirmation">Tem certeza que deseja excluir o grupo \"%s\"? Esta ação não pode ser desfeita.</string>
+    <string name="trainer_groups_delete">Excluir</string>
+    <string name="trainer_groups_add_member_title">Adicionar Membro</string>
+    <string name="trainer_groups_remove">Remover</string>
+
+    <!-- Trainer Announcements -->
+    <string name="trainer_announcements_title">Mural de Avisos</string>
+    <string name="trainer_announcements_subtitle">Gerencie os avisos da academia</string>
+    <string name="trainer_announcements_new">Novo Aviso</string>
+    <string name="trainer_announcements_new_subtitle">Crie um aviso para os alunos</string>
+    <string name="trainer_announcements_title_label">Título</string>
+    <string name="trainer_announcements_content_label">Conteúdo</string>
+    <string name="trainer_announcements_publish">Publicar</string>
+    <string name="trainer_announcements_no_results">Nenhum aviso publicado</string>
+    <string name="trainer_announcements_delete_confirmation">Tem certeza que deseja excluir o aviso \"%s\"?</string>
+
+    <!-- Trainer Profile -->
+    <string name="trainer_profile_account_info">Informações da Conta</string>
+    <string name="trainer_profile_role">Papel</string>
+    <string name="trainer_profile_status_label">Status</string>
+    <string name="trainer_profile_active">Ativo</string>
+    <string name="trainer_profile_admin">Administrador</string>
+    <string name="trainer_profile_settings">Configurações do App</string>
+    <string name="trainer_profile_theme">Tema do App</string>
+    <string name="trainer_profile_logout">Sair da Conta</string>
+    <string name="trainer_profile_logout_confirmation">Tem certeza que deseja desconectar? Você precisará fazer login novamente.</string>
+    <string name="trainer_profile_logout_button">Sair</string>
+
+    <!-- Admin -->
+    <string name="admin_title">Gerenciamento de Usuários</string>
+    <string name="admin_subtitle">Promova usuários e altere status</string>
+    <string name="admin_search">Buscar usuário...</string>
+    <string name="admin_filter_all">Todos</string>
+    <string name="admin_stat_total">Total</string>
+    <string name="admin_stat_students">Alunos</string>
+    <string name="admin_stat_teachers">Professores</string>
+    <string name="admin_stat_admins">Admins</string>
+    <string name="admin_no_results">Nenhum usuário encontrado</string>
+    <string name="admin_change_role">Alterar Papel</string>
+    <string name="admin_current_role">Papel atual: %s</string>
+    <string name="admin_deactivate_confirmation">Desativar o usuário \"%s\"? Ele não poderá fazer login.</string>
+    <string name="admin_reactivate_confirmation">Reativar o usuário \"%s\"?</string>
+    <string name="admin_deactivate">Desativar</string>
+    <string name="admin_reactivate">Reativar</string>
+    <string name="admin_role_aluno">Aluno</string>
+    <string name="admin_role_professor">Professor</string>
+    <string name="admin_role_admin">Admin</string>
+    <string name="admin_change_status">Alterar Status</string>
+
+    <!-- Common -->
+    <string name="common_close">Fechar</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_save">Salvar</string>
+    <string name="common_confirm">Confirmar</string>
+    <string name="common_back">Voltar</string>
+    <string name="common_done">Concluído</string>
+    <string name="common_loading">Carregando...</string>
+    <string name="common_error">Erro</string>
+    <string name="common_na">N/A</string>
+    <string name="common_student">Aluno</string>
+
+    <!-- Theme -->
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_select">Selecionar Tema</string>
 </resources>

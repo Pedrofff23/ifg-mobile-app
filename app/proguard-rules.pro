@@ -1,21 +1,44 @@
 # Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+if you need to add custom rules for libraries, do so here.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep data classes used by Retrofit/Gson (serialization via reflection)
+-keep class com.example.gymapp.domain.model.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep Retrofit service interfaces
+-keep interface com.example.gymapp.data.remote.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Hilt generated classes
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.lifecycle.HiltAndroidApp
+
+# Keep DataStore classes
+-keep class androidx.datastore.** { *; }
+
+# Keep Compose classes used at runtime
+-keep class androidx.compose.** { *; }
+
+# Keep BuildConfig
+-keep class com.example.gymapp.BuildConfig { *; }
+
+# Keep TokenManager
+-keep class com.example.gymapp.data.local.TokenManager { *; }
+
+# Gson specifics
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn sun.misc.**
+-keep class com.google.gson.** { *; }
+
+# OkHttp / Retrofit
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn retrofit2.**
+-keepattributes Exceptions
+
+# Kotlin coroutines
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Coil
+-keep class coil.** { *; }

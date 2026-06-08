@@ -1,5 +1,6 @@
 package com.example.gymapp.di
 
+import com.example.gymapp.BuildConfig
 import com.example.gymapp.data.remote.AuthInterceptor
 import com.example.gymapp.data.remote.AuthService
 import com.example.gymapp.data.remote.ErpService
@@ -20,29 +21,28 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
- private const val BASE_URL = "http://192.168.240.1:8080/"
+    // BASE_URL is injected from BuildConfig (configured in build.gradle.kts)
+    // For production, change the value in build.gradle.kts defaultConfig
 
- // AuthInterceptor is now @Inject-constructed by Hilt (TokenManager + Lazy<AuthService>)
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
 
- @Provides
- @Singleton
- fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
- return OkHttpClient.Builder()
- .addInterceptor(authInterceptor)
- .connectTimeout(30, TimeUnit.SECONDS)
- .readTimeout(30, TimeUnit.SECONDS)
- .build()
- }
-
- @Provides
- @Singleton
- fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
- return Retrofit.Builder()
- .baseUrl(BASE_URL)
- .client(okHttpClient)
- .addConverterFactory(GsonConverterFactory.create())
- .build()
- }
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
  @Provides
  @Singleton
