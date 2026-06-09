@@ -40,6 +40,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     var selectedTemplateId by remember { mutableStateOf("") }
     var selectedGroupId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
+
     var showStudentDetail by remember { mutableStateOf(false) }
     var selectedDetailStudentId by remember { mutableStateOf("") }
 

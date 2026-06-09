@@ -112,6 +112,10 @@ class ProfessorViewModel @Inject constructor(
     private val _studentGroups = MutableStateFlow<List<StudentGroup>>(emptyList())
     val studentGroups: StateFlow<List<StudentGroup>> = _studentGroups.asStateFlow()
 
+    // ---------- Announcement type filter ----------
+    private val _announcementTypeFilter = MutableStateFlow<String?>(null)
+    val announcementTypeFilter: StateFlow<String?> = _announcementTypeFilter.asStateFlow()
+
     init {
     loadUserName()
     loadUserRole()
@@ -168,7 +172,7 @@ class ProfessorViewModel @Inject constructor(
                 _allStudents.value = studentsList
                 _students.value = studentsList
 
-                _templates.value = erpService.getTemplates(withExercises = true).data ?: emptyList()
+                _templates.value = erpService.getTemplates(withWorkoutDays = true).data ?: emptyList()
                 _exercises.value = erpService.getExercises().data ?: emptyList()
                 _announcements.value = erpService.getAnnouncements().data ?: emptyList()
 
@@ -188,7 +192,7 @@ class ProfessorViewModel @Inject constructor(
             _error.value = null
             try {
                 _templates.value = erpService.getTemplates(
-                    withExercises = true
+                    withWorkoutDays = true
                 ).data ?: emptyList()
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
@@ -366,7 +370,6 @@ class ProfessorViewModel @Inject constructor(
             var extension = ".tmp"
             var mimeType = "application/octet-stream"
 
-            // Tenta obter MIME type e extensão
             try {
                 val type = contentResolver.getType(uri)
                 if (type != null) {
@@ -378,10 +381,8 @@ class ProfessorViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("GymApp/Error", "Failed to get MIME type", e)
-                // Ignora erro ao obter tipo
             }
 
-            // Se não conseguiu extensão pelo MIME type, tenta pelo nome do arquivo
             if (extension == ".tmp") {
                 try {
                     val projection = arrayOf(android.provider.OpenableColumns.DISPLAY_NAME)
@@ -398,11 +399,9 @@ class ProfessorViewModel @Inject constructor(
                     }
                 } catch (e: Exception) {
                     Log.e("GymApp/Error", "Failed to query metadata", e)
-                    // Ignora erro ao consultar metadados
                 }
             }
 
-            // Tenta abrir o arquivo usando openInputStream, que é mais estável no Waydroid/Emuladores
             val inputStream = contentResolver.openInputStream(uri)
                 ?: throw Exception("Não foi possível abrir o arquivo.")
 
@@ -417,9 +416,7 @@ class ProfessorViewModel @Inject constructor(
 
             Pair(tempFile, mimeType)
         } catch (e: Exception) {
-            // Log do erro real para depuração no Logcat
             e.printStackTrace()
-            // Mensagem simplificada para o usuário
             throw Exception("Falha ao processar o arquivo de mídia.")
         }
     }
@@ -442,7 +439,7 @@ class ProfessorViewModel @Inject constructor(
             "hipertrofia" -> "hipertrofia"
             "resistência" -> "resistencia"
             "funcional" -> "funcional"
-            "cardio" -> "resistencia" // Fallback se selecionarem cardio e nao houver no enum
+            "cardio" -> "resistencia"
             else -> "hipertrofia"
         }
     }
@@ -474,18 +471,23 @@ class ProfessorViewModel @Inject constructor(
 
     // ==================== ANNOUNCEMENTS ====================
 
-    fun loadAnnouncements() {
+    fun loadAnnouncements(type: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                _announcements.value = erpService.getAnnouncements().data ?: emptyList()
+                _announcements.value = erpService.getAnnouncements(type = type).data ?: emptyList()
+                _announcementTypeFilter.value = type
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun setAnnouncementTypeFilter(type: String?) {
+        loadAnnouncements(type)
     }
 
     fun createAnnouncement(request: CreateAnnouncementRequest) {
@@ -495,7 +497,7 @@ class ProfessorViewModel @Inject constructor(
             try {
                 erpService.createAnnouncement(request)
                 _successMessage.value = "Aviso criado com sucesso"
-                loadAnnouncements()
+                loadAnnouncements(_announcementTypeFilter.value)
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
@@ -511,7 +513,7 @@ class ProfessorViewModel @Inject constructor(
             try {
                 erpService.deleteAnnouncement(id)
                 _successMessage.value = "Aviso excluído com sucesso"
-                loadAnnouncements()
+                loadAnnouncements(_announcementTypeFilter.value)
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
@@ -623,7 +625,7 @@ class ProfessorViewModel @Inject constructor(
     		_isLoading.value = true
     		_error.value = null
     		try {
-    			_groups.value = groupService.getGroups(withUsers = true).data ?: emptyList()
+    			_groups.value = groupService.getGroups(withUsers = true, with = "assignments").data ?: emptyList()
     		} catch (e: Exception) {
     			_error.value = ErrorUtils.parseErrorMessage(e)
     		} finally {
@@ -712,14 +714,10 @@ class ProfessorViewModel @Inject constructor(
     	}
     }
 
-    // ---------------------------------------------------------------------
-    // Fetch detailed group information (including members) for a single group.
-    // The result is delivered via a callback to keep the UI composable simple.
-    // ---------------------------------------------------------------------
     fun fetchGroupDetail(groupId: String, onResult: (StudentGroup?) -> Unit) {
         viewModelScope.launch {
             try {
-                val response = groupService.getGroup(groupId)
+                val response = groupService.getGroup(groupId, with = "assignments")
                 onResult(response.data)
             } catch (e: Exception) {
                 onResult(null)
@@ -733,33 +731,27 @@ class ProfessorViewModel @Inject constructor(
     _isLoading.value = true
     _error.value = null
     try {
-    // Load basic user info
     val userResp = userService.getUser(studentId)
     _selectedStudentDetail.value = userResp.data
 
-    // Load profile and measurements
     try {
     val profileResp = profileService.getProfile(studentId)
     _studentProfile.value = profileResp.data
     val measResp = profileService.getMeasurements(studentId)
     _studentMeasurements.value = measResp.data ?: emptyList()
     } catch (e: Exception) {
-    // If profile endpoint fails (e.g., 404), clear data
     _studentProfile.value = null
     _studentMeasurements.value = emptyList()
     }
 
-    // Load assignments
     val assignResp = erpService.getAssignmentsByAluno(studentId)
     _studentAssignments.value = assignResp.data ?: emptyList()
 
-    // Load sessions
     val sessionsResp = erpService.getSessionsByAluno(studentId)
     _studentSessions.value = sessionsResp.data ?: emptyList()
 
-    // Load groups that this student belongs to
     try {
-        val allGroups = groupService.getGroups().data ?: emptyList()
+        val allGroups = groupService.getGroups(withUsers = true).data ?: emptyList()
         _studentGroups.value = allGroups.filter { group ->
             group.members?.any { it.userId == studentId } == true
         }
@@ -768,7 +760,6 @@ class ProfessorViewModel @Inject constructor(
         _studentGroups.value = emptyList()
     }
 
-    // Load stats (optional)
     try {
     val statsResp = erpService.getAlunoStats(studentId)
     _studentStats.value = statsResp.data

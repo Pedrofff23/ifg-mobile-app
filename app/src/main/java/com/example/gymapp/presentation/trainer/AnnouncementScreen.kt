@@ -17,15 +17,18 @@ import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
     val announcements by viewModel.announcements.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
+    val typeFilter by viewModel.announcementTypeFilter.collectAsState()
 
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf("aviso") }
     var showCreateForm by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var announcementToDelete by remember { mutableStateOf<Announcement?>(null) }
@@ -45,6 +48,26 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
     }
 
     LaunchedEffect(Unit) { viewModel.loadAnnouncements() }
+
+    val typeOptions = listOf(
+        "noticia" to "Notícia",
+        "aviso" to "Aviso",
+        "instrucoes" to "Instruções"
+    )
+
+    fun typeColor(type: String?): Color = when (type) {
+        "noticia" -> Color(0xFF1565C0)
+        "aviso" -> Color(0xFFE65100)
+        "instrucoes" -> Color(0xFF2E7D32)
+        else -> Color(0xFF757575)
+    }
+
+    fun typeBgColor(type: String?): Color = when (type) {
+        "noticia" -> Color(0xFFE3F2FD)
+        "aviso" -> Color(0xFFFFF3E0)
+        "instrucoes" -> Color(0xFFE8F5E9)
+        else -> Color(0xFFF5F5F5)
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -89,18 +112,36 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                         maxLines = 6,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
                         )
+
+                        // Type selector
+                        Text("Tipo", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            typeOptions.forEach { (value, label) ->
+                                FilterChip(
+                                    selected = selectedType == value,
+                                    onClick = { selectedType = value },
+                                    label = { Text(label) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = typeBgColor(value),
+                                        selectedLabelColor = typeColor(value)
+                                    )
+                                )
+                            }
+                        }
+
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
-                                onClick = { showCreateForm = false; title = ""; content = "" },
+                                onClick = { showCreateForm = false; title = ""; content = ""; selectedType = "aviso" },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp)
                             ) { Text("Cancelar") }
                             Button(
                                 onClick = {
                                     if (title.isNotBlank() && content.isNotBlank()) {
-                                        viewModel.createAnnouncement(CreateAnnouncementRequest(title, content))
+                                        viewModel.createAnnouncement(CreateAnnouncementRequest(title, content, selectedType))
                                         title = ""
                                         content = ""
+                                        selectedType = "aviso"
                                         showCreateForm = false
                                     }
                                 },
@@ -116,7 +157,29 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                 // Announcements list
                 Text("Mural de Avisos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                 Text("Gerencie os avisos da academia", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Type filter chips
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = typeFilter == null,
+                        onClick = { viewModel.setAnnouncementTypeFilter(null) },
+                        label = { Text("Todos") }
+                    )
+                    typeOptions.forEach { (value, label) ->
+                        FilterChip(
+                            selected = typeFilter == value,
+                            onClick = { viewModel.setAnnouncementTypeFilter(value) },
+                            label = { Text(label) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = typeBgColor(value),
+                                selectedLabelColor = typeColor(value)
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -140,9 +203,32 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Notifications, contentDescription = null, tint = IfgGreen, modifier = Modifier.size(20.dp))
+                                        Icon(
+                                            when (announcement.type) {
+                                                "noticia" -> Icons.Default.Article
+                                                "instrucoes" -> Icons.Default.MenuBook
+                                                else -> Icons.Default.Notifications
+                                            },
+                                            contentDescription = null,
+                                            tint = typeColor(announcement.type),
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(announcement.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.weight(1f))
+                                        // Type badge
+                                        Badge(
+                                            containerColor = typeBgColor(announcement.type),
+                                            contentColor = typeColor(announcement.type)
+                                        ) {
+                                            Text(
+                                                when (announcement.type) {
+                                                    "noticia" -> "Notícia"
+                                                    "instrucoes" -> "Instruções"
+                                                    else -> "Aviso"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        }
                                         IconButton(
                                             onClick = { announcementToDelete = announcement; showDeleteDialog = true },
                                             modifier = Modifier.size(32.dp)

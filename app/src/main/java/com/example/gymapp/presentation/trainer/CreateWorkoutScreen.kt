@@ -3,6 +3,7 @@ package com.example.gymapp.presentation.trainer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -11,9 +12,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -31,10 +32,10 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Força") }
     var difficulty by remember { mutableStateOf("Iniciante") }
-    var totalSessions by remember { mutableStateOf("8") }
-    var selectedExercises by remember { mutableStateOf<List<SelectedExercise>>(emptyList()) }
+    var workoutDays by remember { mutableStateOf<List<WorkoutDayData>>(listOf(WorkoutDayData(name = "Treino A", orderIndex = 0))) }
     var showExerciseDialog by remember { mutableStateOf(false) }
     var exerciseSearch by remember { mutableStateOf("") }
+    var targetDayIndex by remember { mutableIntStateOf(0) }
 
     val typeOptions = listOf("Força", "Hipertrofia", "Resistência", "Cardio", "Mobilidade")
     var typeExpanded by remember { mutableStateOf(false) }
@@ -57,7 +58,6 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
         }
     }
 
-    // Auto-navigate back after a successful creation
     LaunchedEffect(successMessage) {
         successMessage?.let {
             if (it.contains("criado", ignoreCase = true)) {
@@ -94,11 +94,11 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
             item {
                 Column {
                     Text("Criar Novo Treino", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
-                    Text("Monte o treino do zero", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Monte um treino com múltiplos dias (Treino A, Treino B, ...)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // Form Card
+            // Form Card: name, type, difficulty
             item {
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -108,7 +108,6 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome do Treino") }, modifier = Modifier.fillMaxWidth(), singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
 
-                        // Type dropdown
                         ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
                             OutlinedTextField(value = type, onValueChange = {}, readOnly = true, label = { Text("Tipo") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
                             ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
@@ -118,7 +117,6 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                             }
                         }
 
-                        // Difficulty dropdown
                         ExposedDropdownMenuBox(expanded = difficultyExpanded, onExpandedChange = { difficultyExpanded = !difficultyExpanded }) {
                             OutlinedTextField(value = difficulty, onValueChange = {}, readOnly = true, label = { Text("Dificuldade") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = difficultyExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary))
                             ExposedDropdownMenu(expanded = difficultyExpanded, onDismissRequest = { difficultyExpanded = false }) {
@@ -127,83 +125,109 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                                 }
                             }
                         }
-
-                        OutlinedTextField(
-                            value = totalSessions,
-                            onValueChange = { totalSessions = it },
-                            label = { Text("Total de Sessões") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                        )
                     }
                 }
             }
 
-            // Exercises section
+            // Workout Days section header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Exercícios do Treino", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                    Button(onClick = { showExerciseDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)) {
+                    Text("Dias de Treino", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    FilledTonalButton(
+                        onClick = {
+                            val nextLabel = generateDayLabel(workoutDays.size)
+                            workoutDays = workoutDays + WorkoutDayData(name = nextLabel, orderIndex = workoutDays.size)
+                        },
+                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = Green100, contentColor = IfgGreen)
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Adicionar")
+                        Text("Adicionar Dia")
                     }
                 }
             }
 
-            // Selected exercise items
-            items(selectedExercises) { selectedEx ->
+            // Workout day cards
+            itemsIndexed(workoutDays) { dayIndex, day ->
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
+                        // Day header: name input + delete
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(selectedEx.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.weight(1f))
-                            IconButton(onClick = { selectedExercises = selectedExercises.filter { it.exerciseId != selectedEx.exerciseId } }) {
-                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = androidx.compose.ui.graphics.Color.Red)
+                            OutlinedTextField(
+                                value = day.name,
+                                onValueChange = { newName ->
+                                    workoutDays = workoutDays.toMutableList().also { it[dayIndex] = day.copy(name = newName) }
+                                },
+                                label = { Text("Nome do Dia") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(onClick = {
+                                workoutDays = workoutDays.toMutableList().also {
+                                    it.removeAt(dayIndex)
+                                    // Re-index
+                                    it.forEachIndexed { i, d -> it[i] = d.copy(orderIndex = i) }
+                                }
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Remover dia", tint = Color(0xFFC62828))
                             }
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = selectedEx.sets.toString(),
-                                onValueChange = { newVal ->
-                                    val n = newVal.toIntOrNull() ?: selectedEx.sets
-                                    selectedExercises = selectedExercises.map { if (it.exerciseId == selectedEx.exerciseId) it.copy(sets = n) else it }
-                                },
-                                label = { Text("Sets") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(1f),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Exercises in this day
+                        if (day.exercises.isEmpty()) {
+                            Text(
+                                "Nenhum exercício neste dia",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            OutlinedTextField(
-                                value = selectedEx.reps.toString(),
-                                onValueChange = { newVal ->
-                                    val n = newVal.toIntOrNull() ?: selectedEx.reps
-                                    selectedExercises = selectedExercises.map { if (it.exerciseId == selectedEx.exerciseId) it.copy(reps = n) else it }
-                                },
-                                label = { Text("Reps") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(1f),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                            )
-                            OutlinedTextField(
-                                value = selectedEx.restSeconds.toString(),
-                                onValueChange = { newVal ->
-                                    val n = newVal.toIntOrNull() ?: selectedEx.restSeconds
-                                    selectedExercises = selectedExercises.map { if (it.exerciseId == selectedEx.exerciseId) it.copy(restSeconds = n) else it }
-                                },
-                                label = { Text("Descanso(s)") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(1f),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
-                            )
+                        } else {
+                            day.exercises.forEachIndexed { exIdx, ex ->
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                                ) {
+                                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(ex.exerciseName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+                                            Text("${ex.sets}x${ex.reps} • ${ex.restSeconds}s descanso", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        IconButton(onClick = {
+                                            workoutDays = workoutDays.toMutableList().also {
+                                                val updatedDay = day.copy(exercises = day.exercises.toMutableList().also { it.removeAt(exIdx) })
+                                                it[dayIndex] = updatedDay
+                                            }
+                                        }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Add exercise button
+                        OutlinedButton(
+                            onClick = {
+                                targetDayIndex = dayIndex
+                                showExerciseDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text("Adicionar Exercício")
                         }
                     }
                 }
@@ -229,22 +253,25 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                                 name = name,
                                 type = type,
                                 difficulty = difficulty,
-                                totalSessions = totalSessions.toIntOrNull() ?: 8,
-                                exercises = selectedExercises.mapIndexed { index, ex ->
-                                    TemplateExerciseInput(
-                                        exerciseId = ex.exerciseId,
-                                        orderIndex = index,
-                                        defaultSets = ex.sets,
-                                        defaultReps = ex.reps,
-                                        defaultRestSeconds = ex.restSeconds
+                                workoutDays = workoutDays.map { day ->
+                                    WorkoutDayInput(
+                                        name = day.name,
+                                        orderIndex = day.orderIndex,
+                                        exercises = day.exercises.mapIndexed { idx, ex ->
+                                            TemplateExerciseInput(
+                                                exerciseId = ex.exerciseId,
+                                                orderIndex = idx,
+                                                defaultSets = ex.sets,
+                                                defaultReps = ex.reps,
+                                                defaultRestSeconds = ex.restSeconds
+                                            )
+                                        }
                                     )
                                 }
                             )
                             viewModel.createTemplate(request)
-                            name = ""
-                            selectedExercises = emptyList()
                         },
-                        enabled = name.isNotBlank() && selectedExercises.isNotEmpty() && !isLoading,
+                        enabled = name.isNotBlank() && workoutDays.isNotEmpty() && workoutDays.all { it.exercises.isNotEmpty() } && !isLoading,
                         modifier = Modifier.weight(1f).height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
@@ -271,15 +298,14 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                         label = { Text("Buscar exercício...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                         items(filteredExercises) { exercise ->
-                            val alreadySelected = selectedExercises.any { it.exerciseId == exercise.id }
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                colors = CardDefaults.cardColors(containerColor = if (alreadySelected) Green100 else MaterialTheme.colorScheme.surface)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -289,20 +315,23 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                                         Text(exercise.name ?: "Sem nome", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
                                         Text(exercise.muscleGroup ?: "Geral", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    if (alreadySelected) {
-                                        Icon(Icons.Default.CheckCircle, contentDescription = "Selecionado", tint = IfgGreen)
-                                    } else {
-                                        IconButton(onClick = {
-                                            selectedExercises = selectedExercises + SelectedExercise(
-                                                exerciseId = exercise.id,
-                                                name = exercise.name ?: "",
-                                                sets = 3,
-                                                reps = 12,
-                                                restSeconds = 60
+                                    IconButton(onClick = {
+                                        workoutDays = workoutDays.toMutableList().also {
+                                            val day = it[targetDayIndex]
+                                            it[targetDayIndex] = day.copy(
+                                                exercises = day.exercises + DayExerciseData(
+                                                    exerciseId = exercise.id,
+                                                    exerciseName = exercise.name ?: "",
+                                                    sets = 3,
+                                                    reps = 12,
+                                                    restSeconds = 60
+                                                )
                                             )
-                                        }) {
-                                            Icon(Icons.Default.AddCircle, contentDescription = "Adicionar", tint = IfgGreen)
                                         }
+                                        showExerciseDialog = false
+                                        exerciseSearch = ""
+                                    }) {
+                                        Icon(Icons.Default.AddCircle, contentDescription = "Adicionar", tint = IfgGreen)
                                     }
                                 }
                             }
@@ -317,9 +346,22 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
     }
 }
 
-data class SelectedExercise(
-    val exerciseId: String,
+// Generates Treino A, Treino B, ..., Treino Z, Treino AA, etc.
+fun generateDayLabel(index: Int): String {
+    val letter = ('A' + (index % 26)).toString()
+    val suffix = if (index >= 26) "${index / 26 + 1}" else ""
+    return "Treino $letter$suffix"
+}
+
+data class WorkoutDayData(
     val name: String,
+    val orderIndex: Int,
+    val exercises: List<DayExerciseData> = emptyList()
+)
+
+data class DayExerciseData(
+    val exerciseId: String,
+    val exerciseName: String,
     val sets: Int = 3,
     val reps: Int = 12,
     val restSeconds: Int = 60

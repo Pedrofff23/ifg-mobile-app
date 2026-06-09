@@ -269,6 +269,7 @@ private fun TreinosTab(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(text = "Treino Atual", style = MaterialTheme.typography.titleMedium)
                         Text(text = "Modelo: ${current.templateName ?: "Desconhecido"}", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = "Dia atual: Treino ${(current.currentWorkoutIndex ?: 0) + 1}", style = MaterialTheme.typography.bodySmall)
                         Text(text = "Início: ${current.startsAt ?: "-"}", style = MaterialTheme.typography.bodySmall)
                         Text(text = "Fim: ${current.endsAt ?: "Indefinido"}", style = MaterialTheme.typography.bodySmall)
                     }
@@ -289,6 +290,8 @@ private fun TreinosTab(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = assignment.templateName ?: "Desconhecido", style = MaterialTheme.typography.bodyMedium)
                         Text(text = "Período: ${assignment.startsAt ?: "-"} – ${assignment.endsAt ?: "Indefinido"}", style = MaterialTheme.typography.bodySmall)
+                        val idx = assignment.currentWorkoutIndex ?: 0
+                        Text(text = "Dia atual: Treino ${idx + 1}", style = MaterialTheme.typography.labelSmall, color = IfgGreen)
                     }
                 }
             }
@@ -320,6 +323,9 @@ private fun TreinosTab(
                             Column {
                                 Text(text = (session.startedAt ?: "").take(10), style = MaterialTheme.typography.bodyMedium)
                                 Text(text = "Sessão #${session.sessionNumber}", style = MaterialTheme.typography.bodySmall)
+                                if (!session.workoutName.isNullOrBlank()) {
+                                    Text(text = session.workoutName, style = MaterialTheme.typography.labelSmall, color = IfgGreen)
+                                }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 if (hasRating) {

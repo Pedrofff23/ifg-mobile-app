@@ -57,7 +57,7 @@ interface ErpService {
     suspend fun getTemplates(
         @Query("limit") limit: Int? = null,
         @Query("offset") offset: Int? = null,
-        @Query("__with_exercises") withExercises: Boolean? = null
+        @Query("__with_workout_days") withWorkoutDays: Boolean? = null
     ): PaginatedResponse<WorkoutTemplate>
 
     @GET("templates/{id}")
@@ -85,22 +85,23 @@ interface ErpService {
 
     @GET("assignments/aluno/{aluno_id}")
     suspend fun getAssignmentsByAluno(
-    @Path("aluno_id") alunoId: String
+        @Path("aluno_id") alunoId: String,
+        @Query("__with") with: String? = null
     ): ApiResponse<List<WorkoutAssignment>>
 
     @GET("assignments/aluno/{aluno_id}/current")
     suspend fun getCurrentAssignment(
-    	@Path("aluno_id") alunoId: String
+        @Path("aluno_id") alunoId: String
     ): ApiResponse<WorkoutAssignment?>
 
     @POST("assignments")
     suspend fun assignWorkout(
-    @Body request: AssignWorkoutRequest
+        @Body request: AssignWorkoutRequest
     ): ApiResponse<WorkoutAssignment>
 
     @POST("assignments/group")
     suspend fun assignWorkoutToGroup(
-    @Body request: AssignGroupWorkoutRequest
+        @Body request: AssignGroupWorkoutRequest
     ): ApiResponse<List<WorkoutAssignment>>
 
     // ==================== SESSIONS ====================
@@ -142,12 +143,12 @@ interface ErpService {
 
     @GET("sessions/exercises/{exerciseId}/progress")
     suspend fun getExerciseProgress(
-    @Path("exerciseId") exerciseId: String
+        @Path("exerciseId") exerciseId: String
     ): ApiResponse<List<ExerciseProgressPoint>>
 
     @GET("sessions/aluno/{aluno_id}/stats")
     suspend fun getAlunoStats(
-    	@Path("aluno_id") alunoId: String
+        @Path("aluno_id") alunoId: String
     ): ApiResponse<AlunoStats>
 
     // ==================== ANNOUNCEMENTS ====================
@@ -155,7 +156,8 @@ interface ErpService {
     @GET("announcements")
     suspend fun getAnnouncements(
         @Query("limit") limit: Int? = null,
-        @Query("offset") offset: Int? = null
+        @Query("offset") offset: Int? = null,
+        @Query("type") type: String? = null
     ): PaginatedResponse<Announcement>
 
     @POST("announcements")

@@ -78,7 +78,7 @@ class WorkoutSessionViewModel @Inject constructor(
  			val templateId = assignment?.templateId ?: assignmentId
  			val templateResp = erpService.getTemplate(templateId)
  			template = templateResp.data
- 			templateExercises = (templateResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 			templateExercises = (templateResp.data?.workoutDays?.flatMap { it.exercises ?: emptyList() } ?: emptyList()).sortedBy { it.orderIndex }
 
  			// Auto-resume: find the first incomplete exercise and set
  			resumeFromProgress()
@@ -157,7 +157,7 @@ class WorkoutSessionViewModel @Inject constructor(
  				val templateId = assignment?.templateId ?: assignmentId
  				val templateResp = erpService.getTemplate(templateId)
  				template = templateResp.data
- 				templateExercises = (templateResp.data?.exercises ?: emptyList()).sortedBy { it.orderIndex }
+ 				templateExercises = (templateResp.data?.workoutDays?.flatMap { it.exercises ?: emptyList() } ?: emptyList()).sortedBy { it.orderIndex }
 
  				resumeFromProgress()
  				_sessionState.value = WorkoutSessionState.Resumed

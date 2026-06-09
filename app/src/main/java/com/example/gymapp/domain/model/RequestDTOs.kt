@@ -54,11 +54,18 @@ data class CreateExerciseRequest(
 
 // ==================== TEMPLATE REQUESTS ====================
 
+// CreateTemplateRequest now uses workout_days instead of flat exercises + total_sessions.
+// Each workout day (e.g. "Treino A", "Treino B") has its own list of exercises.
 data class CreateTemplateRequest(
 	val name: String,
 	val type: String,
 	val difficulty: String,
-	@SerializedName("total_sessions") val totalSessions: Int,
+	@SerializedName("workout_days") val workoutDays: List<WorkoutDayInput>
+)
+
+data class WorkoutDayInput(
+	val name: String,
+	@SerializedName("order_index") val orderIndex: Int,
 	val exercises: List<TemplateExerciseInput>
 )
 
@@ -74,7 +81,8 @@ data class TemplateExerciseInput(
 
 data class CreateAnnouncementRequest(
 	val title: String,
-	val content: String
+	val content: String,
+	val type: String
 )
 
 // ==================== PROFILE REQUESTS ====================

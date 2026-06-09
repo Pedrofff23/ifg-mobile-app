@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -125,6 +126,8 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
         } else {
             items(filteredTemplates) { template ->
                 val isExpanded = expandedTemplateId == template.id
+                val workoutDays = template.workoutDays ?: emptyList()
+                val totalExercises = workoutDays.sumOf { it.exercises?.size ?: 0 }
 
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -178,12 +181,9 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                                 Text(template.difficulty ?: "Nível", style = MaterialTheme.typography.labelSmall)
                             }
                             Badge(containerColor = Color(0xFFE3F2FD), contentColor = Color(0xFF1565C0)) {
-                                Text("${template.exercises?.size ?: 0} exercícios", style = MaterialTheme.typography.labelSmall)
+                                Text("${workoutDays.size} dia(s) • $totalExercises ex.", style = MaterialTheme.typography.labelSmall)
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("${template.totalSessions} sessões", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         AnimatedVisibility(
                             visible = isExpanded,
@@ -191,24 +191,42 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel) {
                             exit = shrinkVertically()
                         ) {
                             Column(modifier = Modifier.padding(top = 12.dp)) {
-                                if (template.exercises.isNullOrEmpty()) {
-                                    Text("Nenhum exercício neste treino", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (workoutDays.isEmpty()) {
+                                    Text("Nenhum dia de treino neste template", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 } else {
-                                    template.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                                    workoutDays.sortedBy { it.orderIndex }.forEach { day ->
+                                        Card(
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                                         ) {
-                                            Box(
-                                                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).background(Green100),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text("${idx + 1}", style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen, fontWeight = FontWeight.Bold))
-                                            }
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(ex.exerciseName ?: "Exercício", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
-                                                Text("${ex.defaultSets}x${ex.defaultReps} reps", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    day.name,
+                                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                                    color = IfgGreen
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                if (day.exercises.isNullOrEmpty()) {
+                                                    Text("Sem exercícios", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                } else {
+                                                    day.exercises.sortedBy { it.orderIndex }.forEachIndexed { idx, ex ->
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                "${idx + 1}. ${ex.exerciseName ?: "Exercício"}",
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                            Text(
+                                                                "${ex.defaultSets}x${ex.defaultReps}",
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -409,22 +427,30 @@ private fun EditTemplateDialog(
     var name by remember { mutableStateOf(template.name) }
     var type by remember { mutableStateOf(template.type) }
     var difficulty by remember { mutableStateOf(template.difficulty) }
-    var totalSessions by remember { mutableStateOf(template.totalSessions.toString()) }
 
-    var exerciseEntries by remember {
-        mutableStateOf<List<ExerciseEntry>>(
-            template.exercises?.sortedBy { it.orderIndex ?: 0 }?.map { ex ->
-                ExerciseEntry(
-                    exerciseId = ex.exerciseId,
-                    exerciseName = ex.exerciseName ?: "",
-                    defaultSets = ex.defaultSets ?: 3,
-                    defaultReps = ex.defaultReps ?: 12,
-                    defaultRestSeconds = ex.defaultRestSeconds ?: 60
+    // Build editable workout days from existing template
+    var workoutDays by remember {
+        mutableStateOf<List<EditableWorkoutDay>>(
+            (template.workoutDays ?: emptyList()).sortedBy { it.orderIndex }.map { day ->
+                EditableWorkoutDay(
+                    name = day.name,
+                    orderIndex = day.orderIndex ?: 0,
+                    exercises = (day.exercises ?: emptyList()).sortedBy { it.orderIndex }.map { ex ->
+                        EditableDayExercise(
+                            exerciseId = ex.exerciseId,
+                            exerciseName = ex.exerciseName ?: "",
+                            defaultSets = ex.defaultSets ?: 3,
+                            defaultReps = ex.defaultReps ?: 12,
+                            defaultRestSeconds = ex.defaultRestSeconds ?: 60
+                        )
+                    }
                 )
-            } ?: emptyList()
+            }.ifEmpty { listOf(EditableWorkoutDay(name = "Treino A", orderIndex = 0)) }
         )
     }
+
     var showAddExercise by remember { mutableStateOf(false) }
+    var targetDayIndex by remember { mutableIntStateOf(0) }
 
     val typeOptions = listOf("Força", "Hipertrofia", "Resistência", "Funcional", "Mobilidade")
     val diffOptions = listOf("Iniciante", "Intermediário", "Avançado")
@@ -470,49 +496,91 @@ private fun EditTemplateDialog(
                     }
                 }
 
-                OutlinedTextField(value = totalSessions, onValueChange = { totalSessions = it }, label = { Text("Total de Sessões") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                HorizontalDivider()
+                Text("Dias de Treino", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
 
-                Text("Exercícios (${exerciseEntries.size})", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
-
-                exerciseEntries.forEachIndexed { idx, entry ->
+                workoutDays.forEachIndexed { dayIndex, day ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(entry.exerciseName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
-                                Text("${entry.defaultSets}x${entry.defaultReps}", style = MaterialTheme.typography.bodySmall)
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = day.name,
+                                    onValueChange = { newName ->
+                                        workoutDays = workoutDays.toMutableList().also { it[dayIndex] = day.copy(name = newName) }
+                                    },
+                                    label = { Text("Nome do Dia") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary),
+                                )
+                                IconButton(onClick = {
+                                    workoutDays = workoutDays.toMutableList().also {
+                                        it.removeAt(dayIndex)
+                                        it.forEachIndexed { i, d -> it[i] = d.copy(orderIndex = i) }
+                                    }
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Remover dia", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                                }
                             }
-                            IconButton(onClick = { exerciseEntries = exerciseEntries.toMutableList().also { it.removeAt(idx) } }) {
-                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                            day.exercises.forEachIndexed { exIdx, ex ->
+                                Row(modifier = Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("${exIdx + 1}. ${ex.exerciseName}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                    Text("${ex.defaultSets}x${ex.defaultReps}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    IconButton(onClick = {
+                                        workoutDays = workoutDays.toMutableList().also {
+                                            val updatedDay = day.copy(exercises = day.exercises.toMutableList().also { it.removeAt(exIdx) })
+                                            it[dayIndex] = updatedDay
+                                        }
+                                    }, modifier = Modifier.size(28.dp)) {
+                                        Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color(0xFFC62828), modifier = Modifier.size(14.dp))
+                                    }
+                                }
+                            }
+                            TextButton(onClick = { targetDayIndex = dayIndex; showAddExercise = true }) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text("Adicionar Exercício", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
                 }
 
-                OutlinedButton(onClick = { showAddExercise = true }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = {
+                        val nextLabel = ('A' + (workoutDays.size % 26)).let { letter ->
+                            if (workoutDays.size >= 26) "Treino $letter${workoutDays.size / 26 + 1}" else "Treino $letter"
+                        }
+                        workoutDays = workoutDays + EditableWorkoutDay(name = nextLabel, orderIndex = workoutDays.size)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Icon(Icons.Default.Add, contentDescription = null)
-                    Text("Adicionar Exercício")
+                    Text("Adicionar Dia")
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val sessions = totalSessions.toIntOrNull() ?: 0
                     val request = CreateTemplateRequest(
                         name = name,
                         type = type ?: "Força",
                         difficulty = difficulty ?: "Iniciante",
-                        totalSessions = sessions,
-                        exercises = exerciseEntries.mapIndexed { idx, entry ->
-                            TemplateExerciseInput(entry.exerciseId, idx, entry.defaultSets, entry.defaultReps, entry.defaultRestSeconds)
+                        workoutDays = workoutDays.map { day ->
+                            WorkoutDayInput(
+                                name = day.name,
+                                orderIndex = day.orderIndex,
+                                exercises = day.exercises.mapIndexed { idx, ex ->
+                                    TemplateExerciseInput(ex.exerciseId, idx, ex.defaultSets, ex.defaultReps, ex.defaultRestSeconds)
+                                }
+                            )
                         }
                     )
                     onSave(template.id, request)
                 },
-                enabled = name.isNotBlank() && exerciseEntries.isNotEmpty(),
+                enabled = name.isNotBlank() && workoutDays.isNotEmpty() && workoutDays.all { it.exercises.isNotEmpty() },
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
             ) { Text("Salvar") }
         },
@@ -520,11 +588,14 @@ private fun EditTemplateDialog(
     )
 
     if (showAddExercise) {
-        AddExerciseToTemplateDialog(
+        AddExerciseToDayDialog(
             allExercises = allExercises,
-            existingIds = exerciseEntries.map { it.exerciseId }.toSet(),
+            existingIds = workoutDays[targetDayIndex].exercises.map { it.exerciseId }.toSet(),
             onAdd = { entry ->
-                exerciseEntries = exerciseEntries + entry
+                workoutDays = workoutDays.toMutableList().also {
+                    val day = it[targetDayIndex]
+                    it[targetDayIndex] = day.copy(exercises = day.exercises + entry)
+                }
                 showAddExercise = false
             },
             onDismiss = { showAddExercise = false }
@@ -534,10 +605,10 @@ private fun EditTemplateDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddExerciseToTemplateDialog(
+private fun AddExerciseToDayDialog(
     allExercises: List<Exercise>,
     existingIds: Set<String>,
-    onAdd: (ExerciseEntry) -> Unit,
+    onAdd: (EditableDayExercise) -> Unit,
     onDismiss: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -554,13 +625,13 @@ private fun AddExerciseToTemplateDialog(
                         val alreadyAdded = ex.id in existingIds
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable(enabled = !alreadyAdded) {
-                                onAdd(ExerciseEntry(ex.id, ex.name, 3, 10, 60))
+                                onAdd(EditableDayExercise(ex.id, ex.name ?: "", 3, 10, 60))
                                 onDismiss()
                             },
                             colors = CardDefaults.cardColors(containerColor = if (alreadyAdded) Color.LightGray else MaterialTheme.colorScheme.surface)
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(ex.name, modifier = Modifier.weight(1f))
+                                Text(ex.name ?: "", modifier = Modifier.weight(1f))
                                 if (alreadyAdded) Icon(Icons.Default.Check, contentDescription = null, tint = IfgGreen)
                             }
                         }
@@ -573,7 +644,13 @@ private fun AddExerciseToTemplateDialog(
     )
 }
 
-private data class ExerciseEntry(
+private data class EditableWorkoutDay(
+    val name: String,
+    val orderIndex: Int,
+    val exercises: List<EditableDayExercise> = emptyList()
+)
+
+private data class EditableDayExercise(
     val exerciseId: String,
     val exerciseName: String,
     val defaultSets: Int,

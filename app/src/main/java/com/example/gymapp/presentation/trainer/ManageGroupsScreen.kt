@@ -284,11 +284,11 @@ private fun GroupCard(
                         Badge(containerColor = Green100) {
                             Text("$memberCount membro(s)", color = IfgGreen, style = MaterialTheme.typography.labelSmall)
                         }
-                        // Show assigned workout badge
-                        group.assignedWorkout?.let { workout ->
+                        // Show assigned workout badge from current_assignment
+                        group.currentAssignment?.let { assignment ->
                             Badge(containerColor = Color(0xFFE3F2FD)) {
                                 Text(
-                                    "Treino: ${workout.templateName ?: "Atribuído"}",
+                                    "Treino: ${assignment.templateName ?: "Atribuído"}",
                                     color = Color(0xFF1565C0),
                                     style = MaterialTheme.typography.labelSmall
                                 )

@@ -25,18 +25,30 @@ data class WorkoutTemplate(
 	val name: String,
 	val type: String?,
 	val difficulty: String?,
-	@SerializedName("total_sessions") val totalSessions: Int?,
 	val instituto: String?,
 	@SerializedName("created_by") val createdBy: String?,
 	@SerializedName("updated_by") val updatedBy: String?,
 	@SerializedName("created_at") val createdAt: String?,
 	@SerializedName("updated_at") val updatedAt: String?,
-	val exercises: List<TemplateExercise>? = emptyList()
+	@SerializedName("workout_days") val workoutDays: List<TemplateWorkout>? = emptyList()
+)
+
+// TemplateWorkout represents a single workout day within a template.
+// Example: "Treino A", "Treino B", "Leg Day"
+data class TemplateWorkout(
+	val id: String,
+	@SerializedName("template_id") val templateId: String,
+	val name: String,
+	@SerializedName("order_index") val orderIndex: Int?,
+	val exercises: List<TemplateExercise>? = emptyList(),
+	@SerializedName("created_at") val createdAt: String?,
+	@SerializedName("updated_at") val updatedAt: String?
 )
 
 data class TemplateExercise(
 	val id: String,
 	@SerializedName("template_id") val templateId: String,
+	@SerializedName("template_workout_id") val templateWorkoutId: String?,
 	@SerializedName("exercise_id") val exerciseId: String,
 	@SerializedName("exercise_name") val exerciseName: String?,
 	@SerializedName("order_index") val orderIndex: Int?,
@@ -57,7 +69,8 @@ data class WorkoutAssignment(
 	@SerializedName("ends_at") val endsAt: String?,
 	@SerializedName("created_at") val createdAt: String?,
 	@SerializedName("updated_at") val updatedAt: String?,
-	@SerializedName("template_name") val templateName: String?
+	@SerializedName("template_name") val templateName: String?,
+	@SerializedName("current_workout_index") val currentWorkoutIndex: Int?
 )
 
 // ==================== WORKOUT SESSION ====================
@@ -65,6 +78,8 @@ data class WorkoutSession(
 	val id: String,
 	@SerializedName("aluno_id") val alunoId: String,
 	@SerializedName("assignment_id") val assignmentId: String,
+	@SerializedName("template_workout_id") val templateWorkoutId: String?,
+	@SerializedName("workout_name") val workoutName: String?,
 	@SerializedName("session_number") val sessionNumber: Int?,
 	@SerializedName("started_at") val startedAt: String?,
 	@SerializedName("finished_at") val finishedAt: String?,
@@ -107,6 +122,7 @@ data class Announcement(
 	val id: String,
 	val title: String,
 	val content: String,
+	val type: String?,
 	val instituto: String?,
 	@SerializedName("author_id") val authorId: String?,
 	@SerializedName("published_at") val publishedAt: String?,
@@ -125,7 +141,7 @@ data class StudentGroup(
 	@SerializedName("created_at") val createdAt: String?,
 	@SerializedName("updated_at") val updatedAt: String?,
 	val members: List<GroupMember>? = emptyList(),
-	@SerializedName("assigned_workout") val assignedWorkout: GroupWorkoutInfo? = null
+	@SerializedName("current_assignment") val currentAssignment: GroupCurrentAssignment? = null
 )
 
 data class GroupMember(
@@ -135,11 +151,15 @@ data class GroupMember(
 	@SerializedName("joined_at") val joinedAt: String?
 )
 
-data class GroupWorkoutInfo(
+// GroupCurrentAssignment is returned when groups are fetched with __with=assignments.
+data class GroupCurrentAssignment(
+	val id: String,
+	@SerializedName("aluno_id") val alunoId: String,
 	@SerializedName("template_id") val templateId: String,
 	@SerializedName("template_name") val templateName: String?,
+	@SerializedName("assigned_by") val assignedBy: String?,
 	@SerializedName("starts_at") val startsAt: String?,
-	@SerializedName("member_count") val memberCount: Int?
+	@SerializedName("ends_at") val endsAt: String?
 )
 
 // ==================== ALUNO PROFILE ====================
