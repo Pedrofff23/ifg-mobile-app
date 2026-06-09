@@ -1,5 +1,7 @@
 package com.example.gymapp.presentation.student
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.AlunoProfile
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -45,10 +48,9 @@ fun StudentProfileScreen(
     val userEmail by viewModel.userEmail.collectAsState()
 
     LaunchedEffect(Unit) {
-    viewModel.loadProfile()
+        viewModel.loadProfile()
     }
 
-    // Show snackbar for success/error
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(updateSuccess, error) {
         val msg = updateSuccess ?: error
@@ -61,174 +63,80 @@ fun StudentProfileScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = Spacing.md,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
-            // Profile Header Card
+            // Profile Header — avatar + name + badges
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape)
-                                .background(IfgGreen),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val initials = (userName ?: "").split(" ").filter { it.isNotBlank() }.mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
-                            Text(
-                                text = initials.ifBlank { "?" },
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = (userName ?: "").ifBlank { "Estudante" },
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Badge(containerColor = Green100, contentColor = IfgGreen) { Text("Estudante") }
-                            Badge(containerColor = Blue100, contentColor = Color(0xFF2563EB)) { Text("Ativo") }
-                        }
-                    }
-                }
+                ProfileHeaderCard(
+                    userName = userName,
+                    onEdit = { showEditNameDialog = true }
+                )
             }
 
-            // Personal Information Card
+            // Quick Stats — weight, height, BMI
             item {
-            	Card(
-            		modifier = Modifier.fillMaxWidth(),
-            		elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            		shape = RoundedCornerShape(12.dp)
-            	) {
-            		Column(modifier = Modifier.padding(16.dp)) {
-            			Row(
-            				modifier = Modifier.fillMaxWidth(),
-            				horizontalArrangement = Arrangement.SpaceBetween,
-            				verticalAlignment = Alignment.CenterVertically
-            			) {
-            				Text(
-            					text = "Informações Pessoais",
-            					style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            					modifier = Modifier.padding(bottom = 12.dp)
-            				)
-            				IconButton(onClick = { showEditNameDialog = true }) {
-            					Icon(Icons.Default.Edit, contentDescription = "Editar nome", tint = IfgGreen, modifier = Modifier.size(20.dp))
-            				}
-            			}
-            			ProfileInfoRow(icon = Icons.Default.Person, label = "Nome", value = (userName ?: "").ifBlank { "N/A" })
-            			ProfileInfoRow(icon = Icons.Default.Email, label = "Email", value = (userEmail ?: "").ifBlank { "N/A" })
-            			ProfileInfoRow(icon = Icons.Default.CalendarToday, label = "Membro desde", value = profile?.createdAt?.take(10) ?: "N/A")
-            		}
-            	}
+                PhysicalStatsRow(
+                    profile = profile,
+                    onEdit = { showEditProfileDialog = true }
+                )
             }
 
-            // Physical Data Card with Edit button
+            // Personal Information
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Dados Físicos",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                            )
-                            IconButton(onClick = { showEditProfileDialog = true }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = IfgGreen, modifier = Modifier.size(20.dp))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        ProfileInfoRow(
-                            icon = Icons.Default.MonitorWeight,
-                            label = "Peso",
-                            value = profile?.currentWeightKg?.let { "${it} kg" } ?: "N/A"
-                        )
-                        ProfileInfoRow(
-                            icon = Icons.Default.Height,
-                            label = "Altura",
-                            value = profile?.heightCm?.let { "${it} cm" } ?: "N/A"
-                        )
-                        val bmi = if (profile != null && (profile?.currentWeightKg ?: 0.0) > 0.0 && (profile?.heightCm ?: 0.0) > 0.0) {
-                            val h = (profile?.heightCm ?: 0.0) / 100.0
-                            val weight = profile?.currentWeightKg ?: 0.0
-                            String.format("%.1f", weight / (h * h))
-                        } else "N/A"
-                        ProfileInfoRow(icon = Icons.Default.Analytics, label = "IMC", value = bmi)
-                        if (!profile?.injuryHistory.isNullOrBlank()) {
-                            ProfileInfoRow(
-                                icon = Icons.Default.Healing,
-                                label = "Histórico de Lesões",
-                                value = profile?.injuryHistory ?: ""
-                            )
-                        }
-                    }
-                }
+                PersonalInfoCard(
+                    userName = userName,
+                    userEmail = userEmail,
+                    createdAt = profile?.createdAt?.take(10)
+                )
             }
 
-            // Theme selection button
+            // Theme Selection
             item {
-                OutlinedButton(
-                    onClick = { showThemeDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(Icons.Default.Palette, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Tema do App")
-                        Text(
-                            text = currentTheme.displayName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                PreferenceCard(
+                    icon = Icons.Default.Palette,
+                    title = "Tema do App",
+                    subtitle = currentTheme.displayName,
+                    onClick = { showThemeDialog = true }
+                )
             }
 
-            // Logout Button
+            // Logout
             item {
                 Button(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Red500),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(Spacing.md)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.sm))
                     Text("Sair da Conta", color = Color.White)
                 }
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(Spacing.lg))
             }
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
-        )
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = Spacing.lg)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                shape = RoundedCornerShape(12.dp),
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+            )
+        }
     }
 
-    // Edit Profile Dialog
     if (showEditProfileDialog) {
         EditProfileDialog(
             profile = profile,
@@ -241,7 +149,6 @@ fun StudentProfileScreen(
         )
     }
 
-    // Log Weight Dialog
     if (showLogWeightDialog) {
         LogWeightDialog(
             isUpdating = isUpdating,
@@ -253,31 +160,378 @@ fun StudentProfileScreen(
         )
     }
 
-    // Theme selection dialog
     if (showThemeDialog) {
-    	ThemeSelectionDialog(
-    		currentTheme = currentTheme,
-    		onThemeSelected = { scheme ->
-    			themeManager.setThemeSchemeAsync(scheme)
-    			showThemeDialog = false
-    		},
-    		onDismiss = { showThemeDialog = false }
-    	)
+        ThemeSelectionDialog(
+            currentTheme = currentTheme,
+            onThemeSelected = { scheme ->
+                themeManager.setThemeSchemeAsync(scheme)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
     }
 
-    // Edit Name Dialog
     if (showEditNameDialog) {
-    	EditNameDialog(
-    		currentName = userName ?: "",
-    		isUpdating = isUpdating,
-    		onDismiss = { showEditNameDialog = false },
-    		onSave = { fullName, instituto ->
-    			viewModel.updateUserName(fullName, instituto)
-    			showEditNameDialog = false
-    		}
-    	)
+        EditNameDialog(
+            currentName = userName ?: "",
+            isUpdating = isUpdating,
+            onDismiss = { showEditNameDialog = false },
+            onSave = { fullName, instituto ->
+                viewModel.updateUserName(fullName, instituto)
+                showEditNameDialog = false
+            }
+        )
     }
+}
+
+@Composable
+private fun ProfileHeaderCard(
+    userName: String?,
+    onEdit: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                val initials = (userName ?: "")
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .mapNotNull { it.firstOrNull()?.toString() }
+                    .take(2)
+                    .joinToString("")
+                Text(
+                    text = initials.ifBlank { "?" },
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            Text(
+                text = (userName ?: "").ifBlank { "Estudante" },
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.sm))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Surface(
+                    shape = RoundedCornerShape(Spacing.sm),
+                    color = Green100
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.School, contentDescription = null, tint = IfgGreen, modifier = Modifier.size(14.dp))
+                        Text("Estudante", style = MaterialTheme.typography.labelSmall, color = IfgGreen, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(Spacing.sm),
+                    color = Blue100
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Blue600, modifier = Modifier.size(14.dp))
+                        Text("Ativo", style = MaterialTheme.typography.labelSmall, color = Blue600, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.sm))
+
+            FilledTonalIconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Editar nome",
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun PhysicalStatsRow(
+    profile: AlunoProfile?,
+    onEdit: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xl),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PhysicalStatItem(
+                value = profile?.currentWeightKg?.let { "$it" } ?: "--",
+                unit = "kg",
+                label = "Peso"
+            )
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+            PhysicalStatItem(
+                value = profile?.heightCm?.let { "$it" } ?: "--",
+                unit = "cm",
+                label = "Altura"
+            )
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+            val bmi = if (profile != null && (profile.currentWeightKg ?: 0.0) > 0.0 && (profile.heightCm ?: 0.0) > 0.0) {
+                val h = (profile.heightCm ?: 0.0) / 100.0
+                String.format("%.1f", (profile.currentWeightKg ?: 0.0) / (h * h))
+            } else "--"
+            PhysicalStatItem(
+                value = bmi,
+                unit = "",
+                label = "IMC"
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhysicalStatItem(
+    value: String,
+    unit: String,
+    label: String
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            )
+            if (unit.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = unit,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun PersonalInfoCard(
+    userName: String?,
+    userEmail: String?,
+    createdAt: String?
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
+            Text(
+                text = "Informações Pessoais",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(bottom = Spacing.md)
+            )
+            ProfileInfoRow(Icons.Default.Person, "Nome", (userName ?: "").ifBlank { "N/A" })
+            ProfileInfoRow(Icons.Default.Email, "Email", (userEmail ?: "").ifBlank { "N/A" })
+            ProfileInfoRow(Icons.Default.CalendarToday, "Membro desde", createdAt ?: "N/A")
+        }
+    }
+}
+
+@Composable
+private fun PreferenceCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(Spacing.md))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun LogWeightDialog(
+    isUpdating: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (weightKg: Double, notes: String?) -> Unit
+) {
+    var weightText by remember { mutableStateOf("") }
+    var notesText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar Peso") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                OutlinedTextField(
+                    value = weightText,
+                    onValueChange = { weightText = it },
+                    label = { Text("Peso atual (kg)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
+                )
+                OutlinedTextField(
+                    value = notesText,
+                    onValueChange = { notesText = it },
+                    label = { Text("Observações (opcional)") },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val w = weightText.toDoubleOrNull() ?: return@Button
+                    onSave(w, notesText.ifBlank { null })
+                },
+                enabled = !isUpdating && weightText.toDoubleOrNull() != null,
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                shape = RoundedCornerShape(Spacing.md)
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("Registrar", color = Color.White)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+        shape = RoundedCornerShape(Spacing.lg)
+    )
+}
 
 @Composable
 private fun EditProfileDialog(
@@ -294,31 +548,58 @@ private fun EditProfileDialog(
         onDismissRequest = onDismiss,
         title = { Text("Editar Dados Físicos") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 OutlinedTextField(
-                value = weightText,
-                onValueChange = { weightText = it },
-                label = { Text("Peso (kg)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    value = weightText,
+                    onValueChange = { weightText = it },
+                    label = { Text("Peso (kg)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
                 )
                 OutlinedTextField(
-                value = heightText,
-                onValueChange = { heightText = it },
-                label = { Text("Altura (cm)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    value = heightText,
+                    onValueChange = { heightText = it },
+                    label = { Text("Altura (cm)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
                 )
                 OutlinedTextField(
-                value = injuriesText,
-                onValueChange = { injuriesText = it },
-                label = { Text("Histórico de Lesões") },
-                minLines = 2,
-                maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    value = injuriesText,
+                    onValueChange = { injuriesText = it },
+                    label = { Text("Histórico de Lesões") },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
                 )
             }
         },
@@ -330,129 +611,97 @@ private fun EditProfileDialog(
                     onSave(w, h, injuriesText.ifBlank { null })
                 },
                 enabled = !isUpdating && weightText.toDoubleOrNull() != null && heightText.toDoubleOrNull() != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                shape = RoundedCornerShape(Spacing.md)
             ) {
-                if (isUpdating) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text("Salvar", color = Color.White)
+                if (isUpdating) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("Salvar", color = Color.White)
+                }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
+        },
+        shape = RoundedCornerShape(Spacing.lg)
     )
 }
 
 @Composable
-private fun LogWeightDialog(
+private fun EditNameDialog(
+    currentName: String,
     isUpdating: Boolean,
     onDismiss: () -> Unit,
-    onSave: (weightKg: Double, notes: String?) -> Unit
+    onSave: (fullName: String, instituto: String?) -> Unit
 ) {
-    var weightText by remember { mutableStateOf("") }
-    var notesText by remember { mutableStateOf("") }
+    var nameText by remember { mutableStateOf(currentName) }
+    var institutoText by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Peso") },
+        title = { Text("Editar Nome") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 OutlinedTextField(
-                value = weightText,
-                onValueChange = { weightText = it },
-                label = { Text("Peso atual (kg)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    label = { Text("Nome completo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
                 )
                 OutlinedTextField(
-                value = notesText,
-                onValueChange = { notesText = it },
-                label = { Text("Observações (opcional)") },
-                minLines = 2,
-                maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
+                    value = institutoText,
+                    onValueChange = { institutoText = it },
+                    label = { Text("Instituto (opcional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val w = weightText.toDoubleOrNull() ?: return@Button
-                    onSave(w, notesText.ifBlank { null })
+                    if (nameText.isNotBlank()) {
+                        onSave(nameText.trim(), institutoText.ifBlank { null })
+                    }
                 },
-                enabled = !isUpdating && weightText.toDoubleOrNull() != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                enabled = !isUpdating && nameText.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                shape = RoundedCornerShape(Spacing.md)
             ) {
-                if (isUpdating) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text("Registrar", color = Color.White)
+                if (isUpdating) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("Salvar", color = Color.White)
+                }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
+        },
+        shape = RoundedCornerShape(Spacing.lg)
     )
-}
-
-@Composable
-private fun EditNameDialog(
-	currentName: String,
-	isUpdating: Boolean,
-	onDismiss: () -> Unit,
-	onSave: (fullName: String, instituto: String?) -> Unit
-) {
-	var nameText by remember { mutableStateOf(currentName) }
-	var institutoText by remember { mutableStateOf("") }
-
-	AlertDialog(
-		onDismissRequest = onDismiss,
-		title = { Text("Editar Nome") },
-		text = {
-			Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-				OutlinedTextField(
-					value = nameText,
-					onValueChange = { nameText = it },
-					label = { Text("Nome completo") },
-					singleLine = true,
-					modifier = Modifier.fillMaxWidth(),
-					colors = OutlinedTextFieldDefaults.colors(
-						focusedTextColor = MaterialTheme.colorScheme.onSurface,
-						unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-						cursorColor = MaterialTheme.colorScheme.primary
-					)
-				)
-				OutlinedTextField(
-					value = institutoText,
-					onValueChange = { institutoText = it },
-					label = { Text("Instituto (opcional)") },
-					singleLine = true,
-					modifier = Modifier.fillMaxWidth(),
-					colors = OutlinedTextFieldDefaults.colors(
-						focusedTextColor = MaterialTheme.colorScheme.onSurface,
-						unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-						cursorColor = MaterialTheme.colorScheme.primary
-					)
-				)
-			}
-		},
-		confirmButton = {
-			Button(
-				onClick = {
-					if (nameText.isNotBlank()) {
-						onSave(nameText.trim(), institutoText.ifBlank { null })
-					}
-				},
-				enabled = !isUpdating && nameText.isNotBlank(),
-				colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-			) {
-				if (isUpdating) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-				else Text("Salvar", color = Color.White)
-			}
-		},
-		dismissButton = {
-			TextButton(onClick = onDismiss) { Text("Cancelar") }
-		}
-	)
 }
 
 @Composable
@@ -464,7 +713,7 @@ private fun ProfileInfoRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -473,11 +722,12 @@ private fun ProfileInfoRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(Spacing.md))
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,

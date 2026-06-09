@@ -41,6 +41,9 @@ class WorkoutSessionViewModel @Inject constructor(
  private val _loadHistory = MutableStateFlow<List<ExerciseProgressPoint>>(emptyList())
  val loadHistory: StateFlow<List<ExerciseProgressPoint>> = _loadHistory.asStateFlow()
 
+ private val _currentExerciseDetails = MutableStateFlow<Exercise?>(null)
+ val currentExerciseDetails: StateFlow<Exercise?> = _currentExerciseDetails.asStateFlow()
+
  var session: WorkoutSession? = null
  private set
  var templateExercises: List<TemplateExercise> = emptyList()
@@ -172,59 +175,120 @@ class WorkoutSessionViewModel @Inject constructor(
   * Complete a set: persist weight/reps or cardio data to backend, then advance to next set or exercise.
   */
  fun completeSet(setNumber: Int, weightKg: Double?, repsCompleted: Int = 0, durationSeconds: Int? = null, distanceMeters: Double? = null) {
- viewModelScope.launch {
- try {
- val exIdx = _currentExerciseIndex.value
- val sessionEx = sessionExercises.getOrNull(exIdx) ?: return@launch
- val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
+     viewModelScope.launch {
+         try {
+             val exIdx = _currentExerciseIndex.value
+             val sessionEx = sessionExercises.getOrNull(exIdx) ?: return@launch
+             val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
 
- // Persist set data to backend
- erpService.updateSet(set.id, UpdateSetRequest(
- repsCompleted = repsCompleted,
- weightKg = weightKg,
- durationSeconds = durationSeconds,
- distanceMeters = distanceMeters,
- notes = null,
- isCompleted = true
- ))
+             // Persist set data to backend
+             erpService.updateSet(set.id, UpdateSetRequest(
+                 repsCompleted = repsCompleted,
+                 weightKg = weightKg,
+                 durationSeconds = durationSeconds,
+                 distanceMeters = distanceMeters,
+                 notes = null,
+                 isCompleted = true
+             ))
 
- // Advance: if more sets in this exercise, go to next set; else mark exercise done and advance
- val templateEx = templateExercises.getOrNull(exIdx)
- val totalSets = templateEx?.defaultSets ?: (sessionEx.sets.size)
+             // Update local set data so UI reflects completion immediately
+             sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                 if (idx == exIdx) {
+                     ex.copy(sets = ex.sets?.map { s ->
+                         if (s.setNumber == setNumber) s.copy(
+                             isCompleted = true,
+                             weightKg = weightKg ?: s.weightKg,
+                             repsCompleted = repsCompleted,
+                             durationSeconds = durationSeconds ?: s.durationSeconds,
+                             distanceMeters = distanceMeters ?: s.distanceMeters
+                         ) else s
+                     })
+                 } else ex
+             }
 
- if (setNumber < totalSets) {
- _currentSet.value = setNumber + 1
- } else {
- // All sets done for this exercise — mark exercise as completed on backend
- erpService.updateExerciseStatus(sessionEx.id, UpdateExerciseStatusRequest(status = "completed"))
+             // Advance: if more sets in this exercise, go to next set; else mark exercise done and advance
+             val templateEx = templateExercises.getOrNull(exIdx)
+             val totalSets = templateEx?.defaultSets ?: (sessionEx.sets.size)
 
- // Move to next exercise
- val nextIdx = exIdx + 1
- if (nextIdx < sessionExercises.size) {
- _currentExerciseIndex.value = nextIdx
- _currentSet.value = 1
+             if (setNumber < totalSets) {
+                 _currentSet.value = setNumber + 1
+             } else {
+                 // All sets done for this exercise — mark exercise as completed on backend
+                 erpService.updateExerciseStatus(sessionEx.id, UpdateExerciseStatusRequest(status = "completed"))
+
+                 // Update local status so the list reflects the change immediately
+                 sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                     if (idx == exIdx) ex.copy(status = "completed") else ex
+                 }
+
+                 // Move to next exercise
+                 val nextIdx = exIdx + 1
+                 if (nextIdx < sessionExercises.size) {
+                     _currentExerciseIndex.value = nextIdx
+                     _currentSet.value = 1
+                 }
+                 // If this was the last exercise, user should tap "Finalizar"
+             }
+         } catch (e: Exception) {
+             Log.e("GymApp/Error", "An error occurred", e)
+         }
+     }
  }
- // If this was the last exercise, user should tap "Finalizar"
- }
- } catch (e: Exception) {
-        Log.e("GymApp/Error", "An error occurred", e)
+ fun markSetIncomplete(sessionExerciseId: String, setNumber: Int) {
+    viewModelScope.launch {
+        try {
+            val sessionEx = sessionExercises.find { it.id == sessionExerciseId } ?: return@launch
+            val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
+
+            // Mark as not completed on backend
+            erpService.updateSet(set.id, UpdateSetRequest(
+                repsCompleted = 0,
+                weightKg = null,
+                durationSeconds = null,
+                distanceMeters = null,
+                notes = null,
+                isCompleted = false
+            ))
+
+            // Update local data
+            sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                if (ex.id == sessionExerciseId) {
+                    ex.copy(
+                        status = "in_progress",
+                        sets = ex.sets?.map { s ->
+                            if (s.setNumber == setNumber) s.copy(
+                                isCompleted = false,
+                                weightKg = null,
+                                repsCompleted = 0,
+                                durationSeconds = null,
+                                distanceMeters = null
+                            ) else s
+                        }
+                    )
+                } else ex
+            }
+
+            // Set this set as current so the input fields show
+            _currentSet.value = setNumber
+        } catch (e: Exception) {
+            Log.e("GymApp/Error", "An error occurred", e)
+        }
     }
- }
- }
+}
 
- fun nextExercise() {
- 	val nextIdx = _currentExerciseIndex.value + 1
- 	if (nextIdx < sessionExercises.size) {
- 		selectExercise(nextIdx)
- 	}
- }
+fun nextExercise() {
+    val nextIdx = _currentExerciseIndex.value + 1
+    if (nextIdx < sessionExercises.size) {
+        selectExercise(nextIdx)
+    }
+}
 
- fun previousExercise() {
- 	val prevIdx = _currentExerciseIndex.value - 1
- 	if (prevIdx >= 0) {
- 		selectExercise(prevIdx)
- 	}
- }
+fun previousExercise() {
+    val prevIdx = _currentExerciseIndex.value - 1
+    if (prevIdx >= 0) {
+        selectExercise(prevIdx)
+    }
+}
 
  /**
   * Select any exercise freely — the student can choose which exercise
@@ -299,6 +363,18 @@ class WorkoutSessionViewModel @Inject constructor(
  _loadHistory.value = resp.data ?: emptyList()
  } catch (_: Exception) {
  _loadHistory.value = emptyList()
+ }
+ }
+ }
+
+ /** Load full exercise details (description, media) from the backend */
+ fun loadExerciseDetails(exerciseId: String) {
+ viewModelScope.launch {
+ try {
+ val resp = erpService.getExercise(exerciseId)
+ _currentExerciseDetails.value = resp.data
+ } catch (_: Exception) {
+ _currentExerciseDetails.value = null
  }
  }
  }

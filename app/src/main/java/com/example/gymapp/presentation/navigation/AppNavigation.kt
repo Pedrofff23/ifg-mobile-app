@@ -46,11 +46,6 @@ fun AppNavigation(themeManager: ThemeManager) {
         }
     }
 
-    // Navigate to workout session
-    val startWorkout: (String) -> Unit = { assignmentId ->
-        navController.navigate(Routes.workoutSessionRoute(assignmentId))
-    }
-
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH
@@ -112,9 +107,6 @@ fun AppNavigation(themeManager: ThemeManager) {
         composable(Routes.STUDENT_HOME) {
             StudentMainScreen(
                 themeManager = themeManager,
-                onStartWorkout = { assignment ->
-                    navController.navigate(Routes.workoutSessionRoute(assignment.id))
-                },
                 onLogout = performLogout
             )
         }
@@ -122,24 +114,6 @@ fun AppNavigation(themeManager: ThemeManager) {
         composable(Routes.TRAINER_HOME) {
             TrainerMainScreen(
                 onLogout = performLogout
-            )
-        }
-
-        composable(
-            route = Routes.WORKOUT_SESSION,
-            arguments = listOf(
-                navArgument("assignmentId") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val assignmentId = backStackEntry.arguments?.getString("assignmentId") ?: return@composable
-            WorkoutSessionScreen(
-                assignmentId = assignmentId,
-                onFinish = {
-                    navController.popBackStack()
-                },
-                onBack = {
-                    navController.popBackStack()
-                }
             )
         }
     }

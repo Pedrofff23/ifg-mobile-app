@@ -1,42 +1,17 @@
 package com.example.gymapp.presentation.trainer
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,276 +30,187 @@ fun ProfessorDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    } else if (error != null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Erro: $error",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Painel do Professor",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Visão geral da academia",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Total Alunos",
-                    value = students.size.toString(),
-                    icon = Icons.Default.People,
-                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Treinos Ativos",
-                    value = templates.size.toString(),
-                    icon = Icons.Default.FitnessCenter,
-                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Exercícios",
-                    value = exercises.size.toString(),
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
-                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Avisos",
-                    value = announcements.size.toString(),
-                    icon = Icons.Default.Notifications,
-                    iconBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Ações Rápidas",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        QuickActionButton(
-                            label = "Treinos",
-                            icon = Icons.Default.FitnessCenter,
-                            onClick = { onNavigate("workout_hub") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        QuickActionButton(
-                            label = "Alunos",
-                            icon = Icons.Default.People,
-                            onClick = { onNavigate("students_hub") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        QuickActionButton(
-                            label = "Novo Aviso",
-                            icon = Icons.Default.AddCircle,
-                            onClick = { onNavigate("announcements") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        QuickActionButton(
-                            label = "Exercícios",
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
-                            onClick = { onNavigate("workout_hub") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Atividade Recente",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (templates.isNotEmpty()) {
-                Text(
-                    text = "Treinos",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                templates.take(3).forEach { template ->
-                    RecentActivityItem(
-                        title = template.name,
-                        subtitle = "${template.type} • ${template.difficulty} • ${template.totalSessions} sessões",
-                        icon = Icons.Default.FitnessCenter
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-            }
-
-            if (announcements.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Avisos",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                announcements.take(3).forEach { announcement ->
-                    RecentActivityItem(
-                        title = announcement.title,
-                        subtitle = announcement.content.take(60) + if (announcement.content.length > 60) "…" else "",
-                        icon = Icons.Default.Notifications
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-            }
-
-            if (templates.isEmpty() && announcements.isEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Text(
-                        text = "Nenhuma atividade recente",
-                        modifier = Modifier.padding(24.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+    // Styled snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(error) {
+        if (error != null) {
+            snackbarHostState.showSnackbar(error!!)
         }
     }
-}
 
-@Composable
-private fun StatCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    iconBackgroundColor: Color,
-    iconTint: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(iconBackgroundColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = iconTint,
-                    modifier = Modifier.size(22.dp)
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
                 )
             }
+        }
+    ) { padding ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+            ) {
+                // Header
+                Column {
+                    Text(
+                        text = "Painel do Professor",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.sp
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Text(
+                        text = "Visão geral da academia",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                // Stats Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    StatChip(
+                        value = "${students.size}",
+                        label = "Alunos",
+                        icon = Icons.Default.People,
+                        modifier = Modifier.weight(1f),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    StatChip(
+                        value = "${templates.size}",
+                        label = "Treinos",
+                        icon = Icons.Default.FitnessCenter,
+                        modifier = Modifier.weight(1f),
+                        tint = IfgGreen
+                    )
+                }
 
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                fontSize = 28.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    StatChip(
+                        value = "${exercises.size}",
+                        label = "Exercícios",
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        modifier = Modifier.weight(1f),
+                        tint = Blue600
+                    )
+                    StatChip(
+                        value = "${announcements.size}",
+                        label = "Avisos",
+                        icon = Icons.Default.Notifications,
+                        modifier = Modifier.weight(1f),
+                        tint = Orange600
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(2.dp))
+                // Quick Actions
+                SectionHeader(title = "Ações Rápidas")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    QuickActionButton(
+                        label = "Treinos",
+                        icon = Icons.Default.FitnessCenter,
+                        onClick = { onNavigate("workout_hub") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    QuickActionButton(
+                        label = "Alunos",
+                        icon = Icons.Default.People,
+                        onClick = { onNavigate("students_hub") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    QuickActionButton(
+                        label = "Novo Aviso",
+                        icon = Icons.Default.Add,
+                        onClick = { onNavigate("announcements") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    QuickActionButton(
+                        label = "Exercícios",
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        onClick = { onNavigate("workout_hub") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                // Recent Activity
+                SectionHeader(title = "Atividade Recente")
+
+                if (templates.isNotEmpty()) {
+                    Text(
+                        text = "Treinos",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = Spacing.xs)
+                    )
+                    templates.take(3).forEach { template ->
+                        RecentActivityItem(
+                            title = template.name,
+                            subtitle = "${template.type} • ${template.difficulty}",
+                            icon = Icons.Default.FitnessCenter
+                        )
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                    }
+                }
+
+                if (announcements.isNotEmpty()) {
+                    if (templates.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(Spacing.sm))
+                    }
+                    Text(
+                        text = "Avisos",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = Spacing.xs)
+                    )
+                    announcements.take(3).forEach { announcement ->
+                        RecentActivityItem(
+                            title = announcement.title,
+                            subtitle = announcement.content.take(60) + if (announcement.content.length > 60) "…" else "",
+                            icon = Icons.Default.Notifications
+                        )
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                    }
+                }
+
+                if (templates.isEmpty() && announcements.isEmpty()) {
+                    EmptyState(
+                        icon = Icons.Default.Inbox,
+                        title = "Nenhuma atividade recente",
+                        subtitle = "Crie treinos e avisos para aparecerem aqui."
+                    )
+                }
+            }
         }
     }
 }
@@ -337,19 +223,18 @@ private fun QuickActionButton(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .aspectRatio(1.4f)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        onClick = onClick,
+        modifier = modifier.height(80.dp),
+        shape = RoundedCornerShape(Spacing.md),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(Spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -357,16 +242,13 @@ private fun QuickActionButton(
                 imageVector = icon,
                 contentDescription = label,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(Spacing.xs))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -380,22 +262,21 @@ private fun RecentActivityItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Spacing.md),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -407,15 +288,12 @@ private fun RecentActivityItem(
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(Spacing.md))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     maxLines = 1
                 )
                 Text(

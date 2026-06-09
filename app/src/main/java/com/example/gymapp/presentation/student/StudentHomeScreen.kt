@@ -1,5 +1,7 @@
 package com.example.gymapp.presentation.student
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +28,8 @@ import com.example.gymapp.ui.theme.*
 fun StudentHomeScreen(
     viewModel: StudentViewModel,
     onStartWorkout: (WorkoutAssignment) -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null
 ) {
     val assignments by viewModel.assignments.collectAsState()
     val currentAssignment by viewModel.currentAssignment.collectAsState()
@@ -40,256 +43,115 @@ fun StudentHomeScreen(
         viewModel.loadStudentData()
     }
 
+    // Clear error when dismissed
+    LaunchedEffect(error) {
+        if (error != null && snackbarHostState != null) {
+            snackbarHostState.showSnackbar(error!!)
+            viewModel.clearUpdateStatus()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            top = Spacing.md,
+            end = Spacing.lg,
+            bottom = Spacing.lg
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
-        // Error banner
-        if (error != null) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Red100)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("⚠", fontSize = 18.sp, color = Red500)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = error!!,
-                            style = MaterialTheme.typography.bodySmall.copy(color = Red500),
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = { viewModel.clearUpdateStatus() }) {
-                            Text("Fechar", color = Red500, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-        }
-
         // Welcome Banner
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                            colors = listOf(IfgGreen, IfgGreenDark)
-                        )
-                    )
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = "Bem-vindo, $userName!",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+            WelcomeBanner(
+                title = "Olá, ${userName ?: "Atleta"}! 👋",
+                subtitle = "Pronto para o treino de hoje?",
+                gradientColors = listOf(IfgGreen, IfgGreenDark)
+            )
+        }
+
+        // Today's Workout — highlighted card
+        item {
+            val activeAssignment = currentAssignment
+                ?: assignments.firstOrNull { it.endsAt == null }
+                ?: assignments.firstOrNull()
+
+            if (activeAssignment != null) {
+                TodayWorkoutCard(
+                    assignment = activeAssignment,
+                    sessionsCompleted = stats?.completedSessions ?: 0,
+                    onStartWorkout = { onStartWorkout(activeAssignment) }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Continue seu treino de hoje",
-                    style = MaterialTheme.typography.bodyLarge.copy(color = Color.White.copy(alpha = 0.8f))
-                )
+            } else {
+                EmptyWorkoutCard()
             }
         }
 
-        // Today's Workout
+        // Stats Row — compact chips
         item {
-            Card(
+            SectionHeader(title = "Suas Estatísticas")
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
-                Column {
-                    Text(
-                        text = "Treino de Hoje",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
-                    )
-
-                    if (assignments.isNotEmpty()) {
-                    val activeAssignment = currentAssignment
-                    ?: assignments.firstOrNull { it.endsAt == null }
-                    ?: assignments.firstOrNull()
-
-                        if (activeAssignment != null) {
-                            // Workout summary row
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = activeAssignment.templateName ?: "Treino ${activeAssignment.templateId}",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                                    )
-                                    Text(
-                                    text = "${stats?.completedSessions ?: 0} sessões realizadas",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                }
-                                Button(
-                                    onClick = { onStartWorkout(activeAssignment) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                                ) {
-                                    Text("Iniciar", color = Color.White)
-                                }
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = "Nenhum treino atribuído",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
+                StatChip(
+                    value = "${stats?.completedSessions ?: 0}",
+                    label = "Concluídos",
+                    icon = Icons.Default.CheckCircle,
+                    modifier = Modifier.weight(1f),
+                    tint = IfgGreen
+                )
+                StatChip(
+                    value = "${stats?.currentStreak ?: 0}",
+                    label = "Sequência",
+                    icon = Icons.Default.LocalFireDepartment,
+                    modifier = Modifier.weight(1f),
+                    tint = Orange600
+                )
+                StatChip(
+                    value = String.format("%.1f", stats?.weeklyFrequency ?: 0.0),
+                    label = "Freq.",
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
+                    modifier = Modifier.weight(1f),
+                    tint = Blue600
+                )
             }
-        }
-
-        // Stats Grid
-        item {
-        Column {
-        Text(
-        text = "Estatísticas",
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        modifier = Modifier.padding(bottom = 12.dp)
-        )
-        Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-        StatCard(
-        modifier = Modifier.weight(1f),
-        value = "${stats?.totalSessions ?: 0}",
-        label = "Treinos",
-        icon = Icons.Default.FitnessCenter,
-        iconBgColor = Green100,
-        iconTint = IfgGreen
-        )
-        StatCard(
-        modifier = Modifier.weight(1f),
-        value = "${stats?.completedSessions ?: 0}",
-        label = "Concluídos",
-        icon = Icons.Default.CheckCircle,
-        iconBgColor = Green100,
-        iconTint = IfgGreen
-        )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-        StatCard(
-        modifier = Modifier.weight(1f),
-        value = "${stats?.activeAssignments ?: 0}",
-        label = "Treinos Atribuídos",
-        icon = Icons.Default.CalendarToday,
-        iconBgColor = Purple100,
-        iconTint = Color(0xFF7C3AED)
-        )
-        StatCard(
-        modifier = Modifier.weight(1f),
-        value = "${stats?.currentStreak ?: 0} dias",
-        label = "Sequência",
-        icon = Icons.Default.LocalFireDepartment,
-        iconBgColor = Orange100,
-        iconTint = Orange600
-        )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-        StatCard(
-        modifier = Modifier.weight(1f),
-        value = String.format("%.1f", stats?.weeklyFrequency ?: 0.0),
-        label = "Freq. Semanal",
-        icon = Icons.Default.DateRange,
-        iconBgColor = Blue100,
-        iconTint = Blue600
-        )
-        }
-        }
         }
 
         // Quick Actions
         item {
-            Card(
+            SectionHeader(title = "Ações Rápidas")
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
-                Column {
-                    Text(
-                        text = "Ações Rápidas",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
-                    )
-                    Row(
-                    modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                    OutlinedButton(
+                QuickActionCard(
+                    label = "Ver Progresso",
+                    icon = Icons.AutoMirrored.Filled.ShowChart,
                     onClick = { onNavigate("progress") },
-                    modifier = Modifier
-                    .weight(1f)
-                    .height(80.dp),
-                    shape = RoundedCornerShape(8.dp)
-                    ) {
-                    Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                    ) {
-                    Icon(Icons.AutoMirrored.Filled.ShowChart, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Ver Progresso", style = MaterialTheme.typography.labelSmall)
-                    }
-                    }
-                        OutlinedButton(
-                        onClick = { onNavigate("workout_hub") },
-                        modifier = Modifier
-                        .weight(1f)
-                        .height(80.dp),
-                        shape = RoundedCornerShape(8.dp)
-                        ) {
-                        Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                        ) {
-                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Exercícios", style = MaterialTheme.typography.labelSmall)
-                        }
-                        }
-                    }
-                }
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    label = "Biblioteca",
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    onClick = { onNavigate("workout_hub") },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
-        // Loading indicator
+        // Loading
         if (isLoading) {
             item {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Spacing.xxxl),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -297,47 +159,170 @@ fun StudentHomeScreen(
 }
 
 @Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
-    value: String,
-    label: String,
-    icon: ImageVector,
-    iconBgColor: Color,
-    iconTint: Color
+private fun TodayWorkoutCard(
+    assignment: WorkoutAssignment,
+    sessionsCompleted: Int,
+    onStartWorkout: () -> Unit
 ) {
     Card(
-        modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(Spacing.xl)
         ) {
-            Box(
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Treino de Hoje",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Text(
+                        text = assignment.templateName ?: "Treino ${assignment.templateId}",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.5).sp
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "$sessionsCompleted sessões realizadas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                // Large icon
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.lg))
+
+            Button(
+                onClick = onStartWorkout,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(iconBgColor),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                shape = RoundedCornerShape(Spacing.md)
             ) {
                 Icon(
-                    icon,
+                    Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(24.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Spacing.sm))
+                Text(
+                    "Iniciar Treino",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
-                )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionCard(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(88.dp),
+        shape = RoundedCornerShape(Spacing.md),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(Spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
             )
+            Spacer(modifier = Modifier.height(Spacing.sm))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyWorkoutCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Default.FitnessCenter,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Text(
+                text = "Nenhum treino atribuído",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -1,5 +1,7 @@
 package com.example.gymapp.presentation.student
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,8 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,14 +27,14 @@ import com.example.gymapp.ui.theme.*
 
 @Composable
 fun StudentProgressScreen(viewModel: StudentViewModel) {
- val sessions by viewModel.sessions.collectAsState()
- val measurements by viewModel.measurements.collectAsState()
- val profile by viewModel.profile.collectAsState()
- val assignments by viewModel.assignments.collectAsState()
- val stats by viewModel.stats.collectAsState()
- val isUpdating by viewModel.isUpdating.collectAsState()
- val updateSuccess by viewModel.updateSuccess.collectAsState()
- val error by viewModel.error.collectAsState()
+    val sessions by viewModel.sessions.collectAsState()
+    val measurements by viewModel.measurements.collectAsState()
+    val profile by viewModel.profile.collectAsState()
+    val assignments by viewModel.assignments.collectAsState()
+    val stats by viewModel.stats.collectAsState()
+    val isUpdating by viewModel.isUpdating.collectAsState()
+    val updateSuccess by viewModel.updateSuccess.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     var showLogWeightDialog by remember { mutableStateOf(false) }
 
@@ -42,7 +44,6 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
         viewModel.loadAssignments()
     }
 
-    // Success snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(updateSuccess) {
         if (updateSuccess != null) {
@@ -51,240 +52,163 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
         }
     }
 
+    // Error handling
+    LaunchedEffect(error) {
+        if (error != null) {
+            snackbarHostState.showSnackbar(error!!)
+            viewModel.clearUpdateStatus()
+        }
+    }
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
+        }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = Spacing.md,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
-            // Title
+            // Header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     Column {
                         Text(
                             text = "Seu Progresso",
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.sp
+                            )
                         )
+                        Spacer(modifier = Modifier.height(Spacing.xs))
                         Text(
                             text = "Acompanhe sua evolução",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                            modifier = Modifier.padding(top = 4.dp)
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(
+                    FilledTonalIconButton(
                         onClick = { showLogWeightDialog = true },
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(IfgGreen.copy(alpha = 0.1f))
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Registrar Peso", tint = IfgGreen)
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Registrar Peso",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
 
-            // Error banner
-            if (error != null) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Red100)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("⚠", fontSize = 18.sp, color = Red500)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = error!!,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Red500),
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(onClick = { viewModel.clearUpdateStatus() }) {
-                                Text("Fechar", color = Red500, style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Summary Cards (2x2)
+            // Key Stats — hero layout
             item {
-            Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = profile?.currentWeightKg?.let { "${it}kg" } ?: "--",
-            label = "Peso Atual",
-            icon = Icons.Default.MonitorWeight,
-            iconBgColor = Green100,
-            iconTint = IfgGreen
-            )
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = "${stats?.totalSessions ?: sessions.size}",
-            label = "Dias Ativos",
-            icon = Icons.Default.CalendarToday,
-            iconBgColor = Green100,
-            iconTint = IfgGreen
-            )
-            }
-            }
-            item {
-            Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = "${stats?.completedSessions ?: sessions.count { it.finishedAt != null }}",
-            label = "Treinos Completos",
-            icon = Icons.Default.FitnessCenter,
-            iconBgColor = Purple100,
-            iconTint = Color(0xFF7C3AED)
-            )
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = "${stats?.activeAssignments ?: assignments.size}",
-            label = "Treinos Ativos",
-            icon = Icons.Default.LocalFireDepartment,
-            iconBgColor = Orange100,
-            iconTint = Orange600
-            )
-            }
-            }
-
-            // Extra stats row (streak + weekly frequency)
-            item {
-            Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = "${stats?.currentStreak ?: 0}",
-            label = "Sequência Atual",
-            icon = Icons.Default.LocalFireDepartment,
-            iconBgColor = Orange100,
-            iconTint = Orange600
-            )
-            ProgressStatCard(
-            modifier = Modifier.weight(1f),
-            value = stats?.weeklyFrequency?.let { String.format("%.1f", it) } ?: "0.0",
-            label = "Freq. Semanal",
-            icon = Icons.AutoMirrored.Filled.TrendingUp,
-            iconBgColor = Blue100,
-            iconTint = Blue600
-            )
-            }
-            }
-
-            // Exercises done card
-            item {
-            ProgressStatCard(
-            modifier = Modifier.fillMaxWidth(),
-            value = "${stats?.totalExercisesDone ?: 0}",
-            label = "Exercícios Concluídos",
-            icon = Icons.Default.FitnessCenter,
-            iconBgColor = Purple100,
-            iconTint = Color(0xFF7C3AED)
-            )
-            }
-
-            // Weekly Activity
-            item {
+                // Primary stat: weight
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    shape = RoundedCornerShape(Spacing.lg),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Atividade Semanal",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.xl),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HeroStat(
+                            value = profile?.currentWeightKg?.let { "$it kg" } ?: "--",
+                            label = "Peso Atual",
+                            icon = Icons.Default.MonitorWeight
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            val days = listOf("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
-                            days.forEach { day ->
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = day.first().toString(),
-                                            style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = day,
-                                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    )
-                                }
-                            }
-                        }
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(48.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                        HeroStat(
+                            value = "${stats?.currentStreak ?: 0}",
+                            label = "Sequência (dias)",
+                            icon = Icons.Default.LocalFireDepartment
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(48.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                        HeroStat(
+                            value = "${stats?.completedSessions ?: sessions.count { it.finishedAt != null }}",
+                            label = "Completos",
+                            icon = Icons.Default.CheckCircle
+                        )
                     }
+                }
+            }
+
+            // Secondary stats row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    StatChip(
+                        value = "${stats?.activeAssignments ?: assignments.size}",
+                        label = "Ativos",
+                        icon = Icons.Default.FitnessCenter,
+                        modifier = Modifier.weight(1f),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    StatChip(
+                        value = String.format("%.1f", stats?.weeklyFrequency ?: 0.0),
+                        label = "Freq/Sem",
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
+                        modifier = Modifier.weight(1f),
+                        tint = Blue600
+                    )
                 }
             }
 
             // Recent Sessions
             item {
-                Text(
-                    text = "Sessões Recentes",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                )
+                SectionHeader(title = "Sessões Recentes")
             }
 
-            items(sessions ?: emptyList()) { session ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "Sessão ${session.sessionNumber ?: "N/A"}",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                            )
-                            Text(
-                                text = session.startedAt?.take(10) ?: "N/A",
-                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
-                        }
-                        if (session.finishedAt != null) {
-                            Badge(
-                                containerColor = Green100,
-                                contentColor = IfgGreen
-                            ) { Text("Concluída") }
-                        } else {
-                            Badge(
-                                containerColor = Orange100,
-                                contentColor = Orange600
-                            ) { Text("Em andamento") }
-                        }
-                    }
+            if (sessions.isNullOrEmpty()) {
+                item {
+                    EmptyState(
+                        icon = Icons.Default.FitnessCenter,
+                        title = "Nenhuma sessão ainda",
+                        subtitle = "Comece seu primeiro treino para ver o progresso aqui."
+                    )
+                }
+            } else {
+                items(sessions.take(5)) { session ->
+                    SessionRow(session = session)
                 }
             }
 
@@ -292,42 +216,10 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
             val measList = measurements ?: emptyList()
             if (measList.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Medições Recentes",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    SectionHeader(title = "Histórico de Peso")
                 }
                 items(measList.take(5)) { measurement ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Peso",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                                )
-                                Text(
-                                    text = measurement.measuredAt?.take(10) ?: "N/A",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                )
-                            }
-                            Text(
-                                text = "${measurement.weightKg ?: 0.0} kg",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = IfgGreen
-                                )
-                            )
-                        }
-                    }
+                    MeasurementRow(measurement = measurement)
                 }
             }
         }
@@ -346,104 +238,141 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
 }
 
 @Composable
-private fun LogWeightDialog(
-    isUpdating: Boolean,
-    onDismiss: () -> Unit,
-    onSave: (weightKg: Double, notes: String?) -> Unit
+private fun HeroStat(
+    value: String,
+    label: String,
+    icon: ImageVector
 ) {
-    var weightText by remember { mutableStateOf("") }
-    var notesText by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Registrar Peso") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = weightText,
-                    onValueChange = { weightText = it },
-                    label = { Text("Peso atual (kg)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                OutlinedTextField(
-                    value = notesText,
-                    onValueChange = { notesText = it },
-                    label = { Text("Observações (opcional)") },
-                    minLines = 2,
-                    maxLines = 4,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val w = weightText.toDoubleOrNull() ?: return@Button
-                    onSave(w, notesText.ifBlank { null })
-                },
-                enabled = !isUpdating && weightText.toDoubleOrNull() != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) {
-                if (isUpdating) CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp
-                )
-                else Text("Registrar", color = Color.White)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.height(Spacing.sm))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
-private fun ProgressStatCard(
-    modifier: Modifier = Modifier,
-    value: String,
-    label: String,
-    icon: ImageVector,
-    iconBgColor: Color,
-    iconTint: Color
-) {
+private fun SessionRow(session: WorkoutSession) {
+    val isCompleted = session.finishedAt != null
+
     Card(
-        modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.md),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(iconBgColor),
+                    .background(
+                        if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        else Orange100
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+                Icon(
+                    if (isCompleted) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = if (isCompleted) MaterialTheme.colorScheme.primary else Orange600,
+                    modifier = Modifier.size(20.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-            )
+
+            Spacer(modifier = Modifier.width(Spacing.md))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Sessão ${session.sessionNumber ?: "N/A"}",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = session.startedAt?.take(10) ?: "N/A",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(Spacing.sm),
+                color = if (isCompleted) Green100 else Orange100
+            ) {
+                Text(
+                    text = if (isCompleted) "Concluída" else "Em andamento",
+                    modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isCompleted) IfgGreen else Orange600,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeasurementRow(measurement: BodyMeasurement) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.md),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.MonitorWeight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Spacing.md))
+                Column {
+                    Text(
+                        text = "${measurement.weightKg ?: 0.0} kg",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Text(
+                        text = measurement.measuredAt?.take(10) ?: "N/A",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

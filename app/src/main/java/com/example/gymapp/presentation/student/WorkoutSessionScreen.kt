@@ -1,9 +1,13 @@
 package com.example.gymapp.presentation.student
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,12 +19,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
+import android.os.Build
+import com.example.gymapp.BuildConfig
 import com.example.gymapp.domain.model.*
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.gymapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,295 +50,584 @@ fun WorkoutSessionScreen(
     val showRatingDialog by viewModel.showRatingDialog.collectAsState()
 
     LaunchedEffect(assignmentId) {
-    viewModel.tryResumeSession(assignmentId)
+        viewModel.tryResumeSession(assignmentId)
     }
 
-    if (sessionState == WorkoutSessionState.Loading) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    CircularProgressIndicator(color = IfgGreen)
-    Spacer(modifier = Modifier.height(16.dp))
-    Text("Carregando sessão...", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+    when (sessionState) {
+        WorkoutSessionState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Text(
+                        "Carregando sessão...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        WorkoutSessionState.Error -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Text("Erro ao carregar sessão", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Button(onClick = onBack, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Voltar") }
+                }
+            }
+        }
+        WorkoutSessionState.Active, WorkoutSessionState.Resumed -> {
+            val sessionExercises = viewModel.sessionExercises
+            val templateExercises = viewModel.templateExercises
+            val session = viewModel.session
+
+            // null = list, index = detail
+            var selectedExerciseIndex by remember { mutableStateOf<Int?>(null) }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                if (selectedExerciseIndex == null) {
+                    ExerciseListScreen(
+                        session = session,
+                        sessionState = sessionState,
+                        sessionExercises = sessionExercises,
+                        templateExercises = templateExercises,
+                        onBack = onBack,
+                        onSelectExercise = { index -> selectedExerciseIndex = index },
+                        onFinishWorkout = { viewModel.showRating() }
+                    )
+                } else {
+                    val idx = selectedExerciseIndex!!
+                    val sessionEx = sessionExercises.getOrNull(idx)
+                    val templateEx = templateExercises.getOrNull(idx)
+                    val exerciseName = sessionEx?.exerciseName ?: templateEx?.exerciseName ?: "Exercício"
+                    val defaultSets = templateEx?.defaultSets ?: sessionEx?.sets?.size ?: 3
+                    val defaultReps = templateEx?.defaultReps ?: 12
+                    val isCardio = sessionEx?.muscleGroup.equals("cardio", ignoreCase = true)
+                    val exerciseId = sessionEx?.exerciseId ?: templateEx?.exerciseId
+                    val loadHistory by viewModel.loadHistory.collectAsState()
+                    val exerciseDetails by viewModel.currentExerciseDetails.collectAsState()
+
+                    LaunchedEffect(idx) {
+                        if (exerciseId != null) {
+                            viewModel.loadExerciseHistory(exerciseId)
+                            viewModel.loadExerciseDetails(exerciseId)
+                        }
+                    }
+
+                    ExerciseDetailScreen(
+                        exerciseName = exerciseName,
+                        exerciseDetails = exerciseDetails,
+                        sessionEx = sessionEx,
+                        templateEx = templateEx,
+                        isCardio = isCardio,
+                        defaultSets = defaultSets,
+                        defaultReps = defaultReps,
+                        currentSet = currentSet,
+                        loadHistory = loadHistory,
+                        isLastExercise = idx == sessionExercises.size - 1,
+                        onBack = { selectedExerciseIndex = null },
+                        onCompleteSet = { setNum, weight, duration, distance ->
+                            val durSec = duration?.let { (it * 60).toInt() }
+                            val distM = distance?.let { it * 1000.0 }
+                            viewModel.completeSet(setNum, weight, defaultReps, durSec, distM)
+                            if (setNum >= defaultSets && idx == sessionExercises.size - 1) {
+                                viewModel.showRating()
+                            }
+                            if (setNum >= defaultSets && idx < sessionExercises.size - 1) {
+                                selectedExerciseIndex = null
+                            }
+                        },
+                        onEditSet = { setNum ->
+                            val exId = sessionEx?.id ?: ""
+                            if (exId.isNotEmpty()) {
+                                viewModel.markSetIncomplete(exId, setNum)
+                            }
+                        }
+                    )
+                }
+
+                if (showRatingDialog) {
+                    RatingDialog(
+                        onDismiss = { viewModel.dismissRating() },
+                        onConfirm = { rating, feedback ->
+                            viewModel.finishWorkout(rating, feedback)
+                            onFinish()
+                        }
+                    )
+                }
+            }
+        }
     }
-    }
-    return
-    }
-
-    if (sessionState == WorkoutSessionState.Error) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text("⚠", fontSize = 36.sp, color = Red500)
-    Spacer(modifier = Modifier.height(16.dp))
-    Text("Erro ao carregar sessão", style = MaterialTheme.typography.titleMedium)
-    Spacer(modifier = Modifier.height(8.dp))
-    Button(onClick = onBack) { Text("Voltar") }
-    }
-    }
-    return
-    }
-
-    // Active or Resumed — show session content
-    if (sessionState != WorkoutSessionState.Active && sessionState != WorkoutSessionState.Resumed) return
-
-    val templateExercises = viewModel.templateExercises
-    val sessionExercises = viewModel.sessionExercises
-    val session = viewModel.session
-    val loadHistory by viewModel.loadHistory.collectAsState()
-    val totalExercises = maxOf(templateExercises.size, sessionExercises.size)
-
-    // Load exercise history when current exercise changes
-    LaunchedEffect(currentExerciseIndex) {
-    	val sessionEx = sessionExercises.getOrNull(currentExerciseIndex)
-    	val templateEx = templateExercises.getOrNull(currentExerciseIndex)
-    	val exerciseId = sessionEx?.exerciseId ?: templateEx?.exerciseId
-    	if (exerciseId != null) {
-    		viewModel.loadExerciseHistory(exerciseId)
-    	}
-    }
-
-    // Exercise selector state
-    var showExerciseSelector by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Top Bar
-        Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-        ) {
-        IconButton(onClick = onBack) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
-        }
-        Column(modifier = Modifier.weight(1f)) {
-        Text(
-        text = "Sessão de Treino",
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
-        Text(
-        text = "Sessão ${session?.sessionNumber ?: "..."}",
-        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        )
-        }
-        if (sessionState == WorkoutSessionState.Resumed) {
-        Badge(containerColor = Orange100) {
-        Text("Retomada", color = Orange600, style = MaterialTheme.typography.labelSmall)
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        }
-        IconButton(onClick = { viewModel.showRating() }) {
-        Icon(Icons.Default.CheckCircle, contentDescription = "Finalizar", tint = IfgGreen)
-        }
-        }
-
-        // Progress Bar + Exercise Selector
-        if (totalExercises > 0) {
-        	LinearProgressIndicator(
-        		progress = { (currentExerciseIndex + 1).toFloat() / totalExercises.toFloat() },
-        		modifier = Modifier
-        			.fillMaxWidth()
-        			.padding(horizontal = 16.dp)
-        			.height(8.dp)
-        			.clip(RoundedCornerShape(4.dp)),
-        		color = IfgGreen,
-        		trackColor = MaterialTheme.colorScheme.surfaceVariant
-        	)
-        	Spacer(modifier = Modifier.height(4.dp))
-        	// Clickable exercise indicator — opens selector
-        	Row(
-        		modifier = Modifier
-        			.fillMaxWidth()
-        			.padding(horizontal = 16.dp)
-        			.clickable { showExerciseSelector = true },
-        		verticalAlignment = Alignment.CenterVertically
-        	) {
-        		Text(
-        			text = "Exercício ${currentExerciseIndex + 1} de $totalExercises",
-        			style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        		)
-        		Spacer(modifier = Modifier.width(4.dp))
-        		Icon(
-        			Icons.Default.ArrowDropDown,
-        			contentDescription = "Selecionar exercício",
-        			modifier = Modifier.size(16.dp),
-        			tint = MaterialTheme.colorScheme.onSurfaceVariant
-        		)
-        	}
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Current Exercise Content
-        if (currentExerciseIndex < totalExercises && totalExercises > 0) {
-            val templateEx = templateExercises.getOrNull(currentExerciseIndex)
-            val sessionEx = sessionExercises.getOrNull(currentExerciseIndex)
-            val exerciseName = sessionEx?.exerciseName ?: templateEx?.exerciseName ?: "Exercício"
-            val defaultSets = templateEx?.defaultSets ?: sessionEx?.sets?.size ?: 3
-            val defaultReps = templateEx?.defaultReps ?: 12
-            val isCardio = sessionEx?.muscleGroup.equals("cardio", ignoreCase = true)
-
-            WorkoutExerciseContent(
-            exerciseName = exerciseName,
-            defaultSets = defaultSets,
-            defaultReps = defaultReps,
-            isCardio = isCardio,
-            currentSet = currentSet,
-            currentExerciseIndex = currentExerciseIndex,
-            totalExercises = totalExercises,
-            loadHistory = loadHistory,
-            onCompleteSet = { setNum, weight, duration, distance ->
-            	val durSec = duration?.let { (it * 60).toInt() } // min -> seconds
-            	val distM = distance?.let { it * 1000.0 } // km -> meters
-            	viewModel.completeSet(setNum, weight, defaultReps, durSec, distM)
-            },
-            onPrevious = { viewModel.previousExercise() },
-            onNext = { viewModel.nextExercise() },
-            onFinish = { viewModel.showRating() }
-            )
-        }
-
-        // Rating Dialog
-        if (showRatingDialog) {
-        	RatingDialog(
-        		onDismiss = { viewModel.dismissRating() },
-        		onConfirm = { rating, feedback ->
-        			viewModel.finishWorkout(rating, feedback)
-        			onFinish()
-        		}
-        	)
-        }
-
-        // Exercise Selector Dialog — allows free exercise selection
-        if (showExerciseSelector && sessionExercises.isNotEmpty()) {
-        	ExerciseSelectorDialog(
-        		sessionExercises = sessionExercises,
-        		templateExercises = templateExercises,
-        		currentIndex = currentExerciseIndex,
-        		onSelect = { index ->
-        			viewModel.selectExercise(index)
-        			showExerciseSelector = false
-        		},
-        		onDismiss = { showExerciseSelector = false }
-        	)
-        }
-        }
 }
 
+// ============================================================
+// EXERCISE LIST SCREEN
+// ============================================================
 @Composable
-private fun ColumnScope.WorkoutExerciseContent(
- exerciseName: String,
- defaultSets: Int,
- defaultReps: Int,
- isCardio: Boolean,
- currentSet: Int,
- currentExerciseIndex: Int,
- totalExercises: Int,
- loadHistory: List<ExerciseProgressPoint>,
- onCompleteSet: (Int, Double?, Double?, Double?) -> Unit, // setNum, weightKg, durationMin, distanceKm
- onPrevious: () -> Unit,
- onNext: () -> Unit,
- onFinish: () -> Unit
+private fun ExerciseListScreen(
+    session: WorkoutSession?,
+    sessionState: WorkoutSessionState,
+    sessionExercises: List<SessionExercise>,
+    templateExercises: List<TemplateExercise>,
+    onBack: () -> Unit,
+    onSelectExercise: (Int) -> Unit,
+    onFinishWorkout: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth().weight(1f),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Exercise Header
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = IfgGreen),
-                shape = RoundedCornerShape(12.dp)
+        // Top Bar
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                text = exerciseName,
-                style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-                )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                	text = if (isCardio) "${defaultSets}x cardio" else "${defaultSets}x${defaultReps} reps",
-                	style = MaterialTheme.typography.bodyLarge.copy(color = Color.White.copy(alpha = 0.8f))
-                )
-                // Load history
-                if (loadHistory.isNotEmpty()) {
-                	Spacer(modifier = Modifier.height(8.dp))
-                	Text(
-                		text = if (isCardio) "Histórico de Cardio" else "Histórico de Carga",
-                		style = MaterialTheme.typography.labelMedium.copy(
-                			color = Color.White.copy(alpha = 0.7f),
-                			fontWeight = FontWeight.SemiBold
-                		)
-                	)
-                	loadHistory.take(3).forEach { entry ->
-                		val historyText = if (isCardio) {
-                			val durMin = entry.totalDurationSeconds?.let { "${it / 60}min" } ?: ""
-                			val distKm = entry.totalDistanceMeters?.let { "%.2f km".format(it / 1000.0) } ?: ""
-                			"${(entry.sessionDate ?: "").take(10)}: $durMin $distKm"
-                		} else {
-                			"${(entry.sessionDate ?: "").take(10)}: ${entry.maxWeightKg ?: 0.0} kg"
-                		}
-                		Text(
-                			text = historyText,
-                			style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.6f))
-                		)
-                	}
-                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sessão de Treino",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Text(
+                                text = "Sessão ${session?.sessionNumber ?: "..."}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (sessionState == WorkoutSessionState.Resumed) {
+                                Surface(shape = RoundedCornerShape(Spacing.xs), color = Orange100) {
+                                    Text("Retomada", modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = Orange600, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+                    FilledIconButton(
+                        onClick = onFinishWorkout,
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = "Finalizar", tint = Color.White)
+                    }
                 }
             }
         }
 
-        // Sets
-        items(defaultSets) { setIndex ->
-        	val setNum = setIndex + 1
-        	SetRow(
-        		setNumber = setNum,
-        		reps = defaultReps,
-        		isCardio = isCardio,
-        		isCurrentSet = setNum == currentSet,
-        		isCompleted = setNum < currentSet,
-        		onComplete = { weight, duration, distance -> onCompleteSet(setNum, weight, duration, distance) }
-        	)
+        // Exercise list
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = Spacing.lg,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            item {
+                Text(
+                    text = "Escolha um exercício",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(bottom = Spacing.sm)
+                )
+            }
+
+            itemsIndexed(sessionExercises) { index, sessionEx ->
+                val templateEx = templateExercises.getOrNull(index)
+                val exerciseName = sessionEx.exerciseName ?: templateEx?.exerciseName ?: "Exercício ${index + 1}"
+                val defaultSets = templateEx?.defaultSets ?: sessionEx.sets?.size ?: 3
+                val defaultReps = templateEx?.defaultReps ?: 12
+                val isCardio = sessionEx.muscleGroup.equals("cardio", ignoreCase = true)
+                val status = sessionEx.status ?: "not_started"
+
+                ExerciseListCard(
+                    position = index + 1,
+                    name = exerciseName,
+                    sets = defaultSets,
+                    reps = defaultReps,
+                    isCardio = isCardio,
+                    status = status,
+                    onClick = { onSelectExercise(index) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseListCard(
+    position: Int,
+    name: String,
+    sets: Int,
+    reps: Int,
+    isCardio: Boolean,
+    status: String,
+    onClick: () -> Unit
+) {
+    val isCompleted = status == "completed"
+    val isInProgress = status == "in_progress"
+
+    val containerColor = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.15f)
+        isInProgress -> Orange600.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val borderColor = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.5f)
+        isInProgress -> Orange600.copy(alpha = 0.4f)
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    }
+    val numberBgColor = when {
+        isCompleted -> IfgGreen
+        isInProgress -> Orange600
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val numberTextColor = when {
+        isCompleted -> Color.White
+        isInProgress -> Color.White
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.md),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            width = if (isInProgress) 2.dp else 1.dp,
+            color = borderColor
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(numberBgColor),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCompleted) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                } else {
+                    Text(text = "$position", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = numberTextColor)
+                }
+            }
+
+            Spacer(modifier = Modifier.width(Spacing.md))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (isCardio) "${sets}x cardio" else "${sets}x${reps} reps",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            when {
+                isCompleted -> {
+                    Surface(shape = RoundedCornerShape(Spacing.xs), color = IfgGreen.copy(alpha = 0.15f)) {
+                        Text(
+                            "Concluído",
+                            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = IfgGreen,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                isInProgress -> {
+                    Surface(shape = RoundedCornerShape(Spacing.xs), color = Orange600.copy(alpha = 0.15f)) {
+                        Text(
+                            "Em andamento",
+                            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Orange600,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                else -> {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// EXERCISE DETAIL SCREEN
+// ============================================================
+@Composable
+private fun ExerciseDetailScreen(
+    exerciseName: String,
+    exerciseDetails: Exercise?,
+    sessionEx: SessionExercise?,
+    templateEx: TemplateExercise?,
+    isCardio: Boolean,
+    defaultSets: Int,
+    defaultReps: Int,
+    currentSet: Int,
+    loadHistory: List<ExerciseProgressPoint>,
+    isLastExercise: Boolean,
+    onBack: () -> Unit,
+    onCompleteSet: (Int, Double?, Double?, Double?) -> Unit,
+    onEditSet: (Int) -> Unit
+) {
+    // Build a set of completed set numbers from actual session data
+    val completedSetNumbers = remember(sessionEx) {
+        (sessionEx?.sets ?: emptyList())
+            .filter { it.isCompleted == true }
+            .mapNotNull { it.setNumber }
+            .toSet()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Top Bar
+        Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar aos exercícios")
+                }
+                Text(
+                    text = exerciseName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
-        // Navigation buttons
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = Spacing.lg,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            item {
+                ExerciseInfoCard(
+                    exerciseName = exerciseName,
+                    exerciseDetails = exerciseDetails,
+                    sessionEx = sessionEx,
+                    isCardio = isCardio,
+                    defaultSets = defaultSets,
+                    defaultReps = defaultReps
+                )
+            }
+
+            if (loadHistory.isNotEmpty()) {
+                item { LoadHistoryCard(loadHistory = loadHistory, isCardio = isCardio) }
+            }
+
+            items(defaultSets) { setIndex ->
+                val setNum = setIndex + 1
+                val isCompleted = completedSetNumbers.contains(setNum)
+                val isCurrent = setNum == currentSet
+                val sessionSet = sessionEx?.sets?.find { it.setNumber == setNum }
+
+                SetRow(
+                    setNumber = setNum,
+                    reps = defaultReps,
+                    isCardio = isCardio,
+                    isCurrentSet = isCurrent,
+                    isCompleted = isCompleted,
+                    sessionSet = sessionSet,
+                    onComplete = { weight, duration, distance ->
+                        onCompleteSet(setNum, weight, duration, distance)
+                    },
+                    onEdit = {
+                        onEditSet(setNum)
+                    }
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(Spacing.lg)) }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseInfoCard(
+    exerciseName: String,
+    exerciseDetails: Exercise?,
+    sessionEx: SessionExercise?,
+    isCardio: Boolean,
+    defaultSets: Int,
+    defaultReps: Int
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(Spacing.xl)) {
+            Text(text = exerciseName, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp))
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                if (!sessionEx?.muscleGroup.isNullOrBlank()) {
+                    Surface(shape = RoundedCornerShape(Spacing.sm), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)) {
+                        Text(sessionEx?.muscleGroup ?: "", modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Text(text = if (isCardio) "${defaultSets}x cardio" else "${defaultSets}x${defaultReps} reps", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (!exerciseDetails?.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(Spacing.md))
+                Text(text = exerciseDetails?.description ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (exerciseDetails != null) {
+                val mediaPath = exerciseDetails.mediaPath
+                val mediaType = exerciseDetails.mediaType
+                val videoUrl = exerciseDetails.videoUrl
+
+                if (!mediaPath.isNullOrBlank() && !mediaType.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    ExerciseMediaDisplay(mediaPath = mediaPath, mediaType = mediaType, exerciseName = exerciseName)
+                } else if (!videoUrl.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) { }
+                            },
+                        shape = RoundedCornerShape(Spacing.md),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.PlayCircle, contentDescription = "Assistir vídeo", modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.height(Spacing.sm))
+                                Text("Assistir vídeo", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                                Text("Toque para abrir", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseMediaDisplay(mediaPath: String, mediaType: String, exerciseName: String) {
+    val context = LocalContext.current
+    val fullUrl = "${BuildConfig.SUPABASE_URL}$mediaPath"
+
+    when (mediaType.lowercase()) {
+        "image", "gif" -> {
+            AsyncImage(
+                model = ImageRequest.Builder(context).data(fullUrl)
+                    .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                    .crossfade(true).build(),
+                contentDescription = "Imagem do exercício: $exerciseName",
+                modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(Spacing.md)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+        "video" -> {
+            Card(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                shape = RoundedCornerShape(Spacing.md),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             ) {
-                if (currentExerciseIndex > 0) {
-                    OutlinedButton(
-                        onClick = onPrevious,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Anterior")
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(Spacing.sm))
+                        Text("Vídeo disponível", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                if (currentExerciseIndex < totalExercises - 1) {
-                    Button(
-                        onClick = onNext,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                    ) {
-                        Text("Próximo")
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
-                    }
+            }
+        }
+        else -> {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(Spacing.md), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+                Row(modifier = Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AttachFile, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(Spacing.sm))
+                    Text("Arquivo anexado ($mediaType)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadHistoryCard(loadHistory: List<ExerciseProgressPoint>, isCardio: Boolean) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(Spacing.md), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
+            Text(text = if (isCardio) "Histórico de Cardio" else "Histórico de Carga", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            loadHistory.take(3).forEach { entry ->
+                val historyText = if (isCardio) {
+                    val durMin = entry.totalDurationSeconds?.let { "${it / 60}min" } ?: ""
+                    val distKm = entry.totalDistanceMeters?.let { "%.2f km".format(it / 1000.0) } ?: ""
+                    "${(entry.sessionDate ?: "").take(10)}: $durMin $distKm"
                 } else {
-                    Button(
-                        onClick = onFinish,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                    ) {
-                        Text("Finalizar")
-                    }
+                    "${(entry.sessionDate ?: "").take(10)}: ${entry.maxWeightKg ?: 0.0} kg"
                 }
+                Text(text = historyText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 2.dp))
             }
         }
     }
@@ -334,114 +635,136 @@ private fun ColumnScope.WorkoutExerciseContent(
 
 @Composable
 private fun SetRow(
- setNumber: Int,
- reps: Int,
- isCardio: Boolean,
- isCurrentSet: Boolean,
- isCompleted: Boolean,
- onComplete: (Double?, Double?, Double?) -> Unit // weightKg, durationMin, distanceKm
+    setNumber: Int,
+    reps: Int,
+    isCardio: Boolean,
+    isCurrentSet: Boolean,
+    isCompleted: Boolean,
+    sessionSet: SessionSet?,
+    onComplete: (Double?, Double?, Double?) -> Unit,
+    onEdit: () -> Unit
 ) {
- var weightInput by remember { mutableStateOf("") }
- var durationInput by remember { mutableStateOf("") }
- var distanceInput by remember { mutableStateOf("") }
+    var weightInput by remember { mutableStateOf("") }
+    var durationInput by remember { mutableStateOf("") }
+    var distanceInput by remember { mutableStateOf("") }
 
- Card(
-	modifier = Modifier.fillMaxWidth(),
-	elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentSet) 4.dp else 1.dp),
-	shape = RoundedCornerShape(8.dp),
-	colors = CardDefaults.cardColors(
-		containerColor = if (isCurrentSet) Green100 else Color.White
-	)
- ) {
-	Row(
-		modifier = Modifier.padding(12.dp),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		Box(
-			modifier = Modifier
-				.size(32.dp)
-				.clip(CircleShape)
-				.background(if (isCompleted) IfgGreen else if (isCurrentSet) IfgGreenLight else LightSurfaceVariant),
-			contentAlignment = Alignment.Center
-		) {
-			if (isCompleted) {
-				Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-			} else {
-				Text(
-					text = "$setNumber",
-					style = MaterialTheme.typography.labelMedium.copy(
-						fontWeight = FontWeight.Bold,
-						color = if (isCurrentSet) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				)
-			}
-		}
+    val containerColor = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.08f)
+        isCurrentSet -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.surface
+    }
 
-		Spacer(modifier = Modifier.width(12.dp))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.md),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(
+            width = if (isCurrentSet) 2.dp else 1.dp,
+            color = when {
+                isCurrentSet -> MaterialTheme.colorScheme.primary
+                isCompleted -> IfgGreen.copy(alpha = 0.5f)
+                else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(modifier = Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            // Set number circle
+            Box(
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                    when {
+                        isCompleted -> IfgGreen
+                        isCurrentSet -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCompleted) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                } else {
+                    Text(
+                        text = "$setNumber",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = if (isCurrentSet) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-		Text(
-			text = if (isCardio) "Cardio" else "$reps reps",
-			style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-			modifier = Modifier.weight(0.4f)
-		)
+            Spacer(modifier = Modifier.width(Spacing.md))
 
-		if (isCurrentSet) {
-			if (isCardio) {
-				// Cardio inputs: duration (min) and distance (km)
-				OutlinedTextField(
-					value = durationInput,
-					onValueChange = { durationInput = it },
-					modifier = Modifier.width(64.dp),
-					placeholder = { Text("min", style = MaterialTheme.typography.labelSmall) },
-					singleLine = true,
-					textStyle = MaterialTheme.typography.bodySmall,
-					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-				)
-				Spacer(modifier = Modifier.width(6.dp))
-				OutlinedTextField(
-					value = distanceInput,
-					onValueChange = { distanceInput = it },
-					modifier = Modifier.width(64.dp),
-					placeholder = { Text("km", style = MaterialTheme.typography.labelSmall) },
-					singleLine = true,
-					textStyle = MaterialTheme.typography.bodySmall,
-					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-				)
-			} else {
-				// Strength input: weight (kg)
-				OutlinedTextField(
-					value = weightInput,
-					onValueChange = { weightInput = it },
-					modifier = Modifier.width(80.dp),
-					placeholder = { Text("kg", style = MaterialTheme.typography.labelSmall) },
-					singleLine = true,
-					textStyle = MaterialTheme.typography.bodySmall,
-					colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-				)
-			}
-			Spacer(modifier = Modifier.width(8.dp))
-			IconButton(
-				onClick = {
-					if (isCardio) {
-						onComplete(null, durationInput.toDoubleOrNull(), distanceInput.toDoubleOrNull())
-					} else {
-						onComplete(weightInput.toDoubleOrNull(), null, null)
-					}
-				},
-				colors = IconButtonDefaults.iconButtonColors(containerColor = IfgGreen)
-			) {
-				Icon(Icons.Default.Check, contentDescription = "Completar", tint = Color.White)
-			}
-		}
-	}
- }
+            if (isCompleted) {
+                // ===== COMPLETED: show registered value + edit button =====
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isCardio) "Cardio" else "$reps reps",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val valueText = if (isCardio) {
+                        val durMin = sessionSet?.durationSeconds?.let { "${it / 60}min" } ?: ""
+                        val distKm = sessionSet?.distanceMeters?.let { "%.2f km".format(it / 1000.0) } ?: ""
+                        listOf(durMin, distKm).filter { it.isNotBlank() }.joinToString(" • ")
+                    } else {
+                        sessionSet?.weightKg?.let { "$it kg" } ?: "Sem registro"
+                    }
+                    Text(
+                        text = valueText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                // Edit button
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Editar série",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else if (isCurrentSet) {
+                // ===== CURRENT: show input fields + OK button =====
+                Text(
+                    text = if (isCardio) "Cardio" else "$reps reps",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(0.4f)
+                )
+
+                if (isCardio) {
+                    OutlinedTextField(value = durationInput, onValueChange = { durationInput = it }, modifier = Modifier.width(72.dp), placeholder = { Text("min", style = MaterialTheme.typography.labelSmall) }, singleLine = true, textStyle = MaterialTheme.typography.bodySmall, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.Transparent, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(Spacing.sm))
+                    Spacer(modifier = Modifier.width(Spacing.xs))
+                    OutlinedTextField(value = distanceInput, onValueChange = { distanceInput = it }, modifier = Modifier.width(72.dp), placeholder = { Text("km", style = MaterialTheme.typography.labelSmall) }, singleLine = true, textStyle = MaterialTheme.typography.bodySmall, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.Transparent, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(Spacing.sm))
+                } else {
+                    OutlinedTextField(value = weightInput, onValueChange = { weightInput = it }, modifier = Modifier.width(88.dp), placeholder = { Text("kg", style = MaterialTheme.typography.labelSmall) }, singleLine = true, textStyle = MaterialTheme.typography.bodySmall, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.Transparent, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(Spacing.sm))
+                }
+                Spacer(modifier = Modifier.width(Spacing.sm))
+                FilledIconButton(
+                    onClick = {
+                        if (isCardio) onComplete(null, durationInput.toDoubleOrNull(), distanceInput.toDoubleOrNull())
+                        else onComplete(weightInput.toDoubleOrNull(), null, null)
+                    },
+                    modifier = Modifier.size(40.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = "Completar", tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            } else {
+                // ===== FUTURE: just show reps info =====
+                Text(
+                    text = if (isCardio) "Cardio" else "$reps reps",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }
 
 @Composable
-private fun RatingDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (Int, String) -> Unit
-) {
+private fun RatingDialog(onDismiss: () -> Unit, onConfirm: (Int, String) -> Unit) {
     var rating by remember { mutableIntStateOf(0) }
     var feedback by remember { mutableStateOf("") }
 
@@ -451,145 +774,29 @@ private fun RatingDialog(
         text = {
             Column {
                 Text("Como foi seu treino?", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
+                Spacer(modifier = Modifier.height(Spacing.md))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     (1..5).forEach { star ->
                         IconButton(onClick = { rating = star }) {
                             Icon(
                                 if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = null,
                                 tint = if (star <= rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                value = feedback,
-                onValueChange = { feedback = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Observações (opcional)") },
-                maxLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-                )
+                Spacer(modifier = Modifier.height(Spacing.md))
+                OutlinedTextField(value = feedback, onValueChange = { feedback = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Observações (opcional)") }, maxLines = 3, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.Transparent, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(Spacing.md))
             }
         },
         confirmButton = {
-            Button(
-                onClick = { if (rating > 0) onConfirm(rating, feedback) },
-                enabled = rating > 0,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) {
+            Button(onClick = { if (rating > 0) onConfirm(rating, feedback) }, enabled = rating > 0, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(Spacing.md)) {
                 Text("Finalizar", color = Color.White)
             }
         },
-        dismissButton = {
-        	TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-        )
-        }
-
-        @Composable
-        private fun ExerciseSelectorDialog(
-        sessionExercises: List<SessionExercise>,
-        templateExercises: List<TemplateExercise>,
-        currentIndex: Int,
-        onSelect: (Int) -> Unit,
-        onDismiss: () -> Unit
-        ) {
-        AlertDialog(
-        	onDismissRequest = onDismiss,
-        	title = { Text("Selecionar Exercício") },
-        	text = {
-        		LazyColumn(
-        			verticalArrangement = Arrangement.spacedBy(4.dp)
-        		) {
-        			items(sessionExercises.size) { index ->
-        				val sessionEx = sessionExercises[index]
-        				val templateEx = templateExercises.getOrNull(index)
-        				val name = sessionEx.exerciseName ?: templateEx?.exerciseName ?: "Exercício ${index + 1}"
-        				val isCompleted = sessionEx.status == "completed"
-        				val isCurrent = index == currentIndex
-
-        				Card(
-        					onClick = {
-        						onSelect(index)
-        					},
-        					modifier = Modifier.fillMaxWidth(),
-        					shape = RoundedCornerShape(8.dp),
-        					colors = CardDefaults.cardColors(
-        						containerColor = when {
-        							isCurrent -> Green100
-        							isCompleted -> MaterialTheme.colorScheme.surfaceVariant
-        							else -> MaterialTheme.colorScheme.surface
-        						}
-        					)
-        				) {
-        					Row(
-        						modifier = Modifier
-        							.fillMaxWidth()
-        							.padding(12.dp),
-        						verticalAlignment = Alignment.CenterVertically
-        					) {
-        						Box(
-        							modifier = Modifier
-        								.size(32.dp)
-        								.clip(CircleShape)
-        								.background(
-        									when {
-        										isCompleted -> IfgGreen
-        										isCurrent -> IfgGreenLight
-        										else -> LightSurfaceVariant
-        									}
-        								),
-        							contentAlignment = Alignment.Center
-        						) {
-        							if (isCompleted) {
-        								Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-        							} else {
-        								Text(
-        									text = "${index + 1}",
-        									style = MaterialTheme.typography.labelMedium.copy(
-        										fontWeight = FontWeight.Bold,
-        										color = if (isCurrent) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-        									)
-        								)
-        							}
-        						}
-        						Spacer(modifier = Modifier.width(12.dp))
-        						Column(modifier = Modifier.weight(1f)) {
-        							Text(
-        								text = name,
-        								style = MaterialTheme.typography.bodyMedium.copy(
-        									fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
-        								)
-        							)
-        							if (isCompleted) {
-        								Text(
-        									text = "Concluído",
-        									style = MaterialTheme.typography.labelSmall.copy(color = IfgGreen)
-        								)
-        							}
-        						}
-        						if (isCurrent) {
-        							Icon(
-        								Icons.Default.PlayArrow,
-        								contentDescription = "Atual",
-        								tint = IfgGreen,
-        								modifier = Modifier.size(20.dp)
-        							)
-        						}
-        					}
-        				}
-        			}
-        		}
-        	},
-        	confirmButton = {
-        		TextButton(onClick = onDismiss) { Text("Fechar") }
-        	}
-        )
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        shape = RoundedCornerShape(Spacing.lg)
+    )
+}

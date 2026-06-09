@@ -23,6 +23,7 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import android.os.Build
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.core.net.toUri
 import com.example.gymapp.BuildConfig
@@ -146,7 +147,12 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
         // Exercise List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 8.dp,
+                end = 16.dp,
+                bottom = 16.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredExercises) { exercise ->
@@ -174,7 +180,8 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
 private fun ExerciseCard(exercise: Exercise) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

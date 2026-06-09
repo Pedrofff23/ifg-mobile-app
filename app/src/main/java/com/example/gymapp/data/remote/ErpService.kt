@@ -46,6 +46,11 @@ interface ErpService {
         @Path("id") id: String
     ): Response<Unit>
 
+    @GET("exercises/{id}")
+    suspend fun getExercise(
+        @Path("id") id: String
+    ): ApiResponse<Exercise>
+
     // ==================== TEMPLATES ====================
 
     @GET("templates")
