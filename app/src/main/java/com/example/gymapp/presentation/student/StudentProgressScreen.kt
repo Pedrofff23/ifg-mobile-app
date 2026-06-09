@@ -127,7 +127,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Spacing.lg),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -292,7 +292,7 @@ private fun SessionRow(session: WorkoutSession) {
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         else Orange100
                     ),
                 contentAlignment = Alignment.Center

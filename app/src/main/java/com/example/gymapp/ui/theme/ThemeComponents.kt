@@ -191,7 +191,7 @@ fun StatChip(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(Spacing.sm),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),

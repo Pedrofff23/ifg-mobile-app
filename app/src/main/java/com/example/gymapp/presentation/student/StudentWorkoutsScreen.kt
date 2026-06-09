@@ -130,7 +130,7 @@ private fun WorkoutAssignmentCard(
         shape = RoundedCornerShape(Spacing.lg),
         colors = CardDefaults.cardColors(
             containerColor = if (isActive)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
             else
                 MaterialTheme.colorScheme.surface
         ),
@@ -183,7 +183,7 @@ private fun WorkoutAssignmentCard(
                         Spacer(modifier = Modifier.height(Spacing.xs))
                         Surface(
                             shape = RoundedCornerShape(4.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),

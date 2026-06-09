@@ -75,7 +75,8 @@ fun ProfessorDashboardScreen(
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.sp
-                        )
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(Spacing.xs))
                     Text(
@@ -173,33 +174,32 @@ fun ProfessorDashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Spacing.xs)
                     )
-                    templates.take(3).forEach { template ->
-                        RecentActivityItem(
-                            title = template.name,
-                            subtitle = "${template.type} • ${template.difficulty}",
-                            icon = Icons.Default.FitnessCenter
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.xs))
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        templates.take(3).forEach { template ->
+                            RecentActivityItem(
+                                title = template.name,
+                                subtitle = "${template.type} • ${template.difficulty}",
+                                icon = Icons.Default.FitnessCenter
+                            )
+                        }
                     }
                 }
 
                 if (announcements.isNotEmpty()) {
-                    if (templates.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                    }
                     Text(
                         text = "Avisos",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Spacing.xs)
                     )
-                    announcements.take(3).forEach { announcement ->
-                        RecentActivityItem(
-                            title = announcement.title,
-                            subtitle = announcement.content.take(60) + if (announcement.content.length > 60) "…" else "",
-                            icon = Icons.Default.Notifications
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.xs))
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        announcements.take(3).forEach { announcement ->
+                            RecentActivityItem(
+                                title = announcement.title,
+                                subtitle = announcement.content.take(60) + if (announcement.content.length > 60) "…" else "",
+                                icon = Icons.Default.Notifications
+                            )
+                        }
                     }
                 }
 
@@ -227,7 +227,7 @@ private fun QuickActionButton(
         modifier = modifier.height(80.dp),
         shape = RoundedCornerShape(Spacing.md),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

@@ -53,12 +53,7 @@ fun StudentHomeScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = Spacing.lg,
-            top = Spacing.md,
-            end = Spacing.lg,
-            bottom = Spacing.lg
-        ),
+        contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
         // Welcome Banner
@@ -168,9 +163,9 @@ private fun TodayWorkoutCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Spacing.lg),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -269,9 +264,9 @@ private fun QuickActionCard(
         modifier = modifier.height(88.dp),
         shape = RoundedCornerShape(Spacing.md),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(

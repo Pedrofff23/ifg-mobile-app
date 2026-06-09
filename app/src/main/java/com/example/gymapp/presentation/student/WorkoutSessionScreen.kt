@@ -212,7 +212,8 @@ private fun ExerciseListScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Sessão de Treino",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             Text(
@@ -292,8 +293,8 @@ private fun ExerciseListCard(
     val isInProgress = status == "in_progress"
 
     val containerColor = when {
-        isCompleted -> IfgGreen.copy(alpha = 0.15f)
-        isInProgress -> Orange600.copy(alpha = 0.12f)
+        isCompleted -> IfgGreen.copy(alpha = 0.25f)
+        isInProgress -> Orange600.copy(alpha = 0.22f)
         else -> MaterialTheme.colorScheme.surface
     }
     val borderColor = when {
@@ -358,7 +359,7 @@ private fun ExerciseListCard(
 
             when {
                 isCompleted -> {
-                    Surface(shape = RoundedCornerShape(Spacing.xs), color = IfgGreen.copy(alpha = 0.15f)) {
+                    Surface(shape = RoundedCornerShape(Spacing.xs), color = IfgGreen.copy(alpha = 0.25f)) {
                         Text(
                             "Concluído",
                             modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
@@ -369,7 +370,7 @@ private fun ExerciseListCard(
                     }
                 }
                 isInProgress -> {
-                    Surface(shape = RoundedCornerShape(Spacing.xs), color = Orange600.copy(alpha = 0.15f)) {
+                    Surface(shape = RoundedCornerShape(Spacing.xs), color = Orange600.copy(alpha = 0.25f)) {
                         Text(
                             "Em andamento",
                             modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
@@ -512,15 +513,15 @@ private fun ExerciseInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Spacing.lg),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(Spacing.xl)) {
-            Text(text = exerciseName, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp))
+            Text(text = exerciseName, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp), color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(Spacing.sm))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 if (!sessionEx?.muscleGroup.isNullOrBlank()) {
-                    Surface(shape = RoundedCornerShape(Spacing.sm), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)) {
+                    Surface(shape = RoundedCornerShape(Spacing.sm), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)) {
                         Text(sessionEx?.muscleGroup ?: "", modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -649,8 +650,8 @@ private fun SetRow(
     var distanceInput by remember { mutableStateOf("") }
 
     val containerColor = when {
-        isCompleted -> IfgGreen.copy(alpha = 0.08f)
-        isCurrentSet -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        isCompleted -> IfgGreen.copy(alpha = 0.2f)
+        isCurrentSet -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
         else -> MaterialTheme.colorScheme.surface
     }
 

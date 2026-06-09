@@ -93,7 +93,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
             // Title
             item {
                 Column {
-                    Text("Criar Novo Treino", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                    Text("Criar Novo Treino", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                     Text("Monte o treino do zero", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

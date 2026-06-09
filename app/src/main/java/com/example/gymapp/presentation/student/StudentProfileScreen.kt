@@ -291,9 +291,9 @@ private fun PhysicalStatsRow(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Spacing.lg),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
