@@ -29,6 +29,7 @@ import com.example.gymapp.domain.model.WorkoutSession
 import com.example.gymapp.domain.model.AlunoProfile
 import com.example.gymapp.domain.model.BodyMeasurement
 import com.example.gymapp.domain.model.AlunoStats
+import com.example.gymapp.domain.model.ExerciseProgressPoint
 import com.example.gymapp.ui.theme.ThemeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
+import com.example.gymapp.domain.model.ExerciseCustomMetric
+import com.example.gymapp.domain.model.SetExerciseMetricRequest
+import retrofit2.HttpException
 import android.util.Log
 
 @HiltViewModel
@@ -107,6 +111,17 @@ class ProfessorViewModel @Inject constructor(
 
     private val _studentStats = MutableStateFlow<AlunoStats?>(null)
     val studentStats: StateFlow<AlunoStats?> = _studentStats.asStateFlow()
+
+    // ---------- Student Exercise Progress State ----------
+    private val _studentExerciseProgress = MutableStateFlow<Map<String, List<ExerciseProgressPoint>>>(emptyMap())
+    val studentExerciseProgress: StateFlow<Map<String, List<ExerciseProgressPoint>>> = _studentExerciseProgress.asStateFlow()
+
+    private val _studentExerciseProgressLoading = MutableStateFlow(false)
+    val studentExerciseProgressLoading: StateFlow<Boolean> = _studentExerciseProgressLoading.asStateFlow()
+
+    // ---------- Student Exercise Custom Metrics State ----------
+    private val _studentExerciseCustomMetrics = MutableStateFlow<Map<String, ExerciseCustomMetric>>(emptyMap())
+    val studentExerciseCustomMetrics: StateFlow<Map<String, ExerciseCustomMetric>> = _studentExerciseCustomMetrics.asStateFlow()
 
     // ---------- Student Groups State ----------
     private val _studentGroups = MutableStateFlow<List<StudentGroup>>(emptyList())
@@ -774,20 +789,100 @@ class ProfessorViewModel @Inject constructor(
     }
     }
 
+    // ==================== STUDENT EXERCISE PROGRESS ====================
+
+    /**
+    * Loads exercise progress data for a specific student's exercises.
+    * Results are stored in [studentExerciseProgress] map keyed by exercise ID.
+    * Clears previous progress data when loading for a new student.
+    */
+    fun loadStudentExerciseProgress(exerciseIds: List<String>) {
+    viewModelScope.launch {
+    _studentExerciseProgressLoading.value = true
+    try {
+    val newMap = mutableMapOf<String, List<ExerciseProgressPoint>>()
+    for (id in exerciseIds) {
+    try {
+    val response = erpService.getExerciseProgress(id)
+    newMap[id] = response.data ?: emptyList()
+    } catch (_: Exception) {
+    newMap[id] = emptyList()
+    }
+    }
+    _studentExerciseProgress.value = newMap
+    loadExerciseCustomMetrics(exerciseIds)
+    } finally {
+    _studentExerciseProgressLoading.value = false
+    }
+    }
+    }
+
+    /** Load custom metric preferences for given exercise IDs */
+    fun loadExerciseCustomMetrics(exerciseIds: List<String>) {
+        viewModelScope.launch {
+            val newMap = mutableMapOf<String, ExerciseCustomMetric>()
+            for (id in exerciseIds) {
+                try {
+                    val resp = erpService.getExerciseMetric(id)
+                    resp.data?.let { newMap[id] = it }
+                } catch (e: HttpException) {
+                    if (e.code() != 404) {
+                        // ignore other errors
+                    }
+                } catch (_: Exception) {
+                    // ignore
+                }
+            }
+            if (newMap.isNotEmpty()) {
+                _studentExerciseCustomMetrics.value = _studentExerciseCustomMetrics.value + newMap
+            }
+        }
+    }
+
+    /** Set custom metric for an exercise and refresh state */
+    fun setExerciseMetric(exerciseId: String, metricType: String) {
+        viewModelScope.launch {
+            try {
+                erpService.setExerciseMetric(SetExerciseMetricRequest(exerciseId = exerciseId, metricType = metricType))
+                loadExerciseCustomMetrics(listOf(exerciseId))
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            }
+        }
+    }
+
+    /** Delete custom metric for an exercise */
+    fun deleteExerciseMetric(exerciseId: String) {
+        viewModelScope.launch {
+            try {
+                erpService.deleteExerciseMetric(exerciseId)
+                val updated = _studentExerciseCustomMetrics.value.toMutableMap()
+                updated.remove(exerciseId)
+                _studentExerciseCustomMetrics.value = updated
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            }
+        }
+    }
+
+    fun clearStudentExerciseProgress() {
+        _studentExerciseProgress.value = emptyMap()
+    }
+
     // ==================== GROUP ASSIGNMENTS ====================
 
     fun assignWorkoutToGroup(request: AssignGroupWorkoutRequest) {
-    	viewModelScope.launch {
-    		_isLoading.value = true
-    		_error.value = null
-    		try {
-    			erpService.assignWorkoutToGroup(request)
-    			_successMessage.value = "Treino atribuído ao grupo com sucesso"
-    		} catch (e: Exception) {
-    			_error.value = ErrorUtils.parseErrorMessage(e)
-    		} finally {
-    			_isLoading.value = false
-    		}
-    	}
+    viewModelScope.launch {
+    _isLoading.value = true
+    _error.value = null
+    try {
+    erpService.assignWorkoutToGroup(request)
+    _successMessage.value = "Treino atribuído ao grupo com sucesso"
+    } catch (e: Exception) {
+    _error.value = ErrorUtils.parseErrorMessage(e)
+    } finally {
+    _isLoading.value = false
+    }
+    }
     }
     }

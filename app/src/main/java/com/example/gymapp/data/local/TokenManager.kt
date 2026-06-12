@@ -72,9 +72,15 @@ class TokenManager @Inject constructor(
     }
 
     suspend fun saveUserName(name: String) {
-    	context.dataStore.edit { prefs ->
-    		prefs[KEY_USER_NAME] = name
-    	}
+    context.dataStore.edit { prefs ->
+        prefs[KEY_USER_NAME] = name
+    }
+}
+
+    suspend fun saveUserRole(role: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_USER_ROLE] = role
+        }
     }
 
     suspend fun getAccessTokenSync(): String? = accessToken.first()
@@ -82,4 +88,5 @@ class TokenManager @Inject constructor(
     suspend fun getUserRoleSync(): String? = userRole.first()
     suspend fun getUserNameSync(): String? = userName.first()
     suspend fun getUserEmailSync(): String? = userEmail.first()
+    suspend fun getRefreshTokenSync(): String? = refreshToken.first()
 }

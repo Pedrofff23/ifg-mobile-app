@@ -67,6 +67,17 @@ class StudentViewModel @Inject constructor(
     private val _stats = MutableStateFlow<AlunoStats?>(null)
     val stats: StateFlow<AlunoStats?> = _stats.asStateFlow()
 
+    // ---------- Exercise Progress State ----------
+    private val _exerciseProgress = MutableStateFlow<Map<String, List<ExerciseProgressPoint>>>(emptyMap())
+    val exerciseProgress: StateFlow<Map<String, List<ExerciseProgressPoint>>> = _exerciseProgress.asStateFlow()
+
+    private val _exerciseProgressLoading = MutableStateFlow(false)
+    val exerciseProgressLoading: StateFlow<Boolean> = _exerciseProgressLoading.asStateFlow()
+
+    // ---------- Custom Exercise Metric State ----------
+    private val _exerciseCustomMetrics = MutableStateFlow<Map<String, ExerciseCustomMetric>>(emptyMap())
+    val exerciseCustomMetrics: StateFlow<Map<String, ExerciseCustomMetric>> = _exerciseCustomMetrics.asStateFlow()
+
     init {
         loadUserData()
     }
@@ -265,7 +276,91 @@ class StudentViewModel @Inject constructor(
     }
 
     fun clearUpdateStatus() {
-        _updateSuccess.value = null
-        _error.value = null
+    _updateSuccess.value = null
+    _error.value = null
     }
-}
+
+    // ==================== EXERCISE PROGRESS ====================
+
+    // ==================== EXERCISE CUSTOM METRICS ====================
+
+    /** Load custom metric preferences for given exercise IDs */
+    fun loadExerciseCustomMetrics(exerciseIds: List<String>) {
+        viewModelScope.launch {
+            val newMap = mutableMapOf<String, ExerciseCustomMetric>()
+            for (id in exerciseIds) {
+                try {
+                    val resp = erpService.getExerciseMetric(id)
+                    resp.data?.let { newMap[id] = it }
+                } catch (e: HttpException) {
+                    if (e.code() != 404) {
+                        // ignore other errors
+                    }
+                } catch (_: Exception) {
+                    // ignore
+                }
+            }
+            if (newMap.isNotEmpty()) {
+                _exerciseCustomMetrics.value = _exerciseCustomMetrics.value + newMap
+            }
+        }
+    }
+
+    /** Set custom metric for an exercise and refresh state */
+    fun setExerciseMetric(exerciseId: String, metricType: String) {
+        viewModelScope.launch {
+            try {
+                erpService.setExerciseMetric(SetExerciseMetricRequest(exerciseId = exerciseId, metricType = metricType))
+                loadExerciseCustomMetrics(listOf(exerciseId))
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            }
+        }
+    }
+
+    /** Delete custom metric preference for an exercise */
+    fun deleteExerciseMetric(exerciseId: String) {
+        viewModelScope.launch {
+            try {
+                erpService.deleteExerciseMetric(exerciseId)
+                val updated = _exerciseCustomMetrics.value.toMutableMap()
+                updated.remove(exerciseId)
+                _exerciseCustomMetrics.value = updated
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            }
+        }
+    }
+
+    // ==================== EXERCISE PROGRESS ====================
+
+    /**
+     * Loads exercise progress data for the given exercise IDs.
+     * Results are stored in [exerciseProgress] map keyed by exercise ID.
+     */
+    fun loadExerciseProgress(exerciseIds: List<String>) {
+        viewModelScope.launch {
+            _exerciseProgressLoading.value = true
+            try {
+                val newMap = mutableMapOf<String, List<ExerciseProgressPoint>>()
+                for (id in exerciseIds) {
+                    if (!_exerciseProgress.value.containsKey(id)) {
+                        try {
+                            val response = erpService.getExerciseProgress(id)
+                            newMap[id] = response.data ?: emptyList()
+                        } catch (_: Exception) {
+                            newMap[id] = emptyList()
+                        }
+                    }
+                }
+                if (newMap.isNotEmpty()) {
+                    _exerciseProgress.value = _exerciseProgress.value + newMap
+                }
+                // Load custom metrics after progress data
+                loadExerciseCustomMetrics(exerciseIds)
+            } finally {
+                _exerciseProgressLoading.value = false
+            }
+        }
+    }
+    }

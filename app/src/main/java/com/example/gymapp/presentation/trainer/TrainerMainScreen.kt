@@ -33,7 +33,8 @@ data class TrainerTab(
 @Composable
 fun TrainerMainScreen(
     viewModel: ProfessorViewModel = hiltViewModel(),
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onNavigateToAdminInstitutos: () -> Unit = {}
 ) {
     val navController = rememberNavController()
 
@@ -80,7 +81,8 @@ fun TrainerMainScreen(
                             launchSingleTop = true
                             popUpTo("workout_hub") { saveState = true }
                         }
-                    }
+                    },
+                    navController = navController
                 )
             }
             composable("create_workout") {
@@ -89,10 +91,33 @@ fun TrainerMainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable("edit_template/{templateId}") { backStackEntry ->
+                val templateId = backStackEntry.arguments?.getString("templateId") ?: ""
+                EditTemplateScreen(
+                    templateId = templateId,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("create_exercise") {
+                CreateExerciseScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("edit_exercise/{exerciseId}") { backStackEntry ->
+                val exerciseId = backStackEntry.arguments?.getString("exerciseId") ?: ""
+                EditExerciseScreen(
+                    exerciseId = exerciseId,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable("students_hub") {
                 TrainerStudentsHubScreen(
                     viewModel = viewModel,
-                    isAdmin = isAdmin
+                    isAdmin = isAdmin,
+                    onNavigateToAdminInstitutos = onNavigateToAdminInstitutos
                 )
             }
             composable("groups") {
@@ -106,6 +131,11 @@ fun TrainerMainScreen(
                     viewModel = viewModel,
                     themeManager = viewModel.themeManager,
                     onLogout = onLogout
+                )
+            }
+            composable("admin_institutos") {
+                AdminInstitutoScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
@@ -173,9 +203,12 @@ private fun TrainerBottomNav(
                 onClick = {
                     if (currentRoute != tab.route) {
                         navController.navigate(tab.route) {
-                            popUpTo(0) { saveState = false }
+                            popUpTo("dashboard") {
+                                saveState = true
+                                inclusive = false
+                            }
                             launchSingleTop = true
-                            restoreState = false
+                            restoreState = true
                         }
                     }
                 },

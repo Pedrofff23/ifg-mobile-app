@@ -66,14 +66,6 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { showGroupAssignDialog = true },
-                    containerColor = IfgGreen
-                ) {
-                    Icon(Icons.Default.Group, contentDescription = "Atribuir Treino a Grupo", tint = Color.White)
-                }
-            },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
@@ -152,11 +144,31 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                     Text(student.fullName ?: "", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(student.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         if (student.isActive) {
-                                            Badge(containerColor = Green100, contentColor = IfgGreen) { Text("Ativo", style = MaterialTheme.typography.labelSmall) }
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Green100
+                                            ) {
+                                                Text(
+                                                    "Ativo",
+                                                    color = IfgGreen,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
                                         }
-                                        Badge(containerColor = Color(0xFFE3F2FD), contentColor = Color(0xFF1565C0)) { Text(student.role, style = MaterialTheme.typography.labelSmall) }
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFE3F2FD)
+                                        ) {
+                                            Text(
+                                                student.role,
+                                                color = Color(0xFF1565C0),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
                                     }
                                 }
                                 IconButton(onClick = { selectedStudent = student; showAssignDialog = true }) {

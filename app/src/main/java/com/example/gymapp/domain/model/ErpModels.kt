@@ -174,13 +174,27 @@ data class AlunoProfile(
 )
 
 data class BodyMeasurement(
-	val id: String,
-	@SerializedName("user_id") val userId: String,
-	@SerializedName("weight_kg") val weightKg: Double?,
-	@SerializedName("measured_at") val measuredAt: String?,
-	val notes: String?,
-	@SerializedName("created_at") val createdAt: String?,
-	@SerializedName("updated_at") val updatedAt: String?
+    val id: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("weight_kg") val weightKg: Double?,
+    @SerializedName("measured_at") val measuredAt: String?,
+    val notes: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+// New data class for custom exercise metric preference
+data class ExerciseCustomMetric(
+    val id: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("exercise_id") val exerciseId: String,
+    @SerializedName("metric_type") val metricType: String
+)
+
+// Simple chart point for measurement chart (date + weight)
+data class MeasurementChartPoint(
+    @SerializedName("measured_at") val measuredAt: String?,
+    @SerializedName("weight_kg") val weightKg: Double?
 )
 
 // ==================== EXERCISE PROGRESS (v_exercise_progress) ====================
@@ -200,4 +214,10 @@ data class AlunoStats(
 	@SerializedName("total_exercises_done") val totalExercisesDone: Int?,
 	@SerializedName("current_streak") val currentStreak: Int?,
 	@SerializedName("weekly_frequency") val weeklyFrequency: Double?
+)
+
+// ==================== INSTITUTO ====================
+data class Instituto(
+	val id: String,
+	val name: String
 )

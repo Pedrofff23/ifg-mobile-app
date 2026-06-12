@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymapp.domain.model.Announcement
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,7 +166,7 @@ private fun AnnouncementCard(announcement: Announcement) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(Spacing.xs))
                     Text(
-                        text = announcement.publishedAt?.take(10) ?: announcement.createdAt?.take(10) ?: "",
+                        text = DateUtils.formatIsoDate(announcement.publishedAt ?: announcement.createdAt),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -307,7 +308,7 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
                         )
                         Spacer(modifier = Modifier.height(Spacing.xs))
                         Text(
-                            text = announcement.publishedAt?.take(10) ?: "",
+                            text = DateUtils.formatIsoDate(announcement.publishedAt),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

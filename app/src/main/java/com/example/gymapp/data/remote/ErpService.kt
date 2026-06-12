@@ -133,7 +133,7 @@ interface ErpService {
     suspend fun updateExerciseStatus(
         @Path("exerciseId") exerciseId: String,
         @Body request: UpdateExerciseStatusRequest
-    ): ApiResponse<SessionExercise>
+    ): Response<Unit>
 
     @POST("sessions/{id}/finish")
     suspend fun finishSession(
@@ -169,4 +169,50 @@ interface ErpService {
     suspend fun deleteAnnouncement(
         @Path("id") id: String
     ): Response<Unit>
+
+    // ==================== PROFILE / MEASUREMENTS ====================
+
+    @GET("profiles/{id}/measurements/chart")
+    suspend fun getMeasurementsChart(
+        @Path("id") id: String
+    ): ApiResponse<List<BodyMeasurement>>
+
+    // ==================== EXERCISE METRICS ====================
+
+    @POST("exercise-metrics")
+    suspend fun setExerciseMetric(
+        @Body request: SetExerciseMetricRequest
+    ): ApiResponse<ExerciseCustomMetric>
+
+    @GET("exercise-metrics/{exerciseId}")
+    suspend fun getExerciseMetric(
+        @Path("exerciseId") exerciseId: String
+    ): ApiResponse<ExerciseCustomMetric>
+
+    @DELETE("exercise-metrics/{exerciseId}")
+    suspend fun deleteExerciseMetric(
+        @Path("exerciseId") exerciseId: String
+    ): Response<Unit>
+
+    // ==================== INSTITUTOS ====================
+
+    @GET("institutos")
+    suspend fun getInstitutos(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null
+    ): PaginatedResponse<Instituto>
+
+    @POST("institutos")
+    suspend fun createInstituto(@Body request: CreateInstitutoRequest): ApiResponse<Instituto>
+
+    @PUT("institutos/{id}")
+    suspend fun updateInstituto(
+        @Path("id") id: String,
+        @Body request: CreateInstitutoRequest
+    ): ApiResponse<Instituto>
+
+    @DELETE("institutos/{id}")
+    suspend fun deleteInstituto(@Path("id") id: String): Response<Unit>
 }
+
+data class CreateInstitutoRequest(val name: String)

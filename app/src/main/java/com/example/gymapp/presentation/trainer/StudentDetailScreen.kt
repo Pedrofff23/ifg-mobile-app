@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
+import com.example.gymapp.presentation.components.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,13 +42,18 @@ fun StudentDetailScreen(
     val student by viewModel.selectedStudentDetail.collectAsState()
     val profile by viewModel.studentProfile.collectAsState()
     val measurements by viewModel.studentMeasurements.collectAsState()
-    val assignments by viewModel.studentAssignments.collectAsState()
+    val studentExerciseCustomMetrics by viewModel.studentExerciseCustomMetrics.collectAsState()
+
     val sessions by viewModel.studentSessions.collectAsState()
     val stats by viewModel.studentStats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     // New: collect groups the student belongs to
     val studentGroups by viewModel.studentGroups.collectAsState()
+    // Exercise progress
+    val exerciseProgress by viewModel.studentExerciseProgress.collectAsState()
+    val exerciseProgressLoading by viewModel.studentExerciseProgressLoading.collectAsState()
+    val assignments by viewModel.studentAssignments.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     // Removed Avaliações tab – now only three tabs
@@ -113,7 +120,20 @@ fun StudentDetailScreen(
             AnimatedContent(targetState = selectedTabIndex) { targetIdx ->
                 when (targetIdx) {
                     0 -> PerfilTab(student, profile, stats, studentGroups)
-                    1 -> MedicoesTab(measurements)
+                    1 -> MedicoesTab(
+                        measurements = measurements,
+                        sessions = sessions,
+                        assignments = assignments,
+                        exerciseProgress = exerciseProgress,
+                        exerciseProgressLoading = exerciseProgressLoading,
+                        onLoadExerciseProgress = { exerciseIds ->
+                            viewModel.loadStudentExerciseProgress(exerciseIds)
+                        },
+                        studentExerciseCustomMetrics = studentExerciseCustomMetrics,
+                        onSetMetric = { exerciseId, metricType ->
+                            viewModel.setExerciseMetric(exerciseId, metricType)
+                        }
+                    )
                     2 -> TreinosTab(assignments, sessions)
                 }
             }
@@ -209,21 +229,137 @@ private fun StatItem(label: String, value: String) {
 }
 
 @Composable
-private fun MedicoesTab(measurements: List<BodyMeasurement>) {
+private fun MedicoesTab(
+    measurements: List<BodyMeasurement>,
+    sessions: List<WorkoutSession>,
+    assignments: List<WorkoutAssignment>,
+    exerciseProgress: Map<String, List<ExerciseProgressPoint>>,
+    exerciseProgressLoading: Boolean,
+    onLoadExerciseProgress: (List<String>) -> Unit,
+    studentExerciseCustomMetrics: Map<String, ExerciseCustomMetric> = emptyMap(),
+    onSetMetric: (String, String) -> Unit = { _, _ -> }
+) {
+    // Date range filter state
+    var weightDateRange by remember { mutableStateOf(DateRangeFilter.LAST_90) }
+
+    // Load exercise progress once when this tab is first composed
+    LaunchedEffect(assignments, sessions) {
+        val exerciseIds = sessions
+            .flatMap { it.exercises ?: emptyList() }
+            .mapNotNull { it.exerciseId }
+            .distinct()
+        if (exerciseIds.isNotEmpty() && exerciseProgress.isEmpty()) {
+            onLoadExerciseProgress(exerciseIds.take(10))
+        }
+    }
+
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         if (measurements.isEmpty()) {
             item {
                 Text(text = "Nenhuma medição registrada", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
-            // Simple weight history line (newest first)
+            // ============ BODY WEIGHT CHART ============
             item {
-                val history = measurements
-                    .sortedByDescending { it.measuredAt }
-                    .joinToString(" -> ") { "${it.weightKg} kg" }
-                Text(text = history, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(
+                    text = "Evolução do Peso",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
+
+            // Date range selector
+            item {
+                DateRangeSelector(
+                    selectedRange = weightDateRange,
+                    onRangeSelected = { weightDateRange = it }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Weight chart
+            item {
+                val weightChartData = measurements
+                    .toWeightChartData()
+                    .filterByDateRange(weightDateRange)
+                val latestWeight = weightChartData.lastOrNull()?.value
+                val firstWeight = weightChartData.firstOrNull()?.value
+                val weightChange = if (latestWeight != null && firstWeight != null) {
+                    val diff = latestWeight - firstWeight
+                    String.format("%+.1f kg", diff)
+                } else null
+
+                ProgressLineChart(
+                    data = weightChartData,
+                    title = if (weightChange != null) "Peso Corporal ($weightChange)" else "Peso Corporal",
+                    valueLabel = "kg",
+                    lineColor = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // ============ EXERCISE PROGRESS CHARTS ============
+            if (exerciseProgress.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Progresso dos Exercícios",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            if (exerciseProgressLoading) {
+                item {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            // Build exercise name map from sessions
+            val exerciseNameMap = sessions
+                .flatMap { it.exercises ?: emptyList() }
+                .associate { it.exerciseId to (it.exerciseName ?: it.exerciseId) }
+
+            // Exercise progress charts
+            items(exerciseProgress.entries.toList().take(6)) { (exerciseId, progressPoints) ->
+                val exerciseName = exerciseNameMap[exerciseId] ?: exerciseId
+                val weightData = progressPoints.toExerciseChartData { it.maxWeightKg?.toFloat() }
+                val repData = progressPoints.toExerciseChartData { it.totalReps?.toFloat() }
+
+                val selectedMetric = studentExerciseCustomMetrics[exerciseId]?.metricType ?: "weight"
+                ExerciseProgressChart(
+                    exerciseName = exerciseName,
+                    progressPoints = weightData,
+                    selectedMetric = selectedMetric,
+                    onMetricChanged = { newMetric ->
+                        onSetMetric(exerciseId, newMetric)
+                    },
+                    lineColor = MaterialTheme.colorScheme.primary
+                )
+
+                if (repData.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ExerciseProgressChart(
+                        exerciseName = "$exerciseName — Reps",
+                        progressPoints = repData,
+                        selectedMetric = "reps",
+                        onMetricChanged = { },
+                        lineColor = Blue600
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // ============ MEASUREMENT HISTORY LIST ============
+            item {
+                Text(
+                    text = "Histórico de Medições",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             items(measurements.sortedByDescending { it.measuredAt }) { measurement ->
                 Card(
                     shape = RoundedCornerShape(8.dp),
@@ -232,7 +368,7 @@ private fun MedicoesTab(measurements: List<BodyMeasurement>) {
                         .padding(vertical = 4.dp)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(text = measurement.measuredAt ?: "Data desconhecida", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = DateUtils.formatIsoDate(measurement.measuredAt), style = MaterialTheme.typography.bodyMedium)
                         Text(text = "Peso: ${measurement.weightKg} kg", style = MaterialTheme.typography.bodySmall)
                         measurement.notes?.let { notes ->
                             Text(text = "Observação: $notes", style = MaterialTheme.typography.bodySmall)
@@ -270,8 +406,8 @@ private fun TreinosTab(
                         Text(text = "Treino Atual", style = MaterialTheme.typography.titleMedium)
                         Text(text = "Modelo: ${current.templateName ?: "Desconhecido"}", style = MaterialTheme.typography.bodyMedium)
                         Text(text = "Dia atual: Treino ${(current.currentWorkoutIndex ?: 0) + 1}", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Início: ${current.startsAt ?: "-"}", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Fim: ${current.endsAt ?: "Indefinido"}", style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Início: ${DateUtils.formatIsoDate(current.startsAt)}", style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Fim: ${DateUtils.formatIsoDate(current.endsAt)}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -289,7 +425,7 @@ private fun TreinosTab(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = assignment.templateName ?: "Desconhecido", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Período: ${assignment.startsAt ?: "-"} – ${assignment.endsAt ?: "Indefinido"}", style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Período: ${DateUtils.formatIsoDate(assignment.startsAt)} – ${DateUtils.formatIsoDate(assignment.endsAt)}", style = MaterialTheme.typography.bodySmall)
                         val idx = assignment.currentWorkoutIndex ?: 0
                         Text(text = "Dia atual: Treino ${idx + 1}", style = MaterialTheme.typography.labelSmall, color = IfgGreen)
                     }
@@ -321,7 +457,7 @@ private fun TreinosTab(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(text = (session.startedAt ?: "").take(10), style = MaterialTheme.typography.bodyMedium)
+                                Text(text = DateUtils.formatIsoDate(session.startedAt), style = MaterialTheme.typography.bodyMedium)
                                 Text(text = "Sessão #${session.sessionNumber}", style = MaterialTheme.typography.bodySmall)
                                 if (!session.workoutName.isNullOrBlank()) {
                                     Text(text = session.workoutName, style = MaterialTheme.typography.labelSmall, color = IfgGreen)
@@ -362,5 +498,3 @@ private fun TreinosTab(
         }
     }
 }
-
-

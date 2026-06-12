@@ -13,12 +13,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.gymapp.presentation.auth.ActivationPendingScreen
 import com.example.gymapp.presentation.auth.AuthDestination
+import com.example.gymapp.presentation.auth.AuthState
 import com.example.gymapp.presentation.auth.AuthViewModel
+import com.example.gymapp.presentation.auth.CompleteProfileScreen
 import com.example.gymapp.presentation.auth.LoginScreen
 import com.example.gymapp.presentation.auth.RegisterScreen
 import com.example.gymapp.presentation.student.StudentMainScreen
 import com.example.gymapp.presentation.student.WorkoutSessionScreen
+import com.example.gymapp.presentation.trainer.AdminInstitutoScreen
 import com.example.gymapp.presentation.trainer.TrainerMainScreen
 import com.example.gymapp.ui.theme.ThemeManager
 
@@ -26,11 +30,15 @@ object Routes {
     const val SPLASH = "splash"
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val COMPLETE_PROFILE = "complete_profile"
+    const val ACTIVATION_PENDING = "activation_pending/{email}"
     const val STUDENT_HOME = "student_home"
     const val TRAINER_HOME = "trainer_home"
+    const val ADMIN_INSTITUTOS = "admin_institutos"
     const val WORKOUT_SESSION = "workout_session/{assignmentId}"
 
     fun workoutSessionRoute(assignmentId: String) = "workout_session/$assignmentId"
+    fun activationPendingRoute(email: String) = "activation_pending/$email"
 }
 
 @Composable
@@ -38,11 +46,11 @@ fun AppNavigation(themeManager: ThemeManager) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
 
-    // Shared logout handler: clears session and navigates to login
     val performLogout: () -> Unit = {
-        authViewModel.logout()
-        navController.navigate(Routes.LOGIN) {
-            popUpTo(0) { inclusive = true }
+        authViewModel.logoutAndNavigate {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
 
@@ -55,9 +63,12 @@ fun AppNavigation(themeManager: ThemeManager) {
                 authViewModel = authViewModel,
                 onChecked = { destination ->
                     val route = when (destination) {
-                    AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
-                    AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
-                    AuthDestination.LOGIN -> Routes.LOGIN
+                        AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
+                        AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
+                        AuthDestination.COMPLETE_PROFILE -> Routes.COMPLETE_PROFILE
+                        AuthDestination.ACTIVATION_PENDING -> Routes.activationPendingRoute(authViewModel.getLastEmail())
+                        AuthDestination.REGISTER -> Routes.REGISTER
+                        AuthDestination.LOGIN -> Routes.LOGIN
                     }
                     navController.navigate(route) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
@@ -68,13 +79,15 @@ fun AppNavigation(themeManager: ThemeManager) {
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                onLoginSuccess = { role ->
-                    val destination = if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
-                        Routes.TRAINER_HOME
-                    } else {
-                        Routes.STUDENT_HOME
+                onLoginSuccess = { destination ->
+                    val route = when (destination) {
+                        AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
+                        AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
+                        AuthDestination.COMPLETE_PROFILE -> Routes.COMPLETE_PROFILE
+                        AuthDestination.ACTIVATION_PENDING -> Routes.activationPendingRoute(authViewModel.getLastEmail())
+                        else -> Routes.LOGIN
                     }
-                    navController.navigate(destination) {
+                    navController.navigate(route) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },
@@ -86,19 +99,63 @@ fun AppNavigation(themeManager: ThemeManager) {
 
         composable(Routes.REGISTER) {
             RegisterScreen(
-                onRegisterSuccess = { role ->
-                    val destination = if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
-                        Routes.TRAINER_HOME
-                    } else {
-                        Routes.STUDENT_HOME
-                    }
-                    navController.navigate(destination) {
+                onRegisterSuccess = { email ->
+                    navController.navigate(Routes.activationPendingRoute(email)) {
                         popUpTo(Routes.REGISTER) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.COMPLETE_PROFILE) {
+            CompleteProfileScreen(
+                authViewModel = authViewModel,
+                onProfileCompleted = {
+                    val state = authViewModel.authState.value
+                    if (state is AuthState.Success) {
+                        val route = if (state.user.role.equals("professor", ignoreCase = true) ||
+                            state.user.role.equals("admin", ignoreCase = true)
+                        ) {
+                            Routes.TRAINER_HOME
+                        } else {
+                            Routes.STUDENT_HOME
+                        }
+                        navController.navigate(route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+                onBackToLogin = {
+                    authViewModel.logoutAndNavigate {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Routes.ACTIVATION_PENDING,
+            arguments = listOf(navArgument("email") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            ActivationPendingScreen(
+                email = email,
+                authViewModel = authViewModel,
+                onResendSuccess = { /* Show snackbar */ },
+                onBackToLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -113,7 +170,16 @@ fun AppNavigation(themeManager: ThemeManager) {
 
         composable(Routes.TRAINER_HOME) {
             TrainerMainScreen(
-                onLogout = performLogout
+                onLogout = performLogout,
+                onNavigateToAdminInstitutos = {
+                    navController.navigate(Routes.ADMIN_INSTITUTOS)
+                }
+            )
+        }
+
+        composable(Routes.ADMIN_INSTITUTOS) {
+            AdminInstitutoScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

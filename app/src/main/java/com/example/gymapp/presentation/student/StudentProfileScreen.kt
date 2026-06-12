@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.AlunoProfile
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +93,7 @@ fun StudentProfileScreen(
                 PersonalInfoCard(
                     userName = userName,
                     userEmail = userEmail,
-                    createdAt = profile?.createdAt?.take(10)
+                    createdAt = DateUtils.formatIsoDate(profile?.createdAt)
                 )
             }
 

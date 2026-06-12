@@ -24,7 +24,10 @@ import com.example.gymapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminScreen(viewModel: ProfessorViewModel) {
+fun AdminScreen(
+    viewModel: ProfessorViewModel,
+    onNavigateToInstitutos: () -> Unit = {}
+) {
     val allUsers by viewModel.allUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -72,6 +75,20 @@ fun AdminScreen(viewModel: ProfessorViewModel) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Manage Institutos button
+            OutlinedButton(
+                onClick = onNavigateToInstitutos,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+            ) {
+                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gerenciar Institutos")
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Search bar

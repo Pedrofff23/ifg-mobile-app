@@ -67,6 +67,8 @@ object ErrorUtils {
         if (lowerMsg.contains("invalid credentials")) return "Email ou senha incorretos."
         if (lowerMsg.contains("email already registered")) return "Este email já está em uso."
         if (lowerMsg.contains("user not found")) return "Usuário não encontrado."
+        if (lowerMsg.contains("email not confirmed") || lowerMsg.contains("confirm your email"))
+            return "EMAIL_NOT_CONFIRMED"
         
         // Templates / Exercises
         if (lowerMsg.contains("invalid exercise id")) return "Exercício inválido selecionado."

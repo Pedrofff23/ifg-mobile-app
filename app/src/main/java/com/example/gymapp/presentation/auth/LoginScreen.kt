@@ -22,10 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gymapp.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.example.gymapp.R
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit,
+    onLoginSuccess: (AuthDestination) -> Unit,
     onNavigateToRegister: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
@@ -36,10 +38,26 @@ fun LoginScreen(
     val authState by viewModel.authState.collectAsState()
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            val user = (authState as AuthState.Success).user
-            onLoginSuccess(user.role)
-            viewModel.resetState()
+        when (authState) {
+            is AuthState.Success -> {
+                val user = (authState as AuthState.Success).user
+                val destination = if (user.role.equals("professor", ignoreCase = true) || user.role.equals("admin", ignoreCase = true)) {
+                    AuthDestination.PROFESSOR_HOME
+                } else {
+                    AuthDestination.STUDENT_HOME
+                }
+                onLoginSuccess(destination)
+                viewModel.resetState()
+            }
+            is AuthState.NeedsProfileCompletion -> {
+                onLoginSuccess(AuthDestination.COMPLETE_PROFILE)
+                viewModel.resetState()
+            }
+            is AuthState.NeedsActivation -> {
+                onLoginSuccess(AuthDestination.ACTIVATION_PENDING)
+                viewModel.resetState()
+            }
+            else -> {}
         }
     }
 
@@ -86,7 +104,7 @@ fun LoginScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "IFG",
+                    text = stringResource(R.string.ifg_logo),
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -97,7 +115,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(Spacing.xl))
 
             Text(
-                text = "Academia IFG",
+                text = stringResource(R.string.academia_ifg),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -105,7 +123,7 @@ fun LoginScreen(
                 )
             )
             Text(
-                text = "Instituto Federal de Goiás — Anápolis",
+                text = stringResource(R.string.ifg_subtitle),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White.copy(alpha = 0.7f)
                 ),
@@ -128,14 +146,14 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Bem-vindo de volta",
+                        text = stringResource(R.string.login_welcome_back),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         )
                     )
                     Spacer(modifier = Modifier.height(Spacing.xs))
                     Text(
-                        text = "Entre com suas credenciais",
+                        text = stringResource(R.string.login_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -147,8 +165,8 @@ fun LoginScreen(
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Email") },
-                        placeholder = { Text("seu.email@ifg.edu.br") },
+                        label = { Text(stringResource(R.string.label_email)) },
+                        placeholder = { Text(stringResource(R.string.placeholder_email)) },
                         singleLine = true,
                         leadingIcon = {
                             Icon(
@@ -176,8 +194,8 @@ fun LoginScreen(
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Senha") },
-                        placeholder = { Text("Digite sua senha") },
+                        label = { Text(stringResource(R.string.label_password)) },
+                        placeholder = { Text(stringResource(R.string.placeholder_password)) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         leadingIcon = {
@@ -191,7 +209,7 @@ fun LoginScreen(
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha"
+                                    contentDescription = if (passwordVisible) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password)
                                 )
                             }
                         },
@@ -227,7 +245,7 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                "Entrar",
+                                stringResource(R.string.button_login),
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -255,13 +273,13 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            "Não tem conta? ",
+                            "${stringResource(R.string.login_no_account)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         TextButton(onClick = onNavigateToRegister) {
                             Text(
-                                "Criar Conta",
+                                stringResource(R.string.login_create_account),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )

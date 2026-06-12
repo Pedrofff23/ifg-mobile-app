@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gymapp.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.example.gymapp.R
 
 @Composable
 fun RegisterScreen(
@@ -39,9 +41,9 @@ fun RegisterScreen(
     val authState by viewModel.authState.collectAsState()
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            val user = (authState as AuthState.Success).user
-            onRegisterSuccess(user.role)
+        if (authState is AuthState.NeedsActivation) {
+            val email = (authState as AuthState.NeedsActivation).email
+            onRegisterSuccess(email)
             viewModel.resetState()
         }
     }
@@ -84,14 +86,14 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(Spacing.lg))
 
             Text(
-                text = "Criar Conta",
+                text = stringResource(R.string.register_title),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             )
             Text(
-                text = "Preencha seus dados para se registrar",
+                text = stringResource(R.string.register_subtitle),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White.copy(alpha = 0.7f)
                 ),
@@ -120,8 +122,8 @@ fun RegisterScreen(
                         value = fullName,
                         onValueChange = { fullName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Nome Completo") },
-                        placeholder = { Text("João da Silva") },
+                        label = { Text(stringResource(R.string.label_full_name)) },
+                        placeholder = { Text(stringResource(R.string.placeholder_full_name)) },
                         singleLine = true,
                         leadingIcon = {
                             Icon(
@@ -149,8 +151,8 @@ fun RegisterScreen(
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("E-mail") },
-                        placeholder = { Text("seu.email@ifg.edu.br") },
+                        label = { Text(stringResource(R.string.label_email)) },
+                        placeholder = { Text(stringResource(R.string.placeholder_email)) },
                         singleLine = true,
                         leadingIcon = {
                             Icon(
@@ -178,8 +180,8 @@ fun RegisterScreen(
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Senha") },
-                        placeholder = { Text("Mínimo 6 caracteres") },
+                        label = { Text(stringResource(R.string.label_password)) },
+                        placeholder = { Text(stringResource(R.string.placeholder_password_min_length)) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         leadingIcon = {
@@ -193,7 +195,7 @@ fun RegisterScreen(
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (passwordVisible) "Ocultar" else "Mostrar"
+                                    contentDescription = if (passwordVisible) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password)
                                 )
                             }
                         },
@@ -232,7 +234,7 @@ fun RegisterScreen(
                             )
                         } else {
                             Text(
-                                "Criar Conta",
+                                stringResource(R.string.button_register),
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -260,13 +262,13 @@ fun RegisterScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            "Já tem uma conta? ",
+                            stringResource(R.string.register_no_account),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         TextButton(onClick = onNavigateToLogin) {
                             Text(
-                                "Entre aqui",
+                                stringResource(R.string.register_login_here),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )

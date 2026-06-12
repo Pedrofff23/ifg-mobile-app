@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -245,7 +246,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                             Spacer(modifier = Modifier.width(16.dp))
                                         }
                                         if (announcement.publishedAt != null) {
-                                            Text(announcement.publishedAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(DateUtils.formatIsoDate(announcement.publishedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }

@@ -38,7 +38,7 @@ import com.example.gymapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
+fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx.navigation.NavHostController? = null) {
     val exercises by viewModel.exercises.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -46,8 +46,6 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
 
     var searchQuery by remember { mutableStateOf("") }
     var muscleGroupFilter by remember { mutableStateOf<String?>(null) }
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf<Exercise?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Exercise?>(null) }
     var expandedExerciseId by remember { mutableStateOf<String?>(null) }
 
@@ -78,7 +76,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showCreateDialog = true },
+                onClick = { navController?.navigate("create_exercise") },
                 containerColor = IfgGreen
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Novo Exercício")
@@ -286,7 +284,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             OutlinedButton(
-                                                onClick = { showEditDialog = exercise },
+                                                onClick = { navController?.navigate("edit_exercise/${exercise.id}") },
                                                 modifier = Modifier.weight(1f),
                                                 shape = RoundedCornerShape(8.dp),
                                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
@@ -318,45 +316,6 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
 
     val context = LocalContext.current
 
-    // Create exercise dialog
-    if (showCreateDialog) {
-        ExerciseFormDialog(
-            title = "Novo Exercício",
-            initialExercise = null,
-            onDismiss = { 
-                showCreateDialog = false 
-            },
-            onSave = { name, desc, muscle, weight, video, fileUri ->
-                viewModel.createExercise(context, name, desc, muscle, weight, video, fileUri)
-                showCreateDialog = false
-            }
-        )
-    }
-
-    // Edit exercise dialog
-    if (showEditDialog != null) {
-        ExerciseFormDialog(
-            title = "Editar Exercício",
-            initialExercise = showEditDialog,
-            onDismiss = { showEditDialog = null },
-            onSave = { name, desc, muscle, weight, video, fileUri ->
-                viewModel.updateExercise(
-                    showEditDialog!!.id, 
-                    context, 
-                    name, 
-                    desc, 
-                    muscle, 
-                    weight, 
-                    video, 
-                    showEditDialog!!.mediaPath, 
-                    showEditDialog!!.mediaType, 
-                    fileUri
-                )
-                showEditDialog = null
-            }
-        )
-    }
-
     // Delete confirmation dialog
     if (showDeleteDialog != null) {
         AlertDialog(
@@ -377,131 +336,4 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel) {
             }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExerciseFormDialog(
-    title: String,
-    initialExercise: Exercise?,
-    onDismiss: () -> Unit,
-    onSave: (name: String, desc: String?, muscle: String, weight: Boolean, video: String?, fileUri: Uri?) -> Unit
-) {
-    var name by remember { mutableStateOf(initialExercise?.name ?: "") }
-    var description by remember { mutableStateOf(initialExercise?.description ?: "") }
-    var muscleGroup by remember { mutableStateOf(initialExercise?.muscleGroup ?: "Peito") }
-    var usesWeight by remember { mutableStateOf(initialExercise?.usesWeight ?: true) }
-    var videoUrl by remember { mutableStateOf(initialExercise?.videoUrl ?: "") }
-    var selectedMediaUri by remember { mutableStateOf<Uri?>(null) }
-
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedMediaUri = uri
-    }
-
-    val muscleGroups = listOf("Peito", "Costas", "Ombros", "Bíceps", "Tríceps", "Pernas", "Glúteos", "Core", "Cardio")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nome") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-            )
-            OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Descrição") },
-            minLines = 2,
-            maxLines = 4,
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-            )
-
-                var groupExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = groupExpanded,
-                    onExpandedChange = { groupExpanded = !groupExpanded }
-                ) {
-                    OutlinedTextField(
-                    value = muscleGroup,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Grupo Muscular") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = groupExpanded,
-                        onDismissRequest = { groupExpanded = false }
-                    ) {
-                        muscleGroups.forEach { group ->
-                            DropdownMenuItem(
-                                text = { Text(group) },
-                                onClick = { muscleGroup = group; groupExpanded = false }
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Usa peso?", modifier = Modifier.weight(1f))
-                    Switch(
-                        checked = usesWeight,
-                        onCheckedChange = { usesWeight = it }
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = { launcher.launch("*/*") }, // Allow any media type
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
-                ) {
-                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
-                }
-
-                if (selectedMediaUri == null) {
-                    OutlinedTextField(
-                        value = videoUrl,
-                        onValueChange = { videoUrl = it },
-                        label = { Text("URL de Vídeo Externo (Opcional)") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, cursorColor = MaterialTheme.colorScheme.primary)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onSave(
-                        name,
-                        description.ifBlank { null },
-                        muscleGroup,
-                        usesWeight,
-                        if (selectedMediaUri == null) videoUrl.ifBlank { null } else null,
-                        selectedMediaUri
-                    )
-                },
-                enabled = name.isNotBlank() && muscleGroup.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Salvar", color = Color.White) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-    )
 }

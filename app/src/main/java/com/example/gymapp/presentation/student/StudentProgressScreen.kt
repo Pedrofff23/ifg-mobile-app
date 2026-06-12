@@ -23,7 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymapp.domain.model.BodyMeasurement
 import com.example.gymapp.domain.model.WorkoutSession
+import com.example.gymapp.domain.model.ExerciseProgressPoint
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
+import androidx.compose.ui.res.stringResource
+import com.example.gymapp.R
+import com.example.gymapp.presentation.components.*
 
 @Composable
 fun StudentProgressScreen(viewModel: StudentViewModel) {
@@ -35,8 +40,14 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
     val isUpdating by viewModel.isUpdating.collectAsState()
     val updateSuccess by viewModel.updateSuccess.collectAsState()
     val error by viewModel.error.collectAsState()
+    val exerciseCustomMetrics by viewModel.exerciseCustomMetrics.collectAsState()
+    val exerciseProgress by viewModel.exerciseProgress.collectAsState()
+    val exerciseProgressLoading by viewModel.exerciseProgressLoading.collectAsState()
 
     var showLogWeightDialog by remember { mutableStateOf(false) }
+
+    // Date range filter state for weight chart
+    var weightDateRange by remember { mutableStateOf(DateRangeFilter.LAST_90) }
 
     LaunchedEffect(Unit) {
         viewModel.loadSessions()
@@ -44,7 +55,21 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
         viewModel.loadAssignments()
     }
 
+    // Load exercise progress when sessions are loaded (sessions contain exercise IDs)
+    LaunchedEffect(sessions) {
+        val exerciseIds = (sessions ?: emptyList())
+            .flatMap { it.exercises ?: emptyList() }
+            .mapNotNull { it.exerciseId }
+            .distinct()
+        if (exerciseIds.isNotEmpty()) {
+            viewModel.loadExerciseProgress(exerciseIds.take(10))
+        }
+    }
+
+    // Ensure custom metrics are loaded (they are loaded inside loadExerciseProgress)
+
     val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(updateSuccess) {
         if (updateSuccess != null) {
             snackbarHostState.showSnackbar(updateSuccess!!)
@@ -93,7 +118,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                 ) {
                     Column {
                         Text(
-                            text = "Seu Progresso",
+                            text = stringResource(R.string.student_progress_title),
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.sp
@@ -101,7 +126,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                         )
                         Spacer(modifier = Modifier.height(Spacing.xs))
                         Text(
-                            text = "Acompanhe sua evolução",
+                            text = stringResource(R.string.student_progress_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -113,7 +138,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Registrar Peso",
+                            contentDescription = stringResource(R.string.student_progress_log_weight),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -141,7 +166,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                     ) {
                         HeroStat(
                             value = profile?.currentWeightKg?.let { "$it kg" } ?: "--",
-                            label = "Peso Atual",
+                            label = stringResource(R.string.student_progress_current_weight),
                             icon = Icons.Default.MonitorWeight
                         )
                         Box(
@@ -152,7 +177,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                         )
                         HeroStat(
                             value = "${stats?.currentStreak ?: 0}",
-                            label = "Sequência (dias)",
+                            label = stringResource(R.string.student_progress_streak),
                             icon = Icons.Default.LocalFireDepartment
                         )
                         Box(
@@ -193,6 +218,88 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                 }
             }
 
+            // ============ BODY WEIGHT CHART ============
+            item {
+                SectionHeader(title = "Evolução do Peso")
+            }
+
+            item {
+                DateRangeSelector(
+                    selectedRange = weightDateRange,
+                    onRangeSelected = { weightDateRange = it }
+                )
+            }
+
+            item {
+                val weightChartData = (measurements ?: emptyList())
+                    .toWeightChartData()
+                    .filterByDateRange(weightDateRange)
+                val latestWeight = weightChartData.lastOrNull()?.value
+                val firstWeight = weightChartData.firstOrNull()?.value
+                val weightChange = if (latestWeight != null && firstWeight != null) {
+                    val diff = latestWeight - firstWeight
+                    String.format("%+.1f kg", diff)
+                } else null
+
+                ProgressLineChart(
+                    data = weightChartData,
+                    title = if (weightChange != null) "Peso Corporal ($weightChange)" else "Peso Corporal",
+                    valueLabel = "kg",
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    showDots = true,
+                    showGradient = true
+                )
+            }
+
+            // ============ EXERCISE PROGRESS CHARTS ============
+            if (exerciseProgress.isNotEmpty()) {
+                item {
+                    SectionHeader(title = "Progresso dos Exercícios")
+                }
+
+                if (exerciseProgressLoading) {
+                    item {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                }
+
+                // Collect all exercise names from sessions for labeling
+                val exerciseNameMap = (sessions ?: emptyList())
+                    .flatMap { it.exercises ?: emptyList() }
+                    .associate { it.exerciseId to (it.exerciseName ?: it.exerciseId) }
+
+                items(exerciseProgress.entries.toList().take(6)) { (exerciseId, progressPoints) ->
+                    val exerciseName = exerciseNameMap[exerciseId] ?: exerciseId
+                    val chartData = progressPoints.toExerciseChartData { it.maxWeightKg?.toFloat() }
+                    val repData = progressPoints.toExerciseChartData { it.totalReps?.toFloat() }
+
+                    val selectedMetric = exerciseCustomMetrics[exerciseId]?.metricType ?: "weight"
+                    // Weight chart with metric selector
+                    ExerciseProgressChart(
+                        exerciseName = exerciseName,
+                        progressPoints = chartData,
+                        selectedMetric = selectedMetric,
+                        onMetricChanged = { newMetric ->
+                            viewModel.setExerciseMetric(exerciseId, newMetric)
+                        },
+                        lineColor = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+
+                    // Reps chart (no custom metric selector needed)
+                    if (repData.isNotEmpty()) {
+                        ExerciseProgressChart(
+                            exerciseName = "$exerciseName — Reps",
+                            progressPoints = repData,
+                            selectedMetric = "reps",
+                            onMetricChanged = { },
+                            lineColor = Blue600
+                        )
+                    }
+                }
+            }
+
             // Recent Sessions
             item {
                 SectionHeader(title = "Sessões Recentes")
@@ -212,7 +319,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                 }
             }
 
-            // Measurements
+            // Measurements list
             val measList = measurements ?: emptyList()
             if (measList.isNotEmpty()) {
                 item {
@@ -313,7 +420,7 @@ private fun SessionRow(session: WorkoutSession) {
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Text(
-                    text = session.startedAt?.take(10) ?: "N/A",
+                    text = DateUtils.formatIsoDate(session.startedAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -367,7 +474,7 @@ private fun MeasurementRow(measurement: BodyMeasurement) {
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
                     )
                     Text(
-                        text = measurement.measuredAt?.take(10) ?: "N/A",
+                        text = DateUtils.formatIsoDate(measurement.measuredAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

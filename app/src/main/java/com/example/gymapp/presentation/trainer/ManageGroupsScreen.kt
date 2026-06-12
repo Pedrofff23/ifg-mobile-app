@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -281,18 +282,16 @@ private fun GroupCard(
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         val memberCount = group.members?.size ?: 0
-                        Badge(containerColor = Green100) {
-                            Text("$memberCount membro(s)", color = IfgGreen, style = MaterialTheme.typography.labelSmall)
-                        }
-                        // Show assigned workout badge from current_assignment
-                        group.currentAssignment?.let { assignment ->
-                            Badge(containerColor = Color(0xFFE3F2FD)) {
-                                Text(
-                                    "Treino: ${assignment.templateName ?: "Atribuído"}",
-                                    color = Color(0xFF1565C0),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Green100
+                        ) {
+                            Text(
+                                "$memberCount membro(s)",
+                                color = IfgGreen,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
                         }
                     }
                 }
@@ -308,6 +307,43 @@ private fun GroupCard(
                         contentDescription = if (isExpanded) "Recolher" else "Expandir",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            // Workout Status Bar (Visible even when collapsed)
+            group.currentAssignment?.let { assignment ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE3F2FD))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.FitnessCenter,
+                            contentDescription = null,
+                            tint = Color(0xFF1565C0),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "Treino Atribuído",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF1565C0).copy(alpha = 0.8f)
+                            )
+                            Text(
+                                assignment.templateName ?: "Sem nome",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF1565C0),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
 
@@ -401,7 +437,7 @@ private fun GroupCard(
                                     )
                                     if (!member.joinedAt.isNullOrBlank()) {
                                         Text(
-                                            "Entrou em ${member.joinedAt}",
+                                            "Entrou em ${DateUtils.formatIsoDate(member.joinedAt)}",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )

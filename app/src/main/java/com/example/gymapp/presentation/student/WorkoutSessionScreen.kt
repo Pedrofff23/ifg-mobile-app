@@ -34,6 +34,7 @@ import android.os.Build
 import com.example.gymapp.BuildConfig
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
+import com.example.gymapp.utils.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -624,9 +625,9 @@ private fun LoadHistoryCard(loadHistory: List<ExerciseProgressPoint>, isCardio: 
                 val historyText = if (isCardio) {
                     val durMin = entry.totalDurationSeconds?.let { "${it / 60}min" } ?: ""
                     val distKm = entry.totalDistanceMeters?.let { "%.2f km".format(it / 1000.0) } ?: ""
-                    "${(entry.sessionDate ?: "").take(10)}: $durMin $distKm"
+                    "${DateUtils.formatIsoDate(entry.sessionDate)}: $durMin $distKm"
                 } else {
-                    "${(entry.sessionDate ?: "").take(10)}: ${entry.maxWeightKg ?: 0.0} kg"
+                    "${DateUtils.formatIsoDate(entry.sessionDate)}: ${entry.maxWeightKg ?: 0.0} kg"
                 }
                 Text(text = historyText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 2.dp))
             }

@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TrainerStudentsHubScreen(
     viewModel: ProfessorViewModel,
-    isAdmin: Boolean
+    isAdmin: Boolean,
+    onNavigateToAdminInstitutos: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     
@@ -79,7 +80,7 @@ fun TrainerStudentsHubScreen(
         ) { page ->
             when (page) {
                 0 -> StudentsOverviewScreen(viewModel = viewModel)
-                1 -> if (isAdmin) AdminScreen(viewModel = viewModel)
+                1 -> if (isAdmin) AdminScreen(viewModel = viewModel, onNavigateToInstitutos = onNavigateToAdminInstitutos)
             }
         }
     }

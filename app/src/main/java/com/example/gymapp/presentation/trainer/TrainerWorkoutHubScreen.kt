@@ -16,11 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 
 @Composable
 fun TrainerWorkoutHubScreen(
     viewModel: ProfessorViewModel,
-    onNavigateToCreateWorkout: () -> Unit = {}
+    onNavigateToCreateWorkout: () -> Unit = {},
+    navController: NavHostController
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Gerenciar Treinos", "Exercícios")
@@ -76,8 +78,12 @@ fun TrainerWorkoutHubScreen(
             label = "trainerWorkoutHubTransition"
         ) { page ->
             when (page) {
-                0 -> ManageWorkoutsScreenWrapper(viewModel = viewModel, onNavigateToCreateWorkout = onNavigateToCreateWorkout)
-                1 -> ManageExercisesScreen(viewModel = viewModel)
+                0 -> ManageWorkoutsScreenWrapper(
+                    viewModel = viewModel,
+                    onNavigateToCreateWorkout = onNavigateToCreateWorkout,
+                    navController = navController
+                )
+                1 -> ManageExercisesScreen(viewModel = viewModel, navController = navController)
             }
         }
     }
@@ -86,7 +92,8 @@ fun TrainerWorkoutHubScreen(
 @Composable
 fun ManageWorkoutsScreenWrapper(
     viewModel: ProfessorViewModel,
-    onNavigateToCreateWorkout: () -> Unit
+    onNavigateToCreateWorkout: () -> Unit,
+    navController: NavHostController
 ) {
     Scaffold(
         floatingActionButton = {
@@ -97,8 +104,8 @@ fun ManageWorkoutsScreenWrapper(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.FitnessCenter, contentDescription = "Criar Treino", modifier = Modifier.size(24.dp))
                     Icon(
-                        Icons.Default.Add, 
-                        contentDescription = null, 
+                        Icons.Default.Add,
+                        contentDescription = null,
                         modifier = Modifier.size(14.dp).align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
@@ -108,7 +115,7 @@ fun ManageWorkoutsScreenWrapper(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
-             ManageWorkoutsContent(viewModel = viewModel)
+             ManageWorkoutsContent(viewModel = viewModel, navController = navController)
         }
     }
 }

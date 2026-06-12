@@ -43,13 +43,19 @@ data class AssignGroupWorkoutRequest(
 // ==================== EXERCISE REQUESTS ====================
 
 data class CreateExerciseRequest(
-	val name: String,
-	val description: String,
-	@SerializedName("muscle_group") val muscleGroup: String,
-	@SerializedName("uses_weight") val usesWeight: Boolean,
-	@SerializedName("video_url") val videoUrl: String?,
-	@SerializedName("media_type") val mediaType: String?,
-	@SerializedName("media_path") val mediaPath: String?
+    val name: String,
+    val description: String,
+    @SerializedName("muscle_group") val muscleGroup: String,
+    @SerializedName("uses_weight") val usesWeight: Boolean,
+    @SerializedName("video_url") val videoUrl: String?,
+    @SerializedName("media_type") val mediaType: String?,
+    @SerializedName("media_path") val mediaPath: String?
+)
+
+// Request for setting a custom metric preference for an exercise
+data class SetExerciseMetricRequest(
+    @SerializedName("exercise_id") val exerciseId: String,
+    @SerializedName("metric_type") val metricType: String
 )
 
 // ==================== TEMPLATE REQUESTS ====================

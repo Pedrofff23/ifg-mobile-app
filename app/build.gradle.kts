@@ -22,7 +22,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://192.168.240.1:8080/\"")
+        buildConfigField("String", "BASE_URL", "\"http://192.168.240.1:8080/api/v1/\"")
         buildConfigField("String", "SUPABASE_URL", "\"http://192.168.240.1:8000/storage/v1/object/public/exercises/\"")
     }
 

@@ -90,7 +90,13 @@ fun StudentMainScreen(
                         navController.navigate(Routes.workoutSessionRoute(assignment.id))
                     },
                     onNavigate = { route ->
-                        navController.navigate(route) { launchSingleTop = true }
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     },
                     snackbarHostState = snackbarHostState
                 )
