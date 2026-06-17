@@ -97,6 +97,10 @@ class ProfessorViewModel @Inject constructor(
     private val _groups = MutableStateFlow<List<StudentGroup>>(emptyList())
     val groups: StateFlow<List<StudentGroup>> = _groups.asStateFlow()
 
+    private val _selectedWorkoutHubTab = MutableStateFlow(0)
+    val selectedWorkoutHubTab: StateFlow<Int> = _selectedWorkoutHubTab.asStateFlow()
+
+
     // ---------- Student Detail State ----------
     private val _selectedStudentDetail = MutableStateFlow<User?>(null)
     val selectedStudentDetail: StateFlow<User?> = _selectedStudentDetail.asStateFlow()
@@ -159,6 +163,10 @@ class ProfessorViewModel @Inject constructor(
 
     fun clearSuccessMessage() {
     	_successMessage.value = null
+    }
+
+    fun setSelectedWorkoutHubTab(tab: Int) {
+        _selectedWorkoutHubTab.value = tab
     }
 
     fun updateUserName(fullName: String, instituto: String?) {

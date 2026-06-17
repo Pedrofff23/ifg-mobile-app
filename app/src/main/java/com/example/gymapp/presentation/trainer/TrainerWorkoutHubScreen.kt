@@ -24,7 +24,7 @@ fun TrainerWorkoutHubScreen(
     onNavigateToCreateWorkout: () -> Unit = {},
     navController: NavHostController
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val selectedTab by viewModel.selectedWorkoutHubTab.collectAsState()
     val tabTitles = listOf("Gerenciar Treinos", "Exercícios")
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -42,7 +42,7 @@ fun TrainerWorkoutHubScreen(
             tabTitles.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
-                    onClick = { selectedTab = index },
+                    onClick = { viewModel.setSelectedWorkoutHubTab(index) },
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

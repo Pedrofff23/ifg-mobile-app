@@ -47,25 +47,28 @@ fun CreateExerciseScreen(
         selectedMediaUri = uri
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.clearSuccessMessage()
+        viewModel.clearError()
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(successMessage) {
-        successMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearSuccessMessage()
+        successMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            if (msg.contains("criado", ignoreCase = true)) {
+                kotlinx.coroutines.delay(1200)
+                viewModel.clearSuccessMessage()
+                onBack()
+            } else {
+                viewModel.clearSuccessMessage()
+            }
         }
     }
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
-        }
-    }
-    LaunchedEffect(successMessage) {
-        successMessage?.let {
-            if (it.contains("criado", ignoreCase = true)) {
-                kotlinx.coroutines.delay(1200)
-                onBack()
-            }
         }
     }
 
@@ -185,15 +188,29 @@ fun CreateExerciseScreen(
                         )
                     }
 
-                    OutlinedButton(
-                        onClick = { launcher.launch("*/*") },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
+                        OutlinedButton(
+                            onClick = { launcher.launch("*/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                        ) {
+                            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
+                        }
+                        if (selectedMediaUri != null) {
+                            IconButton(
+                                onClick = { selectedMediaUri = null },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Remover Mídia")
+                            }
+                        }
                     }
 
                     if (selectedMediaUri == null) {

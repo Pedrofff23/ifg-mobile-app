@@ -545,28 +545,7 @@ private fun ExerciseInfoCard(
                     ExerciseMediaDisplay(mediaPath = mediaPath, mediaType = mediaType, exerciseName = exerciseName)
                 } else if (!videoUrl.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(Spacing.md))
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
-                                    context.startActivity(intent)
-                                } catch (_: Exception) { }
-                            },
-                        shape = RoundedCornerShape(Spacing.md),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.PlayCircle, contentDescription = "Assistir vídeo", modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
-                                Spacer(modifier = Modifier.height(Spacing.sm))
-                                Text("Assistir vídeo", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
-                                Text("Toque para abrir", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
+                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
                 }
             }
         }
@@ -590,19 +569,7 @@ private fun ExerciseMediaDisplay(mediaPath: String, mediaType: String, exerciseN
             )
         }
         "video" -> {
-            Card(
-                modifier = Modifier.fillMaxWidth().height(200.dp),
-                shape = RoundedCornerShape(Spacing.md),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                        Text("Vídeo disponível", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+            com.example.gymapp.presentation.components.VideoPlayer(videoUrl = fullUrl)
         }
         else -> {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(Spacing.md), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {

@@ -229,7 +229,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
 
                                         // Mídia
                                         val context = LocalContext.current
-                                        if (exercise.mediaPath != null) {
+                                        if (!exercise.mediaPath.isNullOrBlank()) {
                                             if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
                                                 val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
                                                 AsyncImage(
@@ -250,30 +250,10 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                                 )
                                             } else if (exercise.mediaType == "video") {
                                                 val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())
-                                                        context.startActivity(intent)
-                                                    },
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text("Assistir Vídeo Anexado")
-                                                }
+                                                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
                                             }
-                                        } else if (exercise.videoUrl != null) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    val intent = Intent(Intent.ACTION_VIEW, exercise.videoUrl.toUri())
-                                                    context.startActivity(intent)
-                                                },
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Icon(Icons.Default.Link, contentDescription = null)
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Assistir Vídeo (Link Externo)")
-                                            }
+                                        } else if (!exercise.videoUrl.isNullOrBlank()) {
+                                            com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
                                         }
 
                                         Spacer(modifier = Modifier.height(12.dp))

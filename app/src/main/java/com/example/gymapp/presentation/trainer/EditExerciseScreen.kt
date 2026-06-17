@@ -44,9 +44,28 @@ fun EditExerciseScreen(
     var usesWeight by remember { mutableStateOf(exercise?.usesWeight ?: true) }
     var videoUrl by remember { mutableStateOf(exercise?.videoUrl ?: "") }
     var selectedMediaUri by remember { mutableStateOf<Uri?>(null) }
+    var existingMediaPath by remember { mutableStateOf(exercise?.mediaPath) }
+    var existingMediaType by remember { mutableStateOf(exercise?.mediaType) }
 
     val muscleGroups = listOf("Peito", "Costas", "Ombros", "Bíceps", "Tríceps", "Pernas", "Glúteos", "Core", "Cardio")
     var groupExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(exercise) {
+        exercise?.let {
+            if (name.isBlank()) name = it.name
+            if (description.isBlank()) description = it.description ?: ""
+            muscleGroup = it.muscleGroup ?: "Peito"
+            usesWeight = it.usesWeight ?: true
+            if (videoUrl.isBlank()) videoUrl = it.videoUrl ?: ""
+            existingMediaPath = it.mediaPath
+            existingMediaType = it.mediaType
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.clearSuccessMessage()
+        viewModel.clearError()
+    }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedMediaUri = uri
@@ -54,23 +73,21 @@ fun EditExerciseScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(successMessage) {
-        successMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearSuccessMessage()
+        successMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            if (msg.contains("atualizado", ignoreCase = true)) {
+                kotlinx.coroutines.delay(1200)
+                viewModel.clearSuccessMessage()
+                onBack()
+            } else {
+                viewModel.clearSuccessMessage()
+            }
         }
     }
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
-        }
-    }
-    LaunchedEffect(successMessage) {
-        successMessage?.let {
-            if (it.contains("atualizado", ignoreCase = true)) {
-                kotlinx.coroutines.delay(1200)
-                onBack()
-            }
         }
     }
 
@@ -190,18 +207,46 @@ fun EditExerciseScreen(
                         )
                     }
 
-                    OutlinedButton(
-                        onClick = { launcher.launch("*/*") },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
+                        OutlinedButton(
+                            onClick = { launcher.launch("*/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                        ) {
+                            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                if (selectedMediaUri != null) "Mídia Selecionada!"
+                                else if (existingMediaPath != null) "Substituir Mídia"
+                                else "Anexar Mídia (GIF/Imagem/Vídeo)"
+                            )
+                        }
+                        if (selectedMediaUri != null) {
+                            IconButton(
+                                onClick = { selectedMediaUri = null },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Remover Mídia")
+                            }
+                        } else if (existingMediaPath != null) {
+                            IconButton(
+                                onClick = {
+                                    existingMediaPath = null
+                                    existingMediaType = null
+                                },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Remover Mídia")
+                            }
+                        }
                     }
 
-                    if (selectedMediaUri == null) {
+                    if (selectedMediaUri == null && existingMediaPath == null) {
                         OutlinedTextField(
                             value = videoUrl,
                             onValueChange = { videoUrl = it },
@@ -239,9 +284,9 @@ fun EditExerciseScreen(
                             description = description.ifBlank { null },
                             muscleGroup = muscleGroup,
                             usesWeight = usesWeight,
-                            videoUrl = if (selectedMediaUri == null) videoUrl.ifBlank { null } else null,
-                            mediaPath = exercise?.mediaPath,
-                            mediaType = exercise?.mediaType,
+                            videoUrl = if (selectedMediaUri == null && existingMediaPath == null) videoUrl.ifBlank { null } else null,
+                            mediaPath = existingMediaPath,
+                            mediaType = existingMediaType,
                             fileUri = selectedMediaUri
                         )
                     },
