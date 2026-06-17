@@ -146,32 +146,23 @@ class AuthViewModel @Inject constructor(
                             profileCompleted = profileCompleted
                         )
 
+                        val isProfileIncomplete = !profileCompleted || (institutoId.isNullOrEmpty() && meData.instituto.isNullOrEmpty())
+
                         if (!isActive) {
                             Log.d("AuthViewModel", "User not active, needs activation")
                             _authState.value = AuthState.NeedsActivation(meData.email)
-                        } else if (dbRole.equals("professor", ignoreCase = true) || dbRole.equals("admin", ignoreCase = true)) {
-                            // Staff bypass profile completion
-                            Log.d("AuthViewModel", "Staff login detected ($dbRole), bypassing profile completion")
-                            _authState.value = AuthState.Success(domainUser)
-                        } else if (!profileCompleted || (institutoId.isNullOrEmpty() && meData.instituto.isNullOrEmpty())) {
-                            // Student with incomplete profile
-                            Log.d("AuthViewModel", "Student profile incomplete (completed=$profileCompleted). Redirecting to Complete Profile.")
+                        } else if (isProfileIncomplete) {
+                            Log.d("AuthViewModel", "Profile incomplete (completed=$profileCompleted). Redirecting to Complete Profile.")
                             _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                         } else {
-                            // Student with complete profile
-                            Log.d("AuthViewModel", "Student profile complete. Proceeding to Home.")
+                            Log.d("AuthViewModel", "Profile complete. Proceeding to Home.")
                             _authState.value = AuthState.Success(domainUser)
                         }
                     } else {
                         // No profile data yet - check role from metadata
                         val domainUser = User(id = userId, email = userEmail, fullName = fullName, role = role)
-                        if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
-                            Log.d("AuthViewModel", "No profile data, staff bypass ($role)")
-                            _authState.value = AuthState.Success(domainUser)
-                        } else {
-                            Log.d("AuthViewModel", "No profile data, student redirect ($role)")
-                            _authState.value = AuthState.NeedsProfileCompletion(domainUser)
-                        }
+                        Log.d("AuthViewModel", "No profile data, redirecting to Complete Profile")
+                        _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                     }
                 } catch (e: Exception) {
                     Log.e("AuthViewModel", "Error fetching me profile: ${e.message}", e)
@@ -181,13 +172,9 @@ class AuthViewModel @Inject constructor(
                         _authState.value = AuthState.Blocked
                         return@launch
                     }
-                    // If /auth/me failed, we fallback to metadata role
+                    // If /auth/me failed, we redirect to complete profile to be safe
                     val domainUser = User(id = userId, email = userEmail, fullName = fullName, role = role)
-                    if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
-                        _authState.value = AuthState.Success(domainUser)
-                    } else {
-                        _authState.value = AuthState.NeedsProfileCompletion(domainUser)
-                    }
+                    _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                 }
             } catch (e: Exception) {
                 // Login failed - check if email not confirmed
@@ -359,7 +346,7 @@ class AuthViewModel @Inject constructor(
                     _authState.value = AuthState.NeedsActivation(meData.email)
                     AuthDestination.ACTIVATION_PENDING
                 }
-                !isStaff && isProfileIncomplete -> {
+                isProfileIncomplete -> {
                     _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                     AuthDestination.COMPLETE_PROFILE
                 }
