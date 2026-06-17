@@ -34,6 +34,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
 
@@ -47,15 +48,15 @@ fun LoginScreen(
                     AuthDestination.STUDENT_HOME
                 }
                 onLoginSuccess(destination)
-                viewModel.resetState()
             }
             is AuthState.NeedsProfileCompletion -> {
                 onLoginSuccess(AuthDestination.COMPLETE_PROFILE)
-                viewModel.resetState()
             }
             is AuthState.NeedsActivation -> {
                 onLoginSuccess(AuthDestination.ACTIVATION_PENDING)
-                viewModel.resetState()
+            }
+            is AuthState.Blocked -> {
+                onLoginSuccess(AuthDestination.BLOCKED)
             }
             else -> {}
         }
@@ -225,7 +226,26 @@ fun LoginScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.xl))
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = { showForgotPasswordDialog = true },
+                            contentPadding = PaddingValues(horizontal = 0.dp)
+                        ) {
+                            Text(
+                                "Esqueceu a senha?",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.md))
 
                     // Login Button
                     Button(
@@ -290,5 +310,105 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.weight(0.2f))
         }
+    }
+
+    if (showForgotPasswordDialog) {
+        val forgotSuccess by viewModel.forgotPasswordState.collectAsState()
+        val forgotError by viewModel.forgotPasswordError.collectAsState()
+        val forgotLoading by viewModel.isForgotPasswordLoading.collectAsState()
+        var recoveryEmail by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!forgotLoading) {
+                    showForgotPasswordDialog = false
+                    viewModel.clearForgotPasswordStatus()
+                }
+            },
+            title = { Text("Recuperar Senha") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    if (forgotSuccess != null) {
+                        Text(
+                            text = forgotSuccess ?: "",
+                            color = IfgGreen,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            text = "Digite seu email para receber um link de redefinição de senha.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = recoveryEmail,
+                            onValueChange = { recoveryEmail = it },
+                            label = { Text("Email") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.primary,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = RoundedCornerShape(Spacing.md)
+                        )
+                        if (forgotError != null) {
+                            Text(
+                                text = forgotError ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (forgotSuccess != null) {
+                    Button(
+                        onClick = {
+                            showForgotPasswordDialog = false
+                            viewModel.clearForgotPasswordStatus()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        shape = RoundedCornerShape(Spacing.md)
+                    ) {
+                        Text("Ok", color = Color.White)
+                    }
+                } else {
+                    Button(
+                        onClick = { viewModel.forgotPassword(recoveryEmail.trim()) },
+                        enabled = !forgotLoading && recoveryEmail.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        shape = RoundedCornerShape(Spacing.md)
+                    ) {
+                        if (forgotLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text("Enviar link", color = Color.White)
+                        }
+                    }
+                }
+            },
+            dismissButton = {
+                if (forgotSuccess == null) {
+                    TextButton(
+                        onClick = {
+                            showForgotPasswordDialog = false
+                            viewModel.clearForgotPasswordStatus()
+                        },
+                        enabled = !forgotLoading
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(Spacing.lg)
+        )
     }
 }

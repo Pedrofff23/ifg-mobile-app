@@ -20,6 +20,7 @@ import com.example.gymapp.domain.model.CreateTemplateRequest
 import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.domain.model.UpdateRoleRequest
 import com.example.gymapp.domain.model.UpdateStatusRequest
+import com.example.gymapp.domain.model.UpdateBlockedRequest
 import com.example.gymapp.domain.model.UpdateUserRequest
 import com.example.gymapp.domain.model.User
 import com.example.gymapp.domain.model.WorkoutTemplate
@@ -45,6 +46,9 @@ import java.io.FileOutputStream
 import javax.inject.Inject
 import com.example.gymapp.domain.model.ExerciseCustomMetric
 import com.example.gymapp.domain.model.SetExerciseMetricRequest
+import com.example.gymapp.domain.model.UpdateAnnouncementRequest
+import com.example.gymapp.domain.model.AuditLogEntry
+import com.example.gymapp.domain.model.BackgroundJob
 import retrofit2.HttpException
 import android.util.Log
 
@@ -537,6 +541,22 @@ class ProfessorViewModel @Inject constructor(
         }
     }
 
+    fun updateAnnouncement(id: String, request: UpdateAnnouncementRequest) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                erpService.updateAnnouncement(id, request)
+                _successMessage.value = "Aviso atualizado com sucesso"
+                loadAnnouncements(_announcementTypeFilter.value)
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     // ==================== ASSIGNMENTS ====================
 
     fun assignWorkout(request: AssignWorkoutRequest) {
@@ -617,13 +637,13 @@ class ProfessorViewModel @Inject constructor(
     }
     }
 
-    fun updateUserStatus(userId: String, isActive: Boolean) {
+    fun updateUserBlocked(userId: String, isBlocked: Boolean) {
     	viewModelScope.launch {
     		_isLoading.value = true
     		_error.value = null
     		try {
-    			userService.updateStatus(userId, UpdateStatusRequest(isActive))
-    			_successMessage.value = "Status atualizado com sucesso"
+    			userService.updateBlocked(userId, UpdateBlockedRequest(isBlocked))
+    			_successMessage.value = "Status de bloqueio atualizado com sucesso"
     			loadAllUsers()
     		} catch (e: Exception) {
     			_error.value = ErrorUtils.parseErrorMessage(e)
@@ -631,6 +651,42 @@ class ProfessorViewModel @Inject constructor(
     			_isLoading.value = false
     		}
     	}
+    }
+
+    // ==================== ADMIN (Audit & Jobs) ====================
+
+    private val _auditLogs = MutableStateFlow<List<AuditLogEntry>>(emptyList())
+    val auditLogs: StateFlow<List<AuditLogEntry>> = _auditLogs.asStateFlow()
+
+    private val _backgroundJobs = MutableStateFlow<List<BackgroundJob>>(emptyList())
+    val backgroundJobs: StateFlow<List<BackgroundJob>> = _backgroundJobs.asStateFlow()
+
+    fun loadAuditLogs() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                _auditLogs.value = erpService.getAuditLogs(limit = 50).data ?: emptyList()
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadBackgroundJobs() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                _backgroundJobs.value = erpService.getBackgroundJobs()
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     // ==================== GROUPS ====================

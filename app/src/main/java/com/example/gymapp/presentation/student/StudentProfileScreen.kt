@@ -154,8 +154,8 @@ fun StudentProfileScreen(
         LogWeightDialog(
             isUpdating = isUpdating,
             onDismiss = { showLogWeightDialog = false },
-            onSave = { weightKg, notes ->
-                viewModel.addMeasurement(weightKg = weightKg, notes = notes)
+            onSave = { weightKg ->
+                viewModel.addMeasurement(weightKg = weightKg)
                 showLogWeightDialog = false
             }
         )
@@ -178,7 +178,7 @@ fun StudentProfileScreen(
             isUpdating = isUpdating,
             onDismiss = { showEditNameDialog = false },
             onSave = { fullName, instituto ->
-                viewModel.updateUserName(fullName, instituto)
+                viewModel.updateProfile(fullName = fullName, instituto = instituto)
                 showEditNameDialog = false
             }
         )
@@ -463,10 +463,9 @@ private fun PreferenceCard(
 fun LogWeightDialog(
     isUpdating: Boolean,
     onDismiss: () -> Unit,
-    onSave: (weightKg: Double, notes: String?) -> Unit
+    onSave: (weightKg: Double) -> Unit
 ) {
     var weightText by remember { mutableStateOf("") }
-    var notesText by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -490,31 +489,13 @@ fun LogWeightDialog(
                     ),
                     shape = RoundedCornerShape(Spacing.md)
                 )
-                OutlinedTextField(
-                    value = notesText,
-                    onValueChange = { notesText = it },
-                    label = { Text("Observações (opcional)") },
-                    minLines = 2,
-                    maxLines = 4,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(Spacing.md)
-                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val w = weightText.toDoubleOrNull() ?: return@Button
-                    onSave(w, notesText.ifBlank { null })
+                    onSave(w)
                 },
                 enabled = !isUpdating && weightText.toDoubleOrNull() != null,
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),

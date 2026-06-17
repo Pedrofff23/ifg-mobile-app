@@ -5,7 +5,7 @@ import retrofit2.http.*
 
 interface ProfileService {
 
-    @GET("profiles/{id}")
+    @GET("users/{id}")
     suspend fun getProfile(
         @Path("id") id: String
     ): ApiResponse<AlunoProfile>
@@ -26,4 +26,9 @@ interface ProfileService {
     suspend fun addMeasurement(
         @Body request: AddMeasurementRequest
     ): ApiResponse<BodyMeasurement>
+
+    @GET("profiles/{id}/measurements/chart")
+    suspend fun getMeasurementsChart(
+        @Path("id") id: String
+    ): ApiResponse<List<BodyMeasurement>>
 }

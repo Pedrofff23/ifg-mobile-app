@@ -2,6 +2,7 @@ package com.example.gymapp.presentation.student
 
 import androidx.lifecycle.ViewModel
 import com.example.gymapp.utils.ErrorUtils
+import com.example.gymapp.utils.DateUtils
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.ErpService
@@ -45,6 +46,9 @@ class StudentViewModel @Inject constructor(
 
     private val _measurements = MutableStateFlow<List<BodyMeasurement>>(emptyList())
     val measurements: StateFlow<List<BodyMeasurement>> = _measurements.asStateFlow()
+
+    private val _measurementsChart = MutableStateFlow<List<BodyMeasurement>>(emptyList())
+    val measurementsChart: StateFlow<List<BodyMeasurement>> = _measurementsChart.asStateFlow()
 
     private val _userName = MutableStateFlow<String?>(null)
     val userName: StateFlow<String?> = _userName.asStateFlow()
@@ -187,6 +191,19 @@ class StudentViewModel @Inject constructor(
     loadSessions()
     loadAnnouncements()
     loadStats()
+    loadMeasurementsChart()
+    }
+
+    fun loadMeasurementsChart() {
+        viewModelScope.launch {
+            try {
+                val userId = tokenManager.getUserIdSync() ?: return@launch
+                val resp = profileService.getMeasurementsChart(userId)
+                _measurementsChart.value = resp.data ?: emptyList()
+            } catch (e: Exception) {
+                // Chart data is supplementary - don't show error
+            }
+        }
     }
 
     fun loadStats() {
@@ -201,19 +218,39 @@ class StudentViewModel @Inject constructor(
     }
     }
 
-    fun updateProfile(heightCm: Double, currentWeightKg: Double, injuryHistory: String?) {
+    fun updateProfile(
+        fullName: String? = null,
+        heightCm: Double? = null,
+        currentWeightKg: Double? = null,
+        injuryHistory: String? = null,
+        instituto: String? = null
+    ) {
         viewModelScope.launch {
             _isUpdating.value = true
             _error.value = null
             _updateSuccess.value = null
             try {
-                profileService.upsertProfile(
-                    UpsertProfileRequest(
-                        currentWeightKg = currentWeightKg,
+                val userId = tokenManager.getUserIdSync() ?: return@launch
+                val nameToSubmit = fullName 
+                    ?: _userName.value 
+                    ?: tokenManager.getUserNameSync() 
+                    ?: "Usuário"
+                userService.updateProfile(
+                    userId,
+                    UpdateUserRequest(
+                        fullName = nameToSubmit,
                         heightCm = heightCm,
-                        injuryHistory = injuryHistory
+                        currentWeightKg = currentWeightKg,
+                        injuryHistory = injuryHistory,
+                        instituto = instituto
                     )
                 )
+                
+                if (fullName != null) {
+                    _userName.value = fullName
+                    tokenManager.saveUserName(fullName)
+                }
+
                 loadProfile()
                 _updateSuccess.value = "Perfil atualizado com sucesso!"
             } catch (e: Exception) {
@@ -224,26 +261,19 @@ class StudentViewModel @Inject constructor(
         }
     }
 
-    fun addMeasurement(weightKg: Double, notes: String?) {
+    fun addMeasurement(weightKg: Double) {
         viewModelScope.launch {
             _isUpdating.value = true
             _error.value = null
             _updateSuccess.value = null
             try {
-                // Get current date in ISO format (yyyy-MM-dd)
-                val now = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    java.time.OffsetDateTime.now().format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                } else {
-                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
-                    sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                    sdf.format(java.util.Date())
-                }
+                // Get current date in ISO format using DateUtils for consistency
+                val now = DateUtils.getNowIso()
 
                 profileService.addMeasurement(
                     AddMeasurementRequest(
                         weightKg = weightKg,
-                        measuredAt = now,
-                        notes = notes
+                        measuredAt = now
                     )
                 )
                 loadProfile()
@@ -254,25 +284,6 @@ class StudentViewModel @Inject constructor(
                 _isUpdating.value = false
             }
         }
-    }
-
-    fun updateUserName(fullName: String, instituto: String?) {
-    	viewModelScope.launch {
-    		_isUpdating.value = true
-    		_error.value = null
-    		_updateSuccess.value = null
-    		try {
-    			val userId = tokenManager.getUserIdSync() ?: return@launch
-    			userService.updateProfile(userId, UpdateUserRequest(fullName = fullName, instituto = instituto))
-    			_userName.value = fullName
-    				tokenManager.saveUserName(fullName)
-    			_updateSuccess.value = "Nome atualizado com sucesso!"
-    		} catch (e: Exception) {
-    			_error.value = ErrorUtils.parseErrorMessage(e)
-    		} finally {
-    			_isUpdating.value = false
-    		}
-    	}
     }
 
     fun clearUpdateStatus() {

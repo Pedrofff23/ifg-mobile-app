@@ -2,6 +2,7 @@ package com.example.gymapp.presentation.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,6 +32,7 @@ fun StudentCommunicationScreen(viewModel: StudentViewModel) {
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedAnnouncement by remember { mutableStateOf<Announcement?>(null) }
     val tabs = listOf("Mural", "Instruções", "Notícias")
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -75,15 +77,23 @@ fun StudentCommunicationScreen(viewModel: StudentViewModel) {
 
         // Tab Content
         when (selectedTab) {
-            0 -> MuralTab(announcements = announcements)
+            0 -> MuralTab(announcements = announcements, onAnnounceClick = { selectedAnnouncement = it })
             1 -> InstrucoesTab()
             2 -> NoticiasTab(announcements = announcements)
         }
     }
+
+    // Announcement detail dialog
+    if (selectedAnnouncement != null) {
+        AnnouncementDetailDialog(
+            announcement = selectedAnnouncement!!,
+            onDismiss = { selectedAnnouncement = null }
+        )
+    }
 }
 
 @Composable
-private fun MuralTab(announcements: List<Announcement>?) {
+private fun MuralTab(announcements: List<Announcement>?, onAnnounceClick: (Announcement) -> Unit = {}) {
     if (announcements.isNullOrEmpty()) {
         EmptyState(
             icon = Icons.Default.Notifications,
@@ -102,16 +112,18 @@ private fun MuralTab(announcements: List<Announcement>?) {
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             items(announcements) { announcement ->
-                AnnouncementCard(announcement = announcement)
+                AnnouncementCard(announcement = announcement, onAnnounceClick = onAnnounceClick)
             }
         }
     }
 }
 
 @Composable
-private fun AnnouncementCard(announcement: Announcement) {
+private fun AnnouncementCard(announcement: Announcement, onAnnounceClick: (Announcement) -> Unit = {}) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onAnnounceClick(announcement) },
         shape = RoundedCornerShape(Spacing.lg),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
@@ -317,4 +329,47 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
             }
         }
     }
+}
+
+@Composable
+private fun AnnouncementDetailDialog(
+    announcement: Announcement,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(announcement.title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    announcement.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (announcement.authorName != null) {
+                        Text(
+                            "Por: ${announcement.authorName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (announcement.publishedAt != null) {
+                        Text(
+                            DateUtils.formatIsoDate(announcement.publishedAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Fechar") }
+        }
+    )
 }

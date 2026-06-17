@@ -64,17 +64,25 @@ object ErrorUtils {
         if (lowerMsg.contains("invalid token")) return "Token de acesso inválido."
         
         // Validation / Auth errors
-        if (lowerMsg.contains("invalid credentials")) return "Email ou senha incorretos."
-        if (lowerMsg.contains("email already registered")) return "Este email já está em uso."
+        if (lowerMsg.contains("invalid credentials") || lowerMsg.contains("invalid_grant") || lowerMsg.contains("invalid login")) 
+            return "Email ou senha incorretos."
+        if (lowerMsg.contains("email already registered") || lowerMsg.contains("user already exists")) 
+            return "Este email já está em uso."
         if (lowerMsg.contains("user not found")) return "Usuário não encontrado."
         if (lowerMsg.contains("email not confirmed") || lowerMsg.contains("confirm your email"))
             return "EMAIL_NOT_CONFIRMED"
+        if (lowerMsg.contains("blocked") || lowerMsg.contains("account is blocked"))
+            return "ACCOUNT_BLOCKED"
         
         // Templates / Exercises
         if (lowerMsg.contains("invalid exercise id")) return "Exercício inválido selecionado."
         if (lowerMsg.contains("invalid user id")) return "Usuário inválido."
         if (lowerMsg.contains("failed to upload file")) return "Não foi possível enviar o arquivo de mídia."
         if (lowerMsg.contains("cannot view another user")) return "Você não tem permissão para visualizar estes dados."
+        
+        // General Errors
+        if (lowerMsg.contains("an unexpected error occurred") || lowerMsg.contains("internal_error"))
+            return "Ocorreu um erro interno no servidor. Tente novamente mais tarde."
         
         // Return original if no common mapping fits (or just fallback to something generic, but seeing the original is better for debugging)
         return backendMessage

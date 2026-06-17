@@ -36,10 +36,14 @@ data class MeResponse(
     @SerializedName("full_name") val fullName: String?,
     val role: String,
     @SerializedName("is_active") val isActive: Boolean = true,
+    @SerializedName("is_blocked") val isBlocked: Boolean = false,
     @SerializedName("instituto_id") val institutoId: String? = null,
     val instituto: String? = null,
     @SerializedName("profile_completed") val profileCompleted: Boolean = false,
-    @SerializedName("activation_sent_at") val activationSentAt: String? = null
+    @SerializedName("activation_sent_at") val activationSentAt: String? = null,
+    @SerializedName("current_weight_kg") val currentWeightKg: Double? = null,
+    @SerializedName("height_cm") val heightCm: Double? = null,
+    @SerializedName("injury_history") val injuryHistory: String? = null
 )
 
 data class User(
@@ -48,12 +52,16 @@ data class User(
     @SerializedName("full_name") val fullName: String?,
     val role: String,
     @SerializedName("is_active") val isActive: Boolean = true,
+    @SerializedName("is_blocked") val isBlocked: Boolean = false,
     @SerializedName("instituto_id") val institutoId: String? = null,
     val instituto: String? = null,
     @SerializedName("profile_completed") val profileCompleted: Boolean = false,
     @SerializedName("activation_sent_at") val activationSentAt: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
-    @SerializedName("updated_at") val updatedAt: String? = null
+    @SerializedName("updated_at") val updatedAt: String? = null,
+    @SerializedName("current_weight_kg") val currentWeightKg: Double? = null,
+    @SerializedName("height_cm") val heightCm: Double? = null,
+    @SerializedName("injury_history") val injuryHistory: String? = null
 )
 
 data class CompleteProfileRequest(

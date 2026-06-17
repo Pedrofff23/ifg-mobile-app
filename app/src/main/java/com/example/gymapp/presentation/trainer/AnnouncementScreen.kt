@@ -33,6 +33,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
     var showCreateForm by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var announcementToDelete by remember { mutableStateOf<Announcement?>(null) }
+    var showEditDialog by remember { mutableStateOf<Announcement?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(successMessage) {
@@ -231,6 +232,12 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                             )
                                         }
                                         IconButton(
+                                            onClick = { showEditDialog = announcement },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF1565C0), modifier = Modifier.size(18.dp))
+                                        }
+                                        IconButton(
                                             onClick = { announcementToDelete = announcement; showDeleteDialog = true },
                                             modifier = Modifier.size(32.dp)
                                         ) {
@@ -277,4 +284,94 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
             dismissButton = { TextButton(onClick = { showDeleteDialog = false; announcementToDelete = null }) { Text("Cancelar") } }
         )
     }
+
+    // Edit dialog
+    if (showEditDialog != null) {
+        val editAnn = showEditDialog!!
+        AnnouncementEditDialog(
+            announcement = editAnn,
+            onDismiss = { showEditDialog = null },
+            onSave = { title, content, type ->
+                viewModel.updateAnnouncement(
+                    editAnn.id,
+                    UpdateAnnouncementRequest(
+                        title = title.takeIf { it.isNotBlank() },
+                        content = content.takeIf { it.isNotBlank() },
+                        type = type
+                    )
+                )
+                showEditDialog = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun AnnouncementEditDialog(
+    announcement: Announcement,
+    onDismiss: () -> Unit,
+    onSave: (title: String, content: String, type: String) -> Unit
+) {
+    var title by remember { mutableStateOf(announcement.title) }
+    var content by remember { mutableStateOf(announcement.content) }
+    var selectedType by remember { mutableStateOf(announcement.type ?: "aviso") }
+
+    val typeOptions = listOf(
+        "noticia" to "Notícia",
+        "aviso" to "Aviso",
+        "instrucoes" to "Instruções"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Aviso") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Título") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Conteúdo") },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp),
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+                Text("Tipo", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    typeOptions.forEach { (value, label) ->
+                        FilterChip(
+                            selected = selectedType == value,
+                            onClick = { selectedType = value },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(title, content, selectedType) },
+                enabled = title.isNotBlank() && content.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+            ) { Text("Salvar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }

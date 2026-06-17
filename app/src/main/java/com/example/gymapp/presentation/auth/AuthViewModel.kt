@@ -1,11 +1,14 @@
 package com.example.gymapp.presentation.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.AuthService
 import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.ResendActivationRequest
+import com.example.gymapp.data.remote.FCMTokenRequest
+import com.example.gymapp.data.remote.ForgotPasswordRequest
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.utils.ErrorUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +24,7 @@ sealed class AuthState {
     data class Success(val user: User) : AuthState()
     data class NeedsProfileCompletion(val user: User) : AuthState()
     data class NeedsActivation(val email: String) : AuthState()
+    object Blocked : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -29,6 +33,7 @@ enum class AuthDestination {
     REGISTER,
     COMPLETE_PROFILE,
     ACTIVATION_PENDING,
+    BLOCKED,
     STUDENT_HOME,
     PROFESSOR_HOME
 }
@@ -55,8 +60,8 @@ class AuthViewModel @Inject constructor(
             try {
                 val response = erpService.getInstitutos(limit = 100)
                 _institutos.value = response.data ?: emptyList()
-            } catch (_: Exception) {
-                // Silently fail
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error loading institutos: ${e.message}")
             } finally {
                 _isInstitutosLoading.value = false
             }
@@ -121,9 +126,11 @@ class AuthViewModel @Inject constructor(
                         val profileCompleted = meData.profileCompleted
                         val institutoId = meData.institutoId
                         val isActive = meData.isActive
+                        val dbRole = meData.role
+
+                        Log.d("AuthViewModel", "Login Me profile: role=$dbRole, active=$isActive, instId=$institutoId, instName=${meData.instituto}, completed=$profileCompleted")
 
                         // Sync the database role to tokenManager (overrides stale Supabase metadata role)
-                        val dbRole = meData.role
                         if (dbRole != role) {
                             tokenManager.saveUserRole(dbRole)
                         }
@@ -140,38 +147,62 @@ class AuthViewModel @Inject constructor(
                         )
 
                         if (!isActive) {
+                            Log.d("AuthViewModel", "User not active, needs activation")
                             _authState.value = AuthState.NeedsActivation(meData.email)
-                        } else if (!profileCompleted || institutoId.isNullOrEmpty()) {
+                        } else if (dbRole.equals("professor", ignoreCase = true) || dbRole.equals("admin", ignoreCase = true)) {
+                            // Staff bypass profile completion
+                            Log.d("AuthViewModel", "Staff login detected ($dbRole), bypassing profile completion")
+                            _authState.value = AuthState.Success(domainUser)
+                        } else if (!profileCompleted || (institutoId.isNullOrEmpty() && meData.instituto.isNullOrEmpty())) {
+                            // Student with incomplete profile
+                            Log.d("AuthViewModel", "Student profile incomplete (completed=$profileCompleted). Redirecting to Complete Profile.")
                             _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                         } else {
+                            // Student with complete profile
+                            Log.d("AuthViewModel", "Student profile complete. Proceeding to Home.")
                             _authState.value = AuthState.Success(domainUser)
                         }
                     } else {
-                        // No profile data yet - needs profile completion
+                        // No profile data yet - check role from metadata
                         val domainUser = User(id = userId, email = userEmail, fullName = fullName, role = role)
+                        if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
+                            Log.d("AuthViewModel", "No profile data, staff bypass ($role)")
+                            _authState.value = AuthState.Success(domainUser)
+                        } else {
+                            Log.d("AuthViewModel", "No profile data, student redirect ($role)")
+                            _authState.value = AuthState.NeedsProfileCompletion(domainUser)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Error fetching me profile: ${e.message}", e)
+                    val parsedError = ErrorUtils.parseErrorMessage(e)
+                    if (parsedError == "ACCOUNT_BLOCKED") {
+                        tokenManager.clearSession()
+                        _authState.value = AuthState.Blocked
+                        return@launch
+                    }
+                    // If /auth/me failed, we fallback to metadata role
+                    val domainUser = User(id = userId, email = userEmail, fullName = fullName, role = role)
+                    if (role.equals("professor", ignoreCase = true) || role.equals("admin", ignoreCase = true)) {
+                        _authState.value = AuthState.Success(domainUser)
+                    } else {
                         _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                     }
-                } catch (_: Exception) {
-                    // /auth/me failed - user might not have completed profile yet
-                    val domainUser = User(id = userId, email = userEmail, fullName = fullName, role = role)
-                    _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                 }
             } catch (e: Exception) {
                 // Login failed - check if email not confirmed
-                val errorMsg = e.message ?: ""
-                if (errorMsg == "EMAIL_NOT_CONFIRMED" ||
-                    errorMsg.contains("confirm", ignoreCase = true) ||
-                    errorMsg.contains("Email not confirmed", ignoreCase = true) ||
-                    errorMsg.contains("400", ignoreCase = true) ||
-                    errorMsg.contains("invalid", ignoreCase = true) ||
-                    errorMsg.contains("Invalid login", ignoreCase = true)
-                ) {
-                    // Email not confirmed - send to activation pending
-                    _authState.value = AuthState.NeedsActivation(email)
-                } else {
-                    _authState.value = AuthState.Error(
-                        ErrorUtils.parseErrorMessage(e, "Falha no login")
-                    )
+                val parsedError = ErrorUtils.parseErrorMessage(e)
+                
+                when (parsedError) {
+                    "EMAIL_NOT_CONFIRMED" -> {
+                        _authState.value = AuthState.NeedsActivation(email)
+                    }
+                    "ACCOUNT_BLOCKED" -> {
+                        _authState.value = AuthState.Blocked
+                    }
+                    else -> {
+                        _authState.value = AuthState.Error(parsedError)
+                    }
                 }
             }
         }
@@ -191,7 +222,7 @@ class AuthViewModel @Inject constructor(
                 )
                 val meData = response.data
 
-                if (meData != null && meData.profileCompleted) {
+                if (meData != null && (meData.profileCompleted || !meData.institutoId.isNullOrEmpty() || !meData.instituto.isNullOrEmpty())) {
                     if (meData.isActive) {
                         val domainUser = User(
                             id = meData.id,
@@ -229,6 +260,51 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private val _forgotPasswordState = MutableStateFlow<String?>(null)
+    val forgotPasswordState: StateFlow<String?> = _forgotPasswordState.asStateFlow()
+
+    private val _forgotPasswordError = MutableStateFlow<String?>(null)
+    val forgotPasswordError: StateFlow<String?> = _forgotPasswordError.asStateFlow()
+
+    private val _isForgotPasswordLoading = MutableStateFlow(false)
+    val isForgotPasswordLoading: StateFlow<Boolean> = _isForgotPasswordLoading.asStateFlow()
+
+    fun forgotPassword(email: String) {
+        viewModelScope.launch {
+            _isForgotPasswordLoading.value = true
+            _forgotPasswordError.value = null
+            _forgotPasswordState.value = null
+            try {
+                authService.forgotPassword(ForgotPasswordRequest(email))
+                _forgotPasswordState.value = "Email de recuperação enviado! Verifique sua caixa de entrada."
+            } catch (e: Exception) {
+                _forgotPasswordError.value = ErrorUtils.parseErrorMessage(e, "Erro ao solicitar recuperação")
+            } finally {
+                _isForgotPasswordLoading.value = false
+            }
+        }
+    }
+
+    fun clearForgotPasswordStatus() {
+        _forgotPasswordState.value = null
+        _forgotPasswordError.value = null
+    }
+
+    /**
+     * Store FCM token for push notifications.
+     * Called after Firebase Messaging integration is set up.
+     * Currently a placeholder - requires Firebase dependency.
+     */
+    fun storeFCMToken(fcmToken: String, deviceInfo: String? = null) {
+        viewModelScope.launch {
+            try {
+                erpService.storeFCMToken(FCMTokenRequest(fcmToken, deviceInfo))
+            } catch (_: Exception) {
+                // Silently fail - FCM is optional
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             tokenManager.clearSession()
@@ -262,13 +338,38 @@ class AuthViewModel @Inject constructor(
                 email = meData.email
             )
 
+            val domainUser = User(
+                id = meData.id,
+                email = meData.email,
+                fullName = meData.fullName,
+                role = meData.role,
+                isActive = meData.isActive,
+                institutoId = meData.institutoId,
+                instituto = meData.instituto,
+                profileCompleted = meData.profileCompleted
+            )
+
+            Log.d("AuthViewModel", "CheckAuth Me profile: role=${meData.role}, active=${meData.isActive}, instId=${meData.institutoId}, instName=${meData.instituto}, completed=${meData.profileCompleted}")
+
+            val isStaff = meData.role.equals("professor", ignoreCase = true) || meData.role.equals("admin", ignoreCase = true)
+            val isProfileIncomplete = !meData.profileCompleted || (meData.institutoId.isNullOrEmpty() && meData.instituto.isNullOrEmpty())
+
             when {
-                !meData.isActive -> AuthDestination.ACTIVATION_PENDING
-                !meData.profileCompleted || meData.institutoId.isNullOrEmpty() ->
+                !meData.isActive -> {
+                    _authState.value = AuthState.NeedsActivation(meData.email)
+                    AuthDestination.ACTIVATION_PENDING
+                }
+                !isStaff && isProfileIncomplete -> {
+                    _authState.value = AuthState.NeedsProfileCompletion(domainUser)
                     AuthDestination.COMPLETE_PROFILE
-                else -> resolveDestination(meData.role)
+                }
+                else -> {
+                    _authState.value = AuthState.Success(domainUser)
+                    resolveDestination(meData.role)
+                }
             }
         } catch (e: Exception) {
+            Log.e("AuthViewModel", "CheckAuth error: ${e.message}")
             tokenManager.clearSession()
             null
         }

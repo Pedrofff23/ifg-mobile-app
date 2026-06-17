@@ -34,6 +34,7 @@ import com.example.gymapp.presentation.components.*
 fun StudentProgressScreen(viewModel: StudentViewModel) {
     val sessions by viewModel.sessions.collectAsState()
     val measurements by viewModel.measurements.collectAsState()
+    val measurementsChart by viewModel.measurementsChart.collectAsState()
     val profile by viewModel.profile.collectAsState()
     val assignments by viewModel.assignments.collectAsState()
     val stats by viewModel.stats.collectAsState()
@@ -231,7 +232,8 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
             }
 
             item {
-                val weightChartData = (measurements ?: emptyList())
+                val chartSource = if (measurementsChart.isNotEmpty()) measurementsChart else (measurements ?: emptyList())
+                val weightChartData = chartSource
                     .toWeightChartData()
                     .filterByDateRange(weightDateRange)
                 val latestWeight = weightChartData.lastOrNull()?.value
@@ -336,8 +338,8 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
         LogWeightDialog(
             isUpdating = isUpdating,
             onDismiss = { showLogWeightDialog = false },
-            onSave = { weightKg, notes ->
-                viewModel.addMeasurement(weightKg = weightKg, notes = notes)
+            onSave = { weightKg ->
+                viewModel.addMeasurement(weightKg = weightKg)
                 showLogWeightDialog = false
             }
         )

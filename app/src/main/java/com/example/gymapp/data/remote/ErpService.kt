@@ -1,6 +1,7 @@
 package com.example.gymapp.data.remote
 
 import com.example.gymapp.domain.model.*
+import com.google.gson.annotations.SerializedName
 import retrofit2.http.*
 import retrofit2.Response
 
@@ -165,6 +166,12 @@ interface ErpService {
         @Body request: CreateAnnouncementRequest
     ): ApiResponse<Announcement>
 
+    @PATCH("announcements/{id}")
+    suspend fun updateAnnouncement(
+        @Path("id") id: String,
+        @Body request: UpdateAnnouncementRequest
+    ): ApiResponse<Announcement>
+
     @DELETE("announcements/{id}")
     suspend fun deleteAnnouncement(
         @Path("id") id: String
@@ -213,6 +220,47 @@ interface ErpService {
 
     @DELETE("institutos/{id}")
     suspend fun deleteInstituto(@Path("id") id: String): Response<Unit>
+
+    // ==================== ADMIN ====================
+
+    @GET("admin/audit-logs")
+    suspend fun getAuditLogs(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null
+    ): PaginatedResponse<AuditLogEntry>
+
+    @GET("admin/jobs")
+    suspend fun getBackgroundJobs(): List<BackgroundJob>
+
+    // ==================== NOTIFICATIONS ====================
+
+    @POST("user/fcm-token")
+    suspend fun storeFCMToken(@Body request: FCMTokenRequest): ApiResponse<FCMToken>
+
+    @DELETE("user/fcm-token")
+    suspend fun deleteFCMToken(@Body request: FCMTokenDeleteRequest): Response<Unit>
+
+    @GET("user/fcm-tokens")
+    suspend fun listFCMTokens(): ApiResponse<List<FCMToken>>
 }
 
 data class CreateInstitutoRequest(val name: String)
+
+// ==================== NOTIFICATIONS ====================
+
+data class FCMTokenRequest(
+    @SerializedName("fcm_token") val fcmToken: String,
+    @SerializedName("device_info") val deviceInfo: String? = null
+)
+
+data class FCMTokenDeleteRequest(
+    @SerializedName("fcm_token") val fcmToken: String
+)
+
+data class FCMToken(
+    val id: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("fcm_token") val fcmToken: String,
+    @SerializedName("device_info") val deviceInfo: String?,
+    @SerializedName("created_at") val createdAt: String?
+)

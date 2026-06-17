@@ -30,4 +30,10 @@ interface UserService {
 		@Path("id") userId: String,
 		@Body request: UpdateStatusRequest
 	): ApiResponse<User>
+
+	@PATCH("users/{id}/block")
+	suspend fun updateBlocked(
+		@Path("id") userId: String,
+		@Body request: UpdateBlockedRequest
+	): ApiResponse<User>
 }

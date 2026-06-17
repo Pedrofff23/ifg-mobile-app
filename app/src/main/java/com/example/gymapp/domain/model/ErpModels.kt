@@ -117,6 +117,27 @@ data class SessionSet(
 	@SerializedName("updated_at") val updatedAt: String?
 )
 
+// ==================== SESSION EXERCISE STATUS ====================
+
+enum class SessionExerciseStatus(val raw: String) {
+	NOT_STARTED("not_started"),
+	IN_PROGRESS("in_progress"),
+	COMPLETED("completed");
+
+	companion object {
+		fun fromRaw(raw: String?): SessionExerciseStatus = when (raw) {
+			"not_started" -> NOT_STARTED
+			"in_progress" -> IN_PROGRESS
+			"completed" -> COMPLETED
+			else -> NOT_STARTED
+		}
+	}
+}
+
+// Extension property on String? to convert to SessionExerciseStatus
+val String?.sessionExerciseStatus: SessionExerciseStatus
+	get() = SessionExerciseStatus.fromRaw(this)
+
 // ==================== ANNOUNCEMENT ====================
 data class Announcement(
 	val id: String,
@@ -178,7 +199,6 @@ data class BodyMeasurement(
     @SerializedName("user_id") val userId: String,
     @SerializedName("weight_kg") val weightKg: Double?,
     @SerializedName("measured_at") val measuredAt: String?,
-    val notes: String?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )
@@ -220,4 +240,27 @@ data class AlunoStats(
 data class Instituto(
 	val id: String,
 	val name: String
+)
+
+// ==================== ADMIN ====================
+
+data class AuditLogEntry(
+	val id: String,
+	@SerializedName("user_id") val userId: String?,
+	val action: String,
+	val resource: String,
+	@SerializedName("ip_address") val ipAddress: String?,
+	@SerializedName("user_agent") val userAgent: String?,
+	@SerializedName("created_at") val createdAt: String?
+)
+
+data class BackgroundJob(
+	val id: String,
+	val type: String,
+	val status: String,
+	val payload: String?,
+	val error: String?,
+	val retries: Int,
+	@SerializedName("max_retries") val maxRetries: Int,
+	@SerializedName("created_at") val createdAt: String?
 )

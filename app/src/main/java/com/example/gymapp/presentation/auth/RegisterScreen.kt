@@ -44,7 +44,6 @@ fun RegisterScreen(
         if (authState is AuthState.NeedsActivation) {
             val email = (authState as AuthState.NeedsActivation).email
             onRegisterSuccess(email)
-            viewModel.resetState()
         }
     }
 

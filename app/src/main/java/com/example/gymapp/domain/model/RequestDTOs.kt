@@ -31,13 +31,15 @@ data class FinishSessionRequest(
 data class AssignWorkoutRequest(
 	@SerializedName("aluno_id") val alunoId: String,
 	@SerializedName("template_id") val templateId: String,
-	@SerializedName("starts_at") val startsAt: String
+	@SerializedName("starts_at") val startsAt: String,
+	@SerializedName("ends_at") val endsAt: String? = null
 )
 
 data class AssignGroupWorkoutRequest(
 	@SerializedName("group_id") val groupId: String,
 	@SerializedName("template_id") val templateId: String,
-	@SerializedName("starts_at") val startsAt: String
+	@SerializedName("starts_at") val startsAt: String,
+	@SerializedName("ends_at") val endsAt: String? = null
 )
 
 // ==================== EXERCISE REQUESTS ====================
@@ -91,6 +93,12 @@ data class CreateAnnouncementRequest(
 	val type: String
 )
 
+data class UpdateAnnouncementRequest(
+	@SerializedName("title") val title: String? = null,
+	@SerializedName("content") val content: String? = null,
+	@SerializedName("type") val type: String? = null
+)
+
 // ==================== PROFILE REQUESTS ====================
 
 data class UpsertProfileRequest(
@@ -101,8 +109,7 @@ data class UpsertProfileRequest(
 
 data class AddMeasurementRequest(
 	@SerializedName("weight_kg") val weightKg: Double,
-	@SerializedName("measured_at") val measuredAt: String,
-	val notes: String? = null
+	@SerializedName("measured_at") val measuredAt: String
 )
 
 // ==================== GROUP REQUESTS ====================
@@ -119,8 +126,11 @@ data class AddGroupMemberRequest(
 // ==================== USER REQUESTS ====================
 
 data class UpdateUserRequest(
-	@SerializedName("full_name") val fullName: String,
-	val instituto: String? = null
+	@SerializedName("full_name") val fullName: String? = null,
+	val instituto: String? = null,
+	@SerializedName("current_weight_kg") val currentWeightKg: Double? = null,
+	@SerializedName("height_cm") val heightCm: Double? = null,
+	@SerializedName("injury_history") val injuryHistory: String? = null
 )
 
 data class UpdateRoleRequest(
@@ -129,4 +139,8 @@ data class UpdateRoleRequest(
 
 data class UpdateStatusRequest(
 	@SerializedName("is_active") val isActive: Boolean
+)
+
+data class UpdateBlockedRequest(
+	@SerializedName("is_blocked") val isBlocked: Boolean
 )

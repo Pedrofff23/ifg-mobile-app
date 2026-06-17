@@ -32,7 +32,12 @@ interface AuthService {
 
     @POST("auth/resend-activation")
     suspend fun resendActivation(@Body request: ResendActivationRequest): ApiResponse<Unit>
+
+    @POST("auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): ApiResponse<String>
 }
+
+data class ForgotPasswordRequest(val email: String)
 
 data class RefreshTokenRequest(val refresh_token: String)
 

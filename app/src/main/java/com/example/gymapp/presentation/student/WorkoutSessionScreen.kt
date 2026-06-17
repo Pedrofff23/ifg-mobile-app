@@ -33,6 +33,7 @@ import coil.request.ImageRequest
 import android.os.Build
 import com.example.gymapp.BuildConfig
 import com.example.gymapp.domain.model.*
+import com.example.gymapp.domain.model.sessionExerciseStatus
 import com.example.gymapp.ui.theme.*
 import com.example.gymapp.utils.DateUtils
 
@@ -264,7 +265,7 @@ private fun ExerciseListScreen(
                 val defaultSets = templateEx?.defaultSets ?: sessionEx.sets?.size ?: 3
                 val defaultReps = templateEx?.defaultReps ?: 12
                 val isCardio = sessionEx.muscleGroup.equals("cardio", ignoreCase = true)
-                val status = sessionEx.status ?: "not_started"
+                val status = sessionEx.status.sessionExerciseStatus
 
                 ExerciseListCard(
                     position = index + 1,
@@ -272,7 +273,7 @@ private fun ExerciseListScreen(
                     sets = defaultSets,
                     reps = defaultReps,
                     isCardio = isCardio,
-                    status = status,
+                    status = status.raw,
                     onClick = { onSelectExercise(index) }
                 )
             }

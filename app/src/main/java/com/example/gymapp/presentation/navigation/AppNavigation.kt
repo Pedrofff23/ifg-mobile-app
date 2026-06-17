@@ -20,6 +20,7 @@ import com.example.gymapp.presentation.auth.AuthViewModel
 import com.example.gymapp.presentation.auth.CompleteProfileScreen
 import com.example.gymapp.presentation.auth.LoginScreen
 import com.example.gymapp.presentation.auth.RegisterScreen
+import com.example.gymapp.presentation.auth.BlockedScreen
 import com.example.gymapp.presentation.student.StudentMainScreen
 import com.example.gymapp.presentation.student.WorkoutSessionScreen
 import com.example.gymapp.presentation.trainer.AdminInstitutoScreen
@@ -31,14 +32,15 @@ object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val COMPLETE_PROFILE = "complete_profile"
-    const val ACTIVATION_PENDING = "activation_pending/{email}"
+    const val ACTIVATION_PENDING = "activation_pending?email={email}"
+    const val BLOCKED = "blocked"
     const val STUDENT_HOME = "student_home"
     const val TRAINER_HOME = "trainer_home"
     const val ADMIN_INSTITUTOS = "admin_institutos"
     const val WORKOUT_SESSION = "workout_session/{assignmentId}"
 
     fun workoutSessionRoute(assignmentId: String) = "workout_session/$assignmentId"
-    fun activationPendingRoute(email: String) = "activation_pending/$email"
+    fun activationPendingRoute(email: String) = "activation_pending?email=$email"
 }
 
 @Composable
@@ -67,6 +69,7 @@ fun AppNavigation(themeManager: ThemeManager) {
                         AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
                         AuthDestination.COMPLETE_PROFILE -> Routes.COMPLETE_PROFILE
                         AuthDestination.ACTIVATION_PENDING -> Routes.activationPendingRoute(authViewModel.getLastEmail())
+                        AuthDestination.BLOCKED -> Routes.BLOCKED
                         AuthDestination.REGISTER -> Routes.REGISTER
                         AuthDestination.LOGIN -> Routes.LOGIN
                     }
@@ -85,6 +88,7 @@ fun AppNavigation(themeManager: ThemeManager) {
                         AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
                         AuthDestination.COMPLETE_PROFILE -> Routes.COMPLETE_PROFILE
                         AuthDestination.ACTIVATION_PENDING -> Routes.activationPendingRoute(authViewModel.getLastEmail())
+                        AuthDestination.BLOCKED -> Routes.BLOCKED
                         else -> Routes.LOGIN
                     }
                     navController.navigate(route) {
@@ -146,7 +150,13 @@ fun AppNavigation(themeManager: ThemeManager) {
 
         composable(
             route = Routes.ACTIVATION_PENDING,
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("email") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                }
+            )
         ) { backStackEntry ->
             val email = backStackEntry.arguments?.getString("email") ?: ""
             ActivationPendingScreen(
@@ -180,6 +190,12 @@ fun AppNavigation(themeManager: ThemeManager) {
         composable(Routes.ADMIN_INSTITUTOS) {
             AdminInstitutoScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.BLOCKED) {
+            BlockedScreen(
+                onLogout = performLogout
             )
         }
     }

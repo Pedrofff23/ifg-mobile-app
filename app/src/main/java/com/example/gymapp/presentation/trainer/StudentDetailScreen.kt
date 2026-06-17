@@ -370,9 +370,6 @@ private fun MedicoesTab(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = DateUtils.formatIsoDate(measurement.measuredAt), style = MaterialTheme.typography.bodyMedium)
                         Text(text = "Peso: ${measurement.weightKg} kg", style = MaterialTheme.typography.bodySmall)
-                        measurement.notes?.let { notes ->
-                            Text(text = "Observação: $notes", style = MaterialTheme.typography.bodySmall)
-                        }
                     }
                 }
             }

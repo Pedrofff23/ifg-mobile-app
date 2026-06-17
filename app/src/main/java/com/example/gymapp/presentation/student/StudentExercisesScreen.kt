@@ -1,5 +1,6 @@
 package com.example.gymapp.presentation.student
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,6 +37,7 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
     val error by viewModel.error.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todas") }
+    var selectedExercise by remember { mutableStateOf<Exercise?>(null) }
     val categories = listOf("Todas", "Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps")
 
     // Trigger initial load and update on category change
@@ -156,7 +158,7 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredExercises) { exercise ->
-                ExerciseCard(exercise = exercise)
+                ExerciseCard(exercise = exercise, onClick = { selectedExercise = exercise })
             }
 
             if (filteredExercises.isEmpty()) {
@@ -174,12 +176,22 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             }
         }
     }
+
+    // Exercise detail dialog
+    if (selectedExercise != null) {
+        ExerciseDetailDialog(
+            exercise = selectedExercise!!,
+            onDismiss = { selectedExercise = null }
+        )
+    }
 }
 
 @Composable
-private fun ExerciseCard(exercise: Exercise) {
+private fun ExerciseCard(exercise: Exercise, onClick: () -> Unit = {}) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(12.dp)
@@ -258,4 +270,87 @@ private fun ExerciseCard(exercise: Exercise) {
             }
         }
     }
+}
+
+@Composable
+private fun ExerciseDetailDialog(
+    exercise: Exercise,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(exercise.name) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (exercise.description?.isNotBlank() == true) {
+                    Text(
+                        exercise.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Badge(containerColor = Green100, contentColor = IfgGreen) {
+                        Text(exercise.muscleGroup ?: "Geral")
+                    }
+                    if (exercise.usesWeight == true) {
+                        Badge(containerColor = Blue100, contentColor = Color(0xFF2563EB)) {
+                            Text("Com peso")
+                        }
+                    }
+                }
+
+                // Media section
+                if (exercise.mediaPath != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
+                        val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(mediaUrl)
+                                .decoderFactory(
+                                    if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                                    else GifDecoder.Factory()
+                                )
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Mídia do Exercício",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.05f))
+                        )
+                    } else if (exercise.mediaType == "video") {
+                        val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                        OutlinedButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, videoUrl.toUri())
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Assistir Vídeo Anexado")
+                        }
+                    }
+                } else if (exercise.videoUrl != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, exercise.videoUrl.toUri())
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Assistir Vídeo (Link Externo)")
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Fechar") }
+        }
+    )
 }

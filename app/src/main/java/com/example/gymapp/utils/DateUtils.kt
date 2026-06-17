@@ -7,6 +7,10 @@ object DateUtils {
     private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
+
+    private val isoFormatFull = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
     
     private val isoFormatShort = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
@@ -15,22 +19,40 @@ object DateUtils {
     private val displayFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val displayDateTimeFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
+    /**
+     * Returns current date/time in ISO 8601 format (UTC)
+     */
+    fun getNowIso(): String {
+        return isoFormat.format(Date()) + "Z"
+    }
+
     fun formatIsoDate(isoString: String?, includeTime: Boolean = false): String {
         if (isoString.isNullOrBlank()) return ""
         
         return try {
-            // Clean up the string to handle various ISO formats (with/without milliseconds, with/without Z)
-            val cleaned = isoString.split(".")[0].replace("Z", "").replace("T", " ")
-            val date = if (cleaned.length > 10) {
-                 SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(cleaned)
-            } else {
-                 SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(cleaned)
-            }
+            // Clean up the string to handle various ISO formats
+            // We want to extract YYYY-MM-DD and optionally HH:mm:ss
+            val dateRegex = """(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}:\d{2}))?""".toRegex()
+            val match = dateRegex.find(isoString)
             
-            if (includeTime) {
-                displayDateTimeFormat.format(date!!)
+            if (match != null) {
+                val datePart = match.groupValues[1]
+                val timePart = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+                
+                val date = if (timePart != null) {
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse("$datePart $timePart")
+                } else {
+                    SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(datePart)
+                }
+                
+                if (includeTime && timePart != null) {
+                    displayDateTimeFormat.format(date!!)
+                } else {
+                    displayFormat.format(date!!)
+                }
             } else {
-                displayFormat.format(date!!)
+                // Fallback for non-standard formats
+                isoString
             }
         } catch (e: Exception) {
             // Fallback: if it's at least YYYY-MM-DD, try to flip it
