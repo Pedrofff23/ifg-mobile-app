@@ -65,7 +65,7 @@ fun BlockedScreen(
                 shape = RoundedCornerShape(Spacing.md),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
                 Text(

@@ -74,12 +74,11 @@ fun EditExerciseScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(successMessage) {
         successMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
             if (msg.contains("atualizado", ignoreCase = true)) {
-                kotlinx.coroutines.delay(1200)
                 viewModel.clearSuccessMessage()
                 onBack()
             } else {
+                snackbarHostState.showSnackbar(msg)
                 viewModel.clearSuccessMessage()
             }
         }
@@ -99,11 +98,11 @@ fun EditExerciseScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
-                title = { Text("Editar Exercício", color = Color.White) },
+                title = { Text("Editar Exercício", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = IfgGreen,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -114,7 +113,7 @@ fun EditExerciseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -131,7 +130,6 @@ fun EditExerciseScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
             // Form
             Card(
                 shape = RoundedCornerShape(12.dp),
@@ -295,8 +293,8 @@ fun EditExerciseScreen(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
                 ) {
-                    if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    else Text("Salvar", style = MaterialTheme.typography.titleMedium)
+                    if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                    else Text("Salvar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }

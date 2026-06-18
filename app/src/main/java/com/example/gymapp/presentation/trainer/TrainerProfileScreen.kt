@@ -57,7 +57,8 @@ import com.example.gymapp.ui.theme.*
 fun TrainerProfileScreen(
     viewModel: ProfessorViewModel,
     themeManager: ThemeManager,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null
 ) {
     val userName by viewModel.userName.collectAsState()
     val isAdmin by viewModel.isAdmin.collectAsState()
@@ -67,13 +68,11 @@ fun TrainerProfileScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val internalSnackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -217,6 +216,15 @@ fun TrainerProfileScreen(
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+
+        if (snackbarHostState == null) {
+            SnackbarHost(
+                hostState = internalSnackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
         }
     }
 

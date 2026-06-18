@@ -42,8 +42,8 @@ fun AdminInstitutoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
-                title = { Text("Gerenciar Institutos", color = Color.White) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = MaterialTheme.colorScheme.onPrimary) } },
+                title = { Text("Gerenciar Institutos", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = IfgGreen)
             )
         },
@@ -77,10 +77,10 @@ fun AdminInstitutoScreen(
                             ) {
                                 Text(inst.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                                 IconButton(onClick = { showEditDialog = inst }) {
-                                    Icon(Icons.Default.Edit, "Editar", tint = Color(0xFF1565C0))
+                                    Icon(Icons.Default.Edit, "Editar", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = { showDeleteDialog = inst }) {
-                                    Icon(Icons.Default.Delete, "Excluir", tint = Color(0xFFC62828))
+                                    Icon(Icons.Default.Delete, "Excluir", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
                         }
@@ -127,8 +127,8 @@ fun AdminInstitutoScreen(
                         viewModel.deleteInstituto(inst.id)
                         showDeleteDialog = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                ) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Excluir", color = MaterialTheme.colorScheme.onError) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) { Text("Cancelar") }
@@ -163,7 +163,7 @@ private fun InstitutoFormDialog(
                 onClick = { onSave(name) },
                 enabled = name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Salvar") }
+            ) { Text("Salvar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }

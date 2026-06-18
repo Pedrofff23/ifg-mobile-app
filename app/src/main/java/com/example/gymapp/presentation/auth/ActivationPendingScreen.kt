@@ -110,7 +110,7 @@ fun ActivationPendingScreen(
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
             ) {
-                Text("Voltar para o login")
+                Text("Voltar para o login", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }

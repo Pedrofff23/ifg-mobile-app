@@ -31,7 +31,9 @@ import com.example.gymapp.domain.model.AlunoProfile
 import com.example.gymapp.domain.model.BodyMeasurement
 import com.example.gymapp.domain.model.AlunoStats
 import com.example.gymapp.domain.model.ExerciseProgressPoint
+import com.example.gymapp.domain.model.Instituto
 import com.example.gymapp.ui.theme.ThemeManager
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -134,6 +136,10 @@ class ProfessorViewModel @Inject constructor(
     // ---------- Student Groups State ----------
     private val _studentGroups = MutableStateFlow<List<StudentGroup>>(emptyList())
     val studentGroups: StateFlow<List<StudentGroup>> = _studentGroups.asStateFlow()
+
+    // ---------- Student Active Assignments State ----------
+    private val _studentActiveAssignments = MutableStateFlow<Map<String, WorkoutAssignment?>>(emptyMap())
+    val studentActiveAssignments: StateFlow<Map<String, WorkoutAssignment?>> = _studentActiveAssignments.asStateFlow()
 
     // ---------- Announcement type filter ----------
     private val _announcementTypeFilter = MutableStateFlow<String?>(null)
@@ -593,6 +599,22 @@ class ProfessorViewModel @Inject constructor(
                 val studentsList = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
                 _allStudents.value = studentsList
                 _students.value = studentsList
+                
+                // Concurrently load active assignment for each student
+                val assignmentsMap = mutableMapOf<String, WorkoutAssignment?>()
+                studentsList.forEach { student ->
+                    launch {
+                        try {
+                            val currentResp = erpService.getCurrentAssignment(student.id)
+                            synchronized(assignmentsMap) {
+                                assignmentsMap[student.id] = currentResp.data
+                            }
+                            _studentActiveAssignments.value = assignmentsMap.toMap()
+                        } catch (e: Exception) {
+                            // ignore individual loading failures
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             } finally {
@@ -600,6 +622,7 @@ class ProfessorViewModel @Inject constructor(
             }
         }
     }
+
 
     fun searchStudents(query: String) {
     if (query.isBlank()) {
@@ -929,6 +952,45 @@ class ProfessorViewModel @Inject constructor(
         }
     }
 
+    // ==================== INSTITUTOS ====================
+    private val _institutos = MutableStateFlow<List<Instituto>>(emptyList())
+    val institutos: StateFlow<List<Instituto>> = _institutos.asStateFlow()
+
+    fun loadInstitutos() {
+        viewModelScope.launch {
+            try {
+                val response = erpService.getInstitutos(limit = 100)
+                _institutos.value = response.data ?: emptyList()
+            } catch (e: Exception) {
+                _error.value = "Erro ao carregar institutos: ${e.message}"
+            }
+        }
+    }
+
+    fun updateStudentInstituto(studentId: String, newInstitutoId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val currentStudentName = _selectedStudentDetail.value?.fullName ?: "Aluno"
+                userService.updateProfile(
+                    studentId,
+                    UpdateUserRequest(
+                        fullName = currentStudentName,
+                        instituto = newInstitutoId
+                    )
+                )
+                _successMessage.value = "Instituto do aluno atualizado com sucesso!"
+                loadStudentDetail(studentId)
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
     fun clearStudentExerciseProgress() {
         _studentExerciseProgress.value = emptyMap()
     }
@@ -950,3 +1012,4 @@ class ProfessorViewModel @Inject constructor(
     }
     }
     }
+

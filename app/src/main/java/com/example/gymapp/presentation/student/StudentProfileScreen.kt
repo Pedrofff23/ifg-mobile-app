@@ -30,7 +30,8 @@ import com.example.gymapp.utils.DateUtils
 fun StudentProfileScreen(
     viewModel: StudentViewModel,
     themeManager: ThemeManager,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null
 ) {
     val profile by viewModel.profile.collectAsState()
     val userName by viewModel.userName.collectAsState()
@@ -44,7 +45,6 @@ fun StudentProfileScreen(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showLogWeightDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showEditNameDialog by remember { mutableStateOf(false) }
 
     val userEmail by viewModel.userEmail.collectAsState()
 
@@ -52,11 +52,13 @@ fun StudentProfileScreen(
         viewModel.loadProfile()
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val internalSnackbarHostState = remember { SnackbarHostState() }
+    val effectiveSnackbarHostState = snackbarHostState ?: internalSnackbarHostState
+
     LaunchedEffect(updateSuccess, error) {
         val msg = updateSuccess ?: error
         if (msg != null) {
-            snackbarHostState.showSnackbar(msg)
+            effectiveSnackbarHostState.showSnackbar(msg)
             viewModel.clearUpdateStatus()
         }
     }
@@ -76,26 +78,28 @@ fun StudentProfileScreen(
             item {
                 ProfileHeaderCard(
                     userName = userName,
-                    onEdit = { showEditNameDialog = true }
-                )
-            }
-
-            // Quick Stats — weight, height, BMI
-            item {
-                PhysicalStatsRow(
-                    profile = profile,
                     onEdit = { showEditProfileDialog = true }
                 )
             }
 
-            // Personal Information
-            item {
-                PersonalInfoCard(
-                    userName = userName,
-                    userEmail = userEmail,
-                    createdAt = DateUtils.formatIsoDate(profile?.createdAt)
-                )
-            }
+    // Quick Stats — weight, height, BMI
+    item {
+        PhysicalStatsRow(
+            profile = profile,
+            onEdit = { showEditProfileDialog = true }
+        )
+    }
+
+    // Personal Information
+    item {
+        PersonalInfoCard(
+            userName = userName,
+            userEmail = userEmail,
+            createdAt = DateUtils.formatIsoDate(profile?.createdAt),
+            injuryHistory = profile?.injuryHistory
+        )
+    }
+
 
             // Theme Selection
             item {
@@ -123,28 +127,31 @@ fun StudentProfileScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = Spacing.lg)
-        ) { data ->
-            Snackbar(
-                snackbarData = data,
-                shape = RoundedCornerShape(12.dp),
-                containerColor = MaterialTheme.colorScheme.inverseSurface,
-                contentColor = MaterialTheme.colorScheme.inverseOnSurface
-            )
+        if (snackbarHostState == null) {
+            SnackbarHost(
+                hostState = internalSnackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = Spacing.lg)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
         }
     }
 
     if (showEditProfileDialog) {
         EditProfileDialog(
             profile = profile,
+            currentName = userName ?: "",
             isUpdating = isUpdating,
             onDismiss = { showEditProfileDialog = false },
-            onSave = { weight, height, injuries ->
-                viewModel.updateProfile(heightCm = height, currentWeightKg = weight, injuryHistory = injuries)
+            onSave = { name, weight, height, injuries ->
+                viewModel.updateProfile(fullName = name, heightCm = height, currentWeightKg = weight, injuryHistory = injuries)
                 showEditProfileDialog = false
             }
         )
@@ -171,19 +178,8 @@ fun StudentProfileScreen(
             onDismiss = { showThemeDialog = false }
         )
     }
-
-    if (showEditNameDialog) {
-        EditNameDialog(
-            currentName = userName ?: "",
-            isUpdating = isUpdating,
-            onDismiss = { showEditNameDialog = false },
-            onSave = { fullName, instituto ->
-                viewModel.updateProfile(fullName = fullName, instituto = instituto)
-                showEditNameDialog = false
-            }
-        )
-    }
 }
+
 
 @Composable
 private fun ProfileHeaderCard(
@@ -275,7 +271,7 @@ private fun ProfileHeaderCard(
             ) {
                 Icon(
                     Icons.Default.Edit,
-                    contentDescription = "Editar nome",
+                    contentDescription = "Editar perfil",
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -379,7 +375,8 @@ private fun PhysicalStatItem(
 private fun PersonalInfoCard(
     userName: String?,
     userEmail: String?,
-    createdAt: String?
+    createdAt: String?,
+    injuryHistory: String?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -398,9 +395,15 @@ private fun PersonalInfoCard(
             ProfileInfoRow(Icons.Default.Person, "Nome", (userName ?: "").ifBlank { "N/A" })
             ProfileInfoRow(Icons.Default.Email, "Email", (userEmail ?: "").ifBlank { "N/A" })
             ProfileInfoRow(Icons.Default.CalendarToday, "Membro desde", createdAt ?: "N/A")
+            ProfileInfoRow(
+                Icons.Default.Healing,
+                "Histórico de Lesões",
+                if (!injuryHistory.isNullOrBlank()) injuryHistory else "Nenhum histórico de lesões registrado"
+            )
         }
     }
 }
+
 
 @Composable
 private fun PreferenceCard(
@@ -518,19 +521,38 @@ fun LogWeightDialog(
 @Composable
 private fun EditProfileDialog(
     profile: AlunoProfile?,
+    currentName: String,
     isUpdating: Boolean,
     onDismiss: () -> Unit,
-    onSave: (weight: Double, height: Double, injuries: String?) -> Unit
+    onSave: (name: String, weight: Double, height: Double, injuries: String?) -> Unit
 ) {
+    var nameText by remember { mutableStateOf(currentName) }
     var weightText by remember { mutableStateOf(profile?.currentWeightKg?.toString() ?: "") }
     var heightText by remember { mutableStateOf(profile?.heightCm?.toString() ?: "") }
     var injuriesText by remember { mutableStateOf(profile?.injuryHistory ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar Dados Físicos") },
+        title = { Text("Editar Perfil") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    label = { Text("Nome completo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
+                )
                 OutlinedTextField(
                     value = weightText,
                     onValueChange = { weightText = it },
@@ -590,9 +612,9 @@ private fun EditProfileDialog(
                 onClick = {
                     val w = weightText.toDoubleOrNull() ?: return@Button
                     val h = heightText.toDoubleOrNull() ?: return@Button
-                    onSave(w, h, injuriesText.ifBlank { null })
+                    onSave(nameText.trim(), w, h, injuriesText.ifBlank { null })
                 },
-                enabled = !isUpdating && weightText.toDoubleOrNull() != null && heightText.toDoubleOrNull() != null,
+                enabled = !isUpdating && nameText.isNotBlank() && weightText.toDoubleOrNull() != null && heightText.toDoubleOrNull() != null,
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
                 shape = RoundedCornerShape(Spacing.md)
             ) {
@@ -610,81 +632,7 @@ private fun EditProfileDialog(
     )
 }
 
-@Composable
-private fun EditNameDialog(
-    currentName: String,
-    isUpdating: Boolean,
-    onDismiss: () -> Unit,
-    onSave: (fullName: String, instituto: String?) -> Unit
-) {
-    var nameText by remember { mutableStateOf(currentName) }
-    var institutoText by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Editar Nome") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                OutlinedTextField(
-                    value = nameText,
-                    onValueChange = { nameText = it },
-                    label = { Text("Nome completo") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(Spacing.md)
-                )
-                OutlinedTextField(
-                    value = institutoText,
-                    onValueChange = { institutoText = it },
-                    label = { Text("Instituto (opcional)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(Spacing.md)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (nameText.isNotBlank()) {
-                        onSave(nameText.trim(), institutoText.ifBlank { null })
-                    }
-                },
-                enabled = !isUpdating && nameText.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
-                shape = RoundedCornerShape(Spacing.md)
-            ) {
-                if (isUpdating) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text("Salvar", color = Color.White)
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        },
-        shape = RoundedCornerShape(Spacing.lg)
-    )
-}
 
 @Composable
 private fun ProfileInfoRow(

@@ -226,14 +226,14 @@ private fun WorkoutAssignmentCard(
                 Icon(
                     Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = if (isActive) Color.White
+                    tint = if (isActive) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(Spacing.sm))
                 Text(
                     "Iniciar Treino",
-                    color = if (isActive) Color.White
+                    color = if (isActive) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelLarge
                 )

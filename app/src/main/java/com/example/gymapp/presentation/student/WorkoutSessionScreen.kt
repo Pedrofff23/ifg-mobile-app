@@ -230,11 +230,11 @@ private fun ExerciseListScreen(
                             }
                         }
                     }
-                    FilledIconButton(
+                    IconButton(
                         onClick = onFinishWorkout,
                         colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Finalizar", tint = Color.White)
+                        Icon(Icons.Default.Check, contentDescription = "Finalizar", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -719,7 +719,7 @@ private fun SetRow(
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = "Completar", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Check, contentDescription = "Completar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                 }
             } else {
                 // ===== FUTURE: just show reps info =====
@@ -762,8 +762,13 @@ private fun RatingDialog(onDismiss: () -> Unit, onConfirm: (Int, String) -> Unit
             }
         },
         confirmButton = {
-            Button(onClick = { if (rating > 0) onConfirm(rating, feedback) }, enabled = rating > 0, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(Spacing.md)) {
-                Text("Finalizar", color = Color.White)
+            Button(
+                onClick = { if (rating > 0) onConfirm(rating, feedback) },
+                enabled = rating > 0,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(Spacing.md)
+            ) {
+                Text("Finalizar", color = MaterialTheme.colorScheme.onPrimary)
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },

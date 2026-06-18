@@ -2,6 +2,7 @@
 package com.example.gymapp.presentation.trainer
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,14 +12,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
@@ -36,6 +41,7 @@ fun StudentDetailScreen(
     // Load data when the composable appears
     LaunchedEffect(studentId) {
         viewModel.loadStudentDetail(studentId)
+        viewModel.loadInstitutos()
     }
 
     // Collect states from ViewModel
@@ -54,44 +60,64 @@ fun StudentDetailScreen(
     val exerciseProgress by viewModel.studentExerciseProgress.collectAsState()
     val exerciseProgressLoading by viewModel.studentExerciseProgressLoading.collectAsState()
     val assignments by viewModel.studentAssignments.collectAsState()
+    
+    val institutos by viewModel.institutos.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    // Removed Avaliações tab – now only three tabs
     val tabs = listOf("Perfil", "Medições", "Treinos")
+    
+    var showChangeInstitutoDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Avatar with initials
-                        val initials = student?.fullName?.split(" ")?.mapNotNull { it.firstOrNull()?.toString() }?.joinToString("")
-                            ?: "?"
+                        val initials = student?.fullName?.split(" ")?.mapNotNull { it.firstOrNull()?.toString() }?.joinToString("") ?: "?"
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(IfgGreen)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(IfgGreen, MaterialTheme.colorScheme.primary)
+                                    )
+                                )
                         ) {
                             Text(
                                 text = initials.uppercase(),
                                 color = Color.White,
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = student?.fullName ?: "Aluno",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = student?.fullName ?: "Aluno",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            val resolvedInstitutoName = student?.instituto?.ifBlank { null } 
+                                ?: institutos.find { it.id == student?.institutoId }?.name 
+                                ?: "Sem Instituto"
+                            Text(
+                                text = resolvedInstitutoName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showChangeInstitutoDialog = true }) {
+                        Icon(imageVector = Icons.Default.Business, contentDescription = "Alterar Instituto", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
@@ -101,25 +127,57 @@ fun StudentDetailScreen(
             .fillMaxSize()
             .padding(innerPadding)) {
             if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary)
                 return@Column
             }
             error?.let { errMsg ->
-                Text(text = errMsg, color = Color.Red, modifier = Modifier.padding(8.dp))
+                Surface(
+                    color = Color(0xFFFDE8E8), // soft light red background
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(16.dp).fillMaxWidth()
+                ) {
+                    Text(
+                        text = errMsg,
+                        color = Color(0xFF9B1C1C), // dark crimson text
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
-            TabRow(selectedTabIndex = selectedTabIndex) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(title) }
+                        text = { 
+                            Text(
+                                title, 
+                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ) 
+                        }
                     )
                 }
             }
             // Animated content for tab switching
-            AnimatedContent(targetState = selectedTabIndex) { targetIdx ->
+            AnimatedContent(targetState = selectedTabIndex, label = "TabSwitch") { targetIdx ->
                 when (targetIdx) {
-                    0 -> PerfilTab(student, profile, stats, studentGroups)
+                    0 -> PerfilTab(
+                        student = student,
+                        profile = profile,
+                        stats = stats,
+                        groups = studentGroups,
+                        onChangeInstitutoClick = { showChangeInstitutoDialog = true }
+                    )
                     1 -> MedicoesTab(
                         measurements = measurements,
                         sessions = sessions,
@@ -139,6 +197,84 @@ fun StudentDetailScreen(
             }
         }
     }
+
+    if (showChangeInstitutoDialog) {
+        ChangeInstitutoDialog(
+            currentInstitutoId = student?.institutoId,
+            institutos = institutos,
+            onDismiss = { showChangeInstitutoDialog = false },
+            onConfirm = { selectedId ->
+                viewModel.updateStudentInstituto(studentId, selectedId)
+                showChangeInstitutoDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun ChangeInstitutoDialog(
+    currentInstitutoId: String?,
+    institutos: List<Instituto>,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var selectedId by remember { mutableStateOf(currentInstitutoId ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Alterar Instituto", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Selecione o novo instituto para o aluno:", style = MaterialTheme.typography.bodyMedium)
+                
+                if (institutos.isEmpty()) {
+                    Text("Nenhum instituto disponível.", color = MaterialTheme.colorScheme.error)
+                } else {
+                    institutos.forEach { inst ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (selectedId == inst.id) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    else Color.Transparent
+                                )
+                                .clickable { selectedId = inst.id }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedId == inst.id,
+                                onClick = { selectedId = inst.id },
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(inst.name, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(selectedId) },
+                enabled = selectedId.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Confirmar", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        },
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Composable
@@ -146,51 +282,186 @@ private fun PerfilTab(
     student: User?,
     profile: AlunoProfile?,
     stats: AlunoStats?,
-    groups: List<StudentGroup>
+    groups: List<StudentGroup>,
+    onChangeInstitutoClick: () -> Unit
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Upper student visual details card
         item {
             Card(
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = student?.fullName ?: "Nome desconhecido", style = MaterialTheme.typography.titleLarge)
-                    Text(text = student?.email ?: "", style = MaterialTheme.typography.bodyMedium)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = student?.fullName ?: "Nome desconhecido",
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = student?.email ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        IconButton(
+                            onClick = onChangeInstitutoClick,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Business,
+                                contentDescription = "Trocar Instituto",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         val role = student?.role?.replaceFirstChar { it.uppercase() } ?: "Aluno"
-                        Badge(
-                            containerColor = IfgGreen,
-                            contentColor = Color.White,
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) { Text(role) }
+                        SuggestionChip(
+                            onClick = {},
+                            label = { Text(role) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                labelColor = MaterialTheme.colorScheme.primary
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                        )
                         val status = if (student?.isActive == true) "Ativo" else "Inativo"
-                        Badge(
-                            containerColor = if (student?.isActive == true) Color(0xFF4CAF50) else Color(0xFFF44336),
-                            contentColor = Color.White
-                        ) { Text(status) }
+                        val statusColor = if (student?.isActive == true) IfgGreen else MaterialTheme.colorScheme.error
+                        SuggestionChip(
+                            onClick = {},
+                            label = { Text(status) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = statusColor.copy(alpha = 0.15f),
+                                labelColor = statusColor
+                            ),
+                            border = BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
+                        )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    profile?.let { p ->
-                        Text(text = "Peso: ${p.currentWeightKg ?: "-"} kg", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Altura: ${p.heightCm ?: "-"} cm", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Lesões: ${p.injuryHistory ?: "Nenhuma"}", style = MaterialTheme.typography.bodyMedium)
-                    } ?: run {
-                        Text(text = "Aluno ainda não preencheu o perfil", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+
+        // Physical details info card
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Dados Físicos",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (profile != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${profile.currentWeightKg ?: "-"} kg",
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text("Peso", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box(modifier = Modifier.width(1.dp).height(40.dp).background(MaterialTheme.colorScheme.outlineVariant))
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${profile.heightCm ?: "-"} cm",
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text("Altura", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box(modifier = Modifier.width(1.dp).height(40.dp).background(MaterialTheme.colorScheme.outlineVariant))
+                            
+                            val bmi = if (profile.currentWeightKg != null && profile.heightCm != null && profile.heightCm > 0) {
+                                val h = profile.heightCm / 100.0
+                                String.format("%.1f", profile.currentWeightKg / (h * h))
+                            } else "--"
+                            
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = bmi,
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text("IMC", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Healing, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("Histórico de Lesões", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = profile.injuryHistory ?: "Nenhum histórico de lesões registrado",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "O aluno ainda não preencheu as informações do perfil.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
                     }
-                    // Groups section
+
+                    // Groups sub-section
                     if (groups.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
                         Text(
                             "Grupos",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        groups.forEach { group ->
-                            Badge(containerColor = Color(0xFFE3F2FD)) {
-                                Text(
-                                    group.name,
-                                    color = Color(0xFF1565C0),
-                                    style = MaterialTheme.typography.labelSmall
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            groups.forEach { group ->
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text(group.name) },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
                                 )
                             }
                         }
@@ -198,22 +469,60 @@ private fun PerfilTab(
                 }
             }
         }
+
+        // Stats card (Sessões, Concluídas, Streak, Frequência)
         item {
-            Spacer(modifier = Modifier.height(16.dp))
             Card(
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    StatItem(label = "Sessões", value = stats?.totalSessions?.toString() ?: "0")
-                    StatItem(label = "Concluídas", value = stats?.completedSessions?.toString() ?: "0")
-                    StatItem(label = "Streak", value = stats?.currentStreak?.toString() ?: "0")
-                    StatItem(label = "Frequência", value = stats?.weeklyFrequency?.toString() ?: "0")
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Estatísticas de Treino",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        StatItemCard(
+                            label = "Sessões",
+                            value = stats?.totalSessions?.toString() ?: "0",
+                            icon = Icons.Default.FitnessCenter,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        StatItemCard(
+                            label = "Concluídas",
+                            value = stats?.completedSessions?.toString() ?: "0",
+                            icon = Icons.Default.CheckCircle,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        StatItemCard(
+                            label = "Streak",
+                            value = "${stats?.currentStreak ?: 0} dias",
+                            icon = Icons.Default.LocalFireDepartment,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        StatItemCard(
+                            label = "Frequência",
+                            value = "${stats?.weeklyFrequency ?: 0.0}x/sem",
+                            icon = Icons.Default.CalendarToday,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -221,12 +530,51 @@ private fun PerfilTab(
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(text = label, style = MaterialTheme.typography.bodySmall)
+private fun StatItemCard(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
+
 
 @Composable
 private fun MedicoesTab(

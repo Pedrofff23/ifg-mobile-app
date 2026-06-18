@@ -34,19 +34,19 @@ object ErrorUtils {
  }
  }
  // Fallback to HTTP Status code translation if no specific message
- "HTTP ${e.code()}: " + translateHttpCode(e.code())
+ translateHttpCode(e.code())
  } catch (jsonException: Exception) {
- "HTTP ${e.code()}: " + translateHttpCode(e.code())
+ translateHttpCode(e.code())
  }
  }
  is IOException -> "Erro de conexão (${e.javaClass.simpleName}): Verifique sua internet."
- else -> e.message ?: (e.javaClass.simpleName + ": " + fallback)
+ else -> e.message ?: fallback
  }
  }
 
     private fun translateHttpCode(code: Int): String {
         return when (code) {
-            400 -> "Dados inválidos ou incompletos."
+            400 -> "E-mail ou senha incorretos, ou dados inválidos."
             401 -> "Sessão expirada. Faça login novamente."
             403 -> "Você não tem permissão para realizar esta ação."
             404 -> "Recurso não encontrado."
@@ -54,6 +54,7 @@ object ErrorUtils {
             else -> "Ocorreu um erro na requisição (Código $code)."
         }
     }
+
 
     private fun translateCommonBackendErrors(backendMessage: String): String {
         val lowerMsg = backendMessage.lowercase()

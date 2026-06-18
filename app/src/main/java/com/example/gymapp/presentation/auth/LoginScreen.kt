@@ -260,13 +260,13 @@ fun LoginScreen(
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
                         } else {
                             Text(
                                 stringResource(R.string.button_login),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
@@ -378,7 +378,7 @@ fun LoginScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
                         shape = RoundedCornerShape(Spacing.md)
                     ) {
-                        Text("Ok", color = Color.White)
+                        Text("Ok", color = MaterialTheme.colorScheme.onPrimary)
                     }
                 } else {
                     Button(
@@ -388,9 +388,9 @@ fun LoginScreen(
                         shape = RoundedCornerShape(Spacing.md)
                     ) {
                         if (forgotLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                         } else {
-                            Text("Enviar link", color = Color.White)
+                            Text("Enviar link", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 }

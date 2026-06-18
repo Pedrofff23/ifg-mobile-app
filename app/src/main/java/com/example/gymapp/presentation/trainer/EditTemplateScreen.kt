@@ -108,11 +108,11 @@ fun EditTemplateScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
-                title = { Text("Editar Treino", color = Color.White) },
+                title = { Text("Editar Treino", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = IfgGreen,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -132,7 +132,7 @@ fun EditTemplateScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -149,7 +149,6 @@ fun EditTemplateScreen(
                     )
                 }
             }
-
             item {
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -227,7 +226,10 @@ fun EditTemplateScreen(
                             val nextLabel = generateDayLabel(workoutDays.size)
                             workoutDays = workoutDays + EditableWorkoutDay(name = nextLabel, orderIndex = workoutDays.size)
                         },
-                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = Green100, contentColor = IfgGreen)
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -265,7 +267,7 @@ fun EditTemplateScreen(
                                     it.forEachIndexed { i, d -> it[i] = d.copy(orderIndex = i) }
                                 }
                             }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Remover dia", tint = Color(0xFFC62828))
+                                Icon(Icons.Default.Delete, contentDescription = "Remover dia", tint = MaterialTheme.colorScheme.error)
                             }
                         }
 
@@ -300,7 +302,7 @@ fun EditTemplateScreen(
                                                     it[dayIndex] = updatedDay
                                                 }
                                             }, modifier = Modifier.size(28.dp)) {
-                                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color(0xFFC62828), modifier = Modifier.size(14.dp))
+                                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(14.dp))
                                             }
                                         }
                                         Text(
@@ -371,8 +373,8 @@ fun EditTemplateScreen(
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
                     ) {
-                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        else Text("Salvar", style = MaterialTheme.typography.titleMedium)
+                        if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                        else Text("Salvar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -539,7 +541,7 @@ private fun AddExerciseToDayDialog(
                 },
                 enabled = selectedExercise != null,
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Adicionar") }
+            ) { Text("Adicionar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }

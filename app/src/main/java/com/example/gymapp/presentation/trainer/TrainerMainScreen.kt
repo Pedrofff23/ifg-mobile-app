@@ -37,6 +37,7 @@ fun TrainerMainScreen(
     onNavigateToAdminInstitutos: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val tabs = listOf(
         TrainerTab("dashboard", "Início", Icons.Default.Home),
@@ -48,10 +49,32 @@ fun TrainerMainScreen(
     )
 
     val isAdmin by viewModel.isAdmin.collectAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val isMainTab = currentRoute in listOf("dashboard", "workout_hub", "students_hub", "groups", "announcements", "profile")
 
     Scaffold(
-        topBar = { TrainerTopBar(isAdmin = isAdmin) },
-        bottomBar = { TrainerBottomNav(navController = navController, tabs = tabs) },
+        topBar = {
+            if (isMainTab) {
+                TrainerTopBar(isAdmin = isAdmin)
+            }
+        },
+        bottomBar = {
+            if (isMainTab) {
+                TrainerBottomNav(navController = navController, tabs = tabs)
+            }
+        },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
@@ -130,7 +153,8 @@ fun TrainerMainScreen(
                 TrainerProfileScreen(
                     viewModel = viewModel,
                     themeManager = viewModel.themeManager,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    snackbarHostState = snackbarHostState
                 )
             }
             composable("admin_institutos") {
@@ -183,8 +207,7 @@ private fun TrainerBottomNav(
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         tabs.forEach { tab ->
             val selected = currentRoute == tab.route

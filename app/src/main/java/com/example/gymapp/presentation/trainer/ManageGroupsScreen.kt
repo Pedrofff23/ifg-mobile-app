@@ -74,7 +74,8 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
                 Icon(Icons.Default.Add, contentDescription = "Criar Grupo")
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -191,8 +192,8 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
                         showDeleteDialog = false
                         selectedGroup = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4183D))
-                ) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Excluir", color = MaterialTheme.colorScheme.onError) }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false; selectedGroup = null }) { Text("Cancelar") } }
         )
@@ -299,7 +300,7 @@ private fun GroupCard(
                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = IfgGreen)
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFD4183D))
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.error)
                 }
                 IconButton(onClick = onToggleExpand) {
                     Icon(
@@ -318,14 +319,14 @@ private fun GroupCard(
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 12.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE3F2FD))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.FitnessCenter,
                             contentDescription = null,
-                            tint = Color(0xFF1565C0),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -333,12 +334,12 @@ private fun GroupCard(
                             Text(
                                 "Treino Atribuído",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF1565C0).copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                             )
                             Text(
                                 assignment.templateName ?: "Sem nome",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF1565C0),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -376,7 +377,7 @@ private fun GroupCard(
                             onClick = onAssignWorkout,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -447,7 +448,7 @@ private fun GroupCard(
                                     Icon(
                                         Icons.Default.RemoveCircleOutline,
                                         contentDescription = "Remover",
-                                        tint = Color(0xFFD4183D),
+                                        tint = MaterialTheme.colorScheme.error,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }

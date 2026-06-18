@@ -83,14 +83,14 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Column {
                 Text("Gerenciar Treinos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Text("Edite e atribua treinos aos alunos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = searchQuery,
@@ -161,24 +161,30 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Badge(containerColor = Green100, contentColor = IfgGreen) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ) {
                                 Text(template.type ?: "Geral", style = MaterialTheme.typography.labelSmall)
                             }
                             Badge(
                                 containerColor = when (template.difficulty) {
                                     "Iniciante" -> Green100
-                                    "Intermediário" -> Color(0xFFFFF3E0)
-                                    else -> Color(0xFFFFEBEE)
+                                    "Intermediário" -> Orange100
+                                    else -> Red100
                                 },
                                 contentColor = when (template.difficulty) {
                                     "Iniciante" -> IfgGreen
-                                    "Intermediário" -> Color(0xFFE65100)
-                                    else -> Color(0xFFC62828)
+                                    "Intermediário" -> Orange600
+                                    else -> Red500
                                 }
                             ) {
                                 Text(template.difficulty ?: "Nível", style = MaterialTheme.typography.labelSmall)
                             }
-                            Badge(containerColor = Color(0xFFE3F2FD), contentColor = Color(0xFF1565C0)) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ) {
                                 Text("${workoutDays.size} dia(s) • $totalExercises ex.", style = MaterialTheme.typography.labelSmall)
                             }
                         }
@@ -247,16 +253,16 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
-                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Atribuir", style = MaterialTheme.typography.labelLarge)
+                                Text("Atribuir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
                             }
                             
                             OutlinedButton(
                                 onClick = { navController?.navigate("edit_template/${template.id}") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0)),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -268,9 +274,9 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                                 onClick = { templateToDelete = template; showDeleteDialog = true },
                                 modifier = Modifier.size(40.dp),
                                 shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, Color(0xFFC62828).copy(alpha = 0.5f))
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -368,7 +374,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                     },
                     enabled = selectedAlunoId.isNotBlank() && startsAt.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                ) { Text("Atribuir") }
+                ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = {
                 TextButton(onClick = { 
@@ -393,8 +399,8 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                         showDeleteDialog = false
                         templateToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                ) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Excluir", color = MaterialTheme.colorScheme.onError) }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false; templateToDelete = null }) { Text("Cancelar") } }
         )

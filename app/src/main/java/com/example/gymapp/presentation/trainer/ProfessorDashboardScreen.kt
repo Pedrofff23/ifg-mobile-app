@@ -48,7 +48,8 @@ fun ProfessorDashboardScreen(
                     contentColor = MaterialTheme.colorScheme.inverseOnSurface
                 )
             }
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         if (isLoading) {
             Box(

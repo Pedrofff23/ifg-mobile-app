@@ -57,18 +57,20 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
         "instrucoes" to "Instruções"
     )
 
+    @Composable
     fun typeColor(type: String?): Color = when (type) {
-        "noticia" -> Color(0xFF1565C0)
-        "aviso" -> Color(0xFFE65100)
-        "instrucoes" -> Color(0xFF2E7D32)
-        else -> Color(0xFF757575)
+        "noticia" -> MaterialTheme.colorScheme.primary
+        "aviso" -> Orange600
+        "instrucoes" -> IfgGreen
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
+    @Composable
     fun typeBgColor(type: String?): Color = when (type) {
-        "noticia" -> Color(0xFFE3F2FD)
-        "aviso" -> Color(0xFFFFF3E0)
-        "instrucoes" -> Color(0xFFE8F5E9)
-        else -> Color(0xFFF5F5F5)
+        "noticia" -> MaterialTheme.colorScheme.primaryContainer
+        "aviso" -> Orange100
+        "instrucoes" -> Green100
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     Scaffold(
@@ -83,7 +85,8 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             if (showCreateForm) {
@@ -137,7 +140,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp)
                             ) { Text("Cancelar") }
-                            Button(
+                                Button(
                                 onClick = {
                                     if (title.isNotBlank() && content.isNotBlank()) {
                                         viewModel.createAnnouncement(CreateAnnouncementRequest(title, content, selectedType))
@@ -151,7 +154,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                            ) { Text("Publicar") }
+                            ) { Text("Publicar", color = MaterialTheme.colorScheme.onPrimary) }
                         }
                     }
                 }
@@ -235,13 +238,13 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                             onClick = { showEditDialog = announcement },
                                             modifier = Modifier.size(32.dp)
                                         ) {
-                                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF1565C0), modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                         }
                                         IconButton(
                                             onClick = { announcementToDelete = announcement; showDeleteDialog = true },
                                             modifier = Modifier.size(32.dp)
                                         ) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -278,8 +281,8 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                         showDeleteDialog = false
                         announcementToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                ) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Excluir", color = MaterialTheme.colorScheme.onError) }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false; announcementToDelete = null }) { Text("Cancelar") } }
         )
@@ -368,7 +371,7 @@ private fun AnnouncementEditDialog(
                 onClick = { onSave(title, content, selectedType) },
                 enabled = title.isNotBlank() && content.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Salvar") }
+            ) { Text("Salvar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }

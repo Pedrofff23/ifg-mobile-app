@@ -112,7 +112,8 @@ fun ManageWorkoutsScreenWrapper(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
              ManageWorkoutsContent(viewModel = viewModel, navController = navController)

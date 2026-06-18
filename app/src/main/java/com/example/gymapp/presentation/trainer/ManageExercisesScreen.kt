@@ -82,19 +82,21 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                 Icon(Icons.Default.Add, contentDescription = "Novo Exercício")
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 16.dp)) {
             Text(
                 "Exercícios",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 "Gerencie o catálogo de exercícios",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Search bar
             OutlinedTextField(
@@ -182,11 +184,11 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                     )
                                     // Muscle group badge
                                     Badge(
-                                        containerColor = Green100
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Text(
                                             exercise.muscleGroup ?: "Geral",
-                                            color = IfgGreen,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
@@ -217,10 +219,10 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                             Spacer(modifier = Modifier.height(4.dp))
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Badge(containerColor = if (exercise.usesWeight == true) Blue100 else Orange100) {
+                                            Badge(containerColor = if (exercise.usesWeight == true) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer) {
                                                 Text(
                                                     if (exercise.usesWeight == true) "Com peso" else "Sem peso",
-                                                    color = if (exercise.usesWeight == true) Color(0xFF1565C0) else Orange600,
+                                                    color = if (exercise.usesWeight == true) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                                                     style = MaterialTheme.typography.labelSmall
                                                 )
                                             }
@@ -267,7 +269,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                                 onClick = { navController?.navigate("edit_exercise/${exercise.id}") },
                                                 modifier = Modifier.weight(1f),
                                                 shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                                             ) {
                                                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                                                 Spacer(modifier = Modifier.width(4.dp))
@@ -277,7 +279,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                                 onClick = { showDeleteDialog = exercise },
                                                 modifier = Modifier.weight(1f),
                                                 shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828))
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                                             ) {
                                                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                                                 Spacer(modifier = Modifier.width(4.dp))
@@ -308,8 +310,8 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                         viewModel.deleteExercise(showDeleteDialog!!.id)
                         showDeleteDialog = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                ) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Excluir", color = MaterialTheme.colorScheme.onError) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) { Text("Cancelar") }

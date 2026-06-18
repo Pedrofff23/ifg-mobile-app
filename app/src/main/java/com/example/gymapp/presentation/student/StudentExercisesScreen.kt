@@ -76,21 +76,24 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
         if (error != null) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Red100)
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             ) {
                 Row(
                     modifier = Modifier.padding(12.dp).fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("⚠", fontSize = 18.sp, color = Red500)
+                    Text("⚠", fontSize = 18.sp, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = error!!,
-                        style = MaterialTheme.typography.bodySmall.copy(color = Red500),
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error),
                         modifier = Modifier.weight(1f)
                     )
                     TextButton(onClick = { viewModel.clearUpdateStatus() }) {
-                        Text("Fechar", color = Red500, style = MaterialTheme.typography.labelSmall)
+                        Text("Fechar", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -212,14 +215,14 @@ private fun ExerciseCard(exercise: Exercise, onClick: () -> Unit = {}) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Badge(
-                    containerColor = Green100,
-                    contentColor = IfgGreen
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) { Text(exercise.muscleGroup ?: "Geral") }
 
                 if (exercise.usesWeight == true) {
                     Badge(
-                        containerColor = Blue100,
-                        contentColor = Color(0xFF2563EB)
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ) { Text("Com peso") }
                 }
             }
@@ -276,11 +279,17 @@ private fun ExerciseDetailDialog(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Badge(containerColor = Green100, contentColor = IfgGreen) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
                         Text(exercise.muscleGroup ?: "Geral")
                     }
                     if (exercise.usesWeight == true) {
-                        Badge(containerColor = Blue100, contentColor = Color(0xFF2563EB)) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ) {
                             Text("Com peso")
                         }
                     }

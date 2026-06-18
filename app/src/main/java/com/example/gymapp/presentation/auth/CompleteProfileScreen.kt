@@ -55,10 +55,10 @@ fun CompleteProfileScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBackToLogin) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 },
-                title = { Text("Completar Perfil", color = Color.White) },
+                title = { Text("Completar Perfil", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = IfgGreen)
             )
         }
@@ -196,7 +196,7 @@ fun CompleteProfileScreen(
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
             ) {
-                Text("Continuar", style = MaterialTheme.typography.titleMedium)
+                Text("Continuar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }

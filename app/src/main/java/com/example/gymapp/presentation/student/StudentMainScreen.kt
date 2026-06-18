@@ -59,13 +59,19 @@ fun StudentMainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val isSessionRoute = currentRoute?.startsWith("workout_session") == true || currentRoute == Routes.WORKOUT_SESSION
+
     Scaffold(
         topBar = { 
-            if (currentRoute != Routes.WORKOUT_SESSION) {
+            if (!isSessionRoute) {
                 StudentTopBar() 
             }
         },
-        bottomBar = { StudentBottomNav(navController = navController, tabs = tabs) },
+        bottomBar = {
+            if (!isSessionRoute) {
+                StudentBottomNav(navController = navController, tabs = tabs)
+            }
+        },
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
@@ -119,7 +125,8 @@ fun StudentMainScreen(
                 StudentProfileScreen(
                     viewModel = viewModel,
                     themeManager = themeManager,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    snackbarHostState = snackbarHostState
                 )
             }
             composable(
@@ -184,11 +191,7 @@ private fun StudentBottomNav(
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        modifier = Modifier.background(
-            MaterialTheme.colorScheme.surface
-        )
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         tabs.forEach { tab ->
             val selected = currentRoute == tab.route

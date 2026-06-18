@@ -238,13 +238,13 @@ private fun TodayWorkoutCard(
                 Icon(
                     Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(Spacing.sm))
                 Text(
                     "Iniciar Treino",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.labelLarge
                 )
             }

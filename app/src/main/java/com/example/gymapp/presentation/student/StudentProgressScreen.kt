@@ -401,15 +401,15 @@ private fun SessionRow(session: WorkoutSession) {
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        else Orange100
+                        if (isCompleted) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.tertiaryContainer
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     if (isCompleted) Icons.Default.CheckCircle else Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = if (isCompleted) MaterialTheme.colorScheme.primary else Orange600,
+                    tint = if (isCompleted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -430,13 +430,13 @@ private fun SessionRow(session: WorkoutSession) {
 
             Surface(
                 shape = RoundedCornerShape(Spacing.sm),
-                color = if (isCompleted) Green100 else Orange100
+                color = if (isCompleted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
             ) {
                 Text(
                     text = if (isCompleted) "Concluída" else "Em andamento",
                     modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isCompleted) IfgGreen else Orange600,
+                    color = if (isCompleted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                     fontWeight = FontWeight.SemiBold
                 )
             }

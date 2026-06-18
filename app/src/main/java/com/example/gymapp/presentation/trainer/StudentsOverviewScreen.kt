@@ -67,7 +67,8 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
@@ -93,9 +94,9 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatCardSmall("Total", students.size.toString(), IfgGreen, Green100, Icons.Default.People, modifier = Modifier.weight(1f))
-                            StatCardSmall("Ativos", students.count { it.isActive }.toString(), Color(0xFF1565C0), Color(0xFFE3F2FD), Icons.Default.CheckCircle, modifier = Modifier.weight(1f))
-                            StatCardSmall("Novos", "0", Color(0xFF6A1B9A), Color(0xFFF3E5F5), Icons.Default.PersonAdd, modifier = Modifier.weight(1f))
+                            StatCardSmall("Total", students.size.toString(), MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, Icons.Default.People, modifier = Modifier.weight(1f))
+                            StatCardSmall("Ativos", students.count { it.isActive }.toString(), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondaryContainer, Icons.Default.CheckCircle, modifier = Modifier.weight(1f))
+                            StatCardSmall("Novos", "0", MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiaryContainer, Icons.Default.PersonAdd, modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -143,7 +144,30 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(student.fullName ?: "", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(student.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    
+                                    val activeAssignments by viewModel.studentActiveAssignments.collectAsState()
+                                    val currentWorkout = activeAssignments[student.id]
+                                    if (currentWorkout != null) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.FitnessCenter,
+                                                contentDescription = null,
+                                                tint = IfgGreen,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "Treino: ${currentWorkout.templateName ?: "Carregando"}",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                                color = IfgGreen
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         if (student.isActive) {
                                             Surface(
@@ -160,11 +184,11 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                         }
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFFE3F2FD)
+                                            color = MaterialTheme.colorScheme.secondaryContainer
                                         ) {
                                             Text(
                                                 student.role,
-                                                color = Color(0xFF1565C0),
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
@@ -265,7 +289,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                     },
                     enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                ) { Text("Atribuir") }
+                ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedStudent = null; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
         )
@@ -355,7 +379,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                     },
                     enabled = selectedGroupId.isNotBlank() && selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-                ) { Text("Atribuir") }
+                ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = { TextButton(onClick = { showGroupAssignDialog = false; selectedGroupId = ""; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
         )
