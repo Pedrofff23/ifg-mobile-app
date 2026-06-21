@@ -48,15 +48,15 @@ fun AdminInstitutoScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = IfgGreen) {
-                Icon(Icons.Default.Add, "Novo Instituto")
+            FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = MaterialTheme.colorScheme.primary) {
+                Icon(Icons.Default.Add, "Novo Instituto", tint = MaterialTheme.colorScheme.onPrimary)
             }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when {
                 isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = IfgGreen)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
                 institutos.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Nenhum instituto cadastrado", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -162,7 +162,7 @@ private fun InstitutoFormDialog(
             Button(
                 onClick = { onSave(name) },
                 enabled = name.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) { Text("Salvar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {

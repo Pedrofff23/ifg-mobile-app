@@ -104,7 +104,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                 if (isLoading) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = IfgGreen)
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 } else if (students.isEmpty()) {
@@ -133,13 +133,13 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier.size(48.dp).clip(CircleShape).background(IfgGreen),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val initials = (student.fullName ?: "").split(" ").filter { it.isNotBlank() }.map { it.firstOrNull() ?: 'A' }.take(2).joinToString("")
-                                    Text(initials, color = Color.White, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                }
+                                    Box(
+                                        modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val initials = (student.fullName ?: "").split(" ").filter { it.isNotBlank() }.map { it.firstOrNull() ?: 'A' }.take(2).joinToString("")
+                                        Text(initials, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                                    }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(student.fullName ?: "", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -156,13 +156,13 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                             Icon(
                                                 imageVector = Icons.Default.FitnessCenter,
                                                 contentDescription = null,
-                                                tint = IfgGreen,
+                                                tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(12.dp)
                                             )
                                             Text(
                                                 text = "Treino: ${currentWorkout.templateName ?: "Carregando"}",
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                                color = IfgGreen
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -172,11 +172,11 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                         if (student.isActive) {
                                             Surface(
                                                 shape = RoundedCornerShape(4.dp),
-                                                color = Green100
+                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                                             ) {
                                                 Text(
                                                     "Ativo",
-                                                    color = IfgGreen,
+                                                    color = MaterialTheme.colorScheme.primary,
                                                     style = MaterialTheme.typography.labelSmall,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
@@ -196,7 +196,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                     }
                                 }
                                 IconButton(onClick = { selectedStudent = student; showAssignDialog = true }) {
-                                    Icon(Icons.Default.FitnessCenter, contentDescription = "Atribuir Treino", tint = IfgGreen)
+                                    Icon(Icons.Default.FitnessCenter, contentDescription = "Atribuir Treino", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
@@ -288,7 +288,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         }
                     },
                     enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = { TextButton(onClick = { showAssignDialog = false; selectedStudent = null; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
@@ -378,7 +378,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         }
                     },
                     enabled = selectedGroupId.isNotBlank() && selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = { TextButton(onClick = { showGroupAssignDialog = false; selectedGroupId = ""; selectedTemplateId = ""; startsAt = "" }) { Text("Cancelar") } }
@@ -401,13 +401,13 @@ private fun StatCardSmall(
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(4.dp))
             Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = iconTint)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = iconTint.copy(alpha = 0.8f))
         }
     }
 }

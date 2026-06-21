@@ -79,7 +79,7 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize()4
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
                 .padding(horizontal = 16.dp)

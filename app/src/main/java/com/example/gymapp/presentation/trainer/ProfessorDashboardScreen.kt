@@ -104,7 +104,7 @@ fun ProfessorDashboardScreen(
                         label = "Treinos",
                         icon = Icons.Default.FitnessCenter,
                         modifier = Modifier.weight(1f),
-                        tint = IfgGreen
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -117,14 +117,14 @@ fun ProfessorDashboardScreen(
                         label = "Exercícios",
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         modifier = Modifier.weight(1f),
-                        tint = Blue600
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                     StatChip(
                         value = "${announcements.size}",
                         label = "Avisos",
                         icon = Icons.Default.Notifications,
                         modifier = Modifier.weight(1f),
-                        tint = Orange600
+                        tint = MaterialTheme.colorScheme.tertiary
                     )
                 }
 
@@ -228,9 +228,9 @@ private fun QuickActionButton(
         modifier = modifier.height(80.dp),
         shape = RoundedCornerShape(Spacing.md),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -242,14 +242,14 @@ private fun QuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.height(Spacing.xs))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }

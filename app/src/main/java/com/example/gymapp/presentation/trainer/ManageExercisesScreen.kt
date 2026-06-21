@@ -77,9 +77,9 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController?.navigate("create_exercise") },
-                containerColor = IfgGreen
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Novo Exercício")
+                Icon(Icons.Default.Add, contentDescription = "Novo Exercício", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -135,7 +135,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = IfgGreen)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (filteredExercises.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -173,7 +173,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                     Icon(
                                         Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = IfgGreen,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(22.dp)
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -183,13 +183,15 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                         modifier = Modifier.weight(1f)
                                     )
                                     // Muscle group badge
-                                    Badge(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Text(
                                             exercise.muscleGroup ?: "Geral",
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            style = MaterialTheme.typography.labelSmall
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
                                     IconButton(onClick = {
@@ -219,11 +221,15 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                                             Spacer(modifier = Modifier.height(4.dp))
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Badge(containerColor = if (exercise.usesWeight == true) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer) {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = if (exercise.usesWeight == true) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+                                            ) {
                                                 Text(
                                                     if (exercise.usesWeight == true) "Com peso" else "Sem peso",
                                                     color = if (exercise.usesWeight == true) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
-                                                    style = MaterialTheme.typography.labelSmall
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
                                             }
                                         }

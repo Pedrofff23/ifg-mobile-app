@@ -143,7 +143,7 @@ private fun AdminUsersTab(
                 onClick = onNavigateToInstitutos,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -187,15 +187,12 @@ private fun AdminUsersTab(
 
             // Stats
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatChip("Total", allUsers.size, IfgGreen, Green100)
-                StatChip("Alunos", allUsers.count { it.role.equals("aluno", ignoreCase = true) }, Color(0xFF1565C0), Blue100)
-                StatChip("Professores", allUsers.count { it.role.equals("professor", ignoreCase = true) }, Color(0xFFE65100), Orange100)
-                StatChip("Admins", allUsers.count { it.role.equals("admin", ignoreCase = true) }, Color(0xFF6B21A8), Purple100)
+                StatChip("Total", allUsers.size, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.weight(1f))
+                StatChip("Alunos", allUsers.count { it.role.equals("aluno", ignoreCase = true) }, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
+                StatChip("Profs", allUsers.count { it.role.equals("professor", ignoreCase = true) }, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -257,10 +254,10 @@ private fun AdminUsersTab(
                         showStatusDialog = null
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!showStatusDialog!!.isBlocked) Color(0xFFC62828) else IfgGreen
+                        containerColor = if (!showStatusDialog!!.isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(if (showStatusDialog!!.isBlocked) "Desbloquear" else "Bloquear")
+                    Text(if (showStatusDialog!!.isBlocked) "Desbloquear" else "Bloquear", color = if (!showStatusDialog!!.isBlocked) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary)
                 }
             },
             dismissButton = {
@@ -344,9 +341,9 @@ private fun AuditLogCard(entry: AuditLogEntry) {
                     },
                     contentDescription = null,
                     tint = when (entry.action) {
-                        "POST" -> IfgGreen
-                        "PUT", "PATCH" -> Color(0xFF1565C0)
-                        "DELETE" -> Color(0xFFC62828)
+                        "POST" -> MaterialTheme.colorScheme.primary
+                        "PUT", "PATCH" -> MaterialTheme.colorScheme.secondary
+                        "DELETE" -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     modifier = Modifier.size(18.dp)
@@ -446,10 +443,10 @@ private fun BackgroundJobCard(job: BackgroundJob) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val statusColor = when (job.status) {
-                    "done" -> IfgGreen
-                    "processing" -> Color(0xFF1565C0)
-                    "failed" -> Color(0xFFC62828)
-                    else -> Color(0xFFE65100)
+                    "done" -> MaterialTheme.colorScheme.primary
+                    "processing" -> MaterialTheme.colorScheme.secondary
+                    "failed" -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.tertiary
                 }
                 val statusLabel = when (job.status) {
                     "done" -> "Concluído"
@@ -490,17 +487,18 @@ private fun BackgroundJobCard(job: BackgroundJob) {
 }
 
 @Composable
-private fun StatChip(label: String, count: Int, textColor: Color, bgColor: Color) {
+private fun StatChip(label: String, count: Int, textColor: Color, bgColor: Color, modifier: Modifier = Modifier) {
     Card(
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor)
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("$count", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = textColor)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = textColor)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.8f), maxLines = 1)
         }
     }
 }
@@ -527,9 +525,9 @@ private fun UserCard(
                     .clip(CircleShape)
                     .background(
                         when {
-                            user.role.equals("admin", ignoreCase = true) -> Color(0xFF6B21A8)
-                            user.role.equals("professor", ignoreCase = true) -> Color(0xFFE65100)
-                            else -> IfgGreen
+                            user.role.equals("admin", ignoreCase = true) -> MaterialTheme.colorScheme.tertiary
+                            user.role.equals("professor", ignoreCase = true) -> MaterialTheme.colorScheme.secondary
+                            else -> MaterialTheme.colorScheme.primary
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -537,7 +535,11 @@ private fun UserCard(
                 Text(
                     (user.fullName ?: "").take(1).uppercase(),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
+                    color = when {
+                        user.role.equals("admin", ignoreCase = true) -> MaterialTheme.colorScheme.onTertiary
+                        user.role.equals("professor", ignoreCase = true) -> MaterialTheme.colorScheme.onSecondary
+                        else -> MaterialTheme.colorScheme.onPrimary
+                    }
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -551,21 +553,23 @@ private fun UserCard(
             }
 
             // Role badge
-            Badge(
-                containerColor = when {
-                    user.role.equals("admin", ignoreCase = true) -> Purple100
-                    user.role.equals("professor", ignoreCase = true) -> Orange100
-                    else -> Green100
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = when {
+                    user.role.equals("admin", ignoreCase = true) -> MaterialTheme.colorScheme.tertiaryContainer
+                    user.role.equals("professor", ignoreCase = true) -> MaterialTheme.colorScheme.secondaryContainer
+                    else -> MaterialTheme.colorScheme.primaryContainer
                 }
             ) {
                 Text(
                     user.role.replaceFirstChar { it.uppercase() },
                     color = when {
-                        user.role.equals("admin", ignoreCase = true) -> Color(0xFF6B21A8)
-                        user.role.equals("professor", ignoreCase = true) -> Color(0xFFE65100)
-                        else -> IfgGreen
+                        user.role.equals("admin", ignoreCase = true) -> MaterialTheme.colorScheme.onTertiaryContainer
+                        user.role.equals("professor", ignoreCase = true) -> MaterialTheme.colorScheme.onSecondaryContainer
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
                     },
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
 
@@ -574,7 +578,7 @@ private fun UserCard(
             Icon(
                 if (user.isBlocked) Icons.Default.Block else Icons.Default.CheckCircle,
                 contentDescription = if (user.isBlocked) "Bloqueado" else "Ativo",
-                tint = if (user.isBlocked) Color(0xFFC62828) else IfgGreen,
+                tint = if (user.isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -588,7 +592,7 @@ private fun UserCard(
                 onClick = onRoleClick,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(Icons.Default.AdminPanelSettings, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -599,7 +603,7 @@ private fun UserCard(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (!user.isBlocked) Color(0xFFC62828) else IfgGreen
+                    contentColor = if (user.isBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
             ) {
                 Icon(
@@ -656,8 +660,8 @@ private fun RoleChangeDialog(
             Button(
                 onClick = { onConfirm(selectedRole) },
                 enabled = selectedRole != user.role,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Salvar", color = Color.White) }
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) { Text("Salvar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
