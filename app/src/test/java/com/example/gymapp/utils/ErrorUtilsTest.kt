@@ -26,7 +26,7 @@ class ErrorUtilsTest {
     fun `parseErrorMessage handles generic Exception without message`() {
         val exception = Exception()
         val result = ErrorUtils.parseErrorMessage(exception)
-        assertTrue(result.contains("Exception"))
+        assertTrue(result.contains("Ocorreu um erro inesperado"))
     }
 
     @Test
