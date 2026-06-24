@@ -134,7 +134,7 @@
     <string name="workout_session_error">Erro ao carregar sessão</string>
     <string name="workout_session_back">Voltar</string>
     <string name="workout_session_finish">Finalizar</string>
-    <string name="workout_session_exercise_progress">Exercício %d de %d</string>
+    <string name="workout_session_exercise_progress" formatted="false">Exercício %d de %d</string>
     <string name="workout_session_cardio">Cardio</string>
     <string name="workout_session_reps">%d reps</string>
     <string name="workout_session_minutes">min</string>

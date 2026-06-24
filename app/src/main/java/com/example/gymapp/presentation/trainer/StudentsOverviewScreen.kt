@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.ui.theme.*
 
+enum class StudentFilter { ALL, ACTIVE, BLOCKED }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
@@ -34,13 +36,23 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
     val successMessage by viewModel.successMessage.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf(StudentFilter.ALL) }
+    val filteredStudents = remember(students, filter) {
+        students.filter { student ->
+            when (filter) {
+                StudentFilter.ALL -> true
+                StudentFilter.ACTIVE -> student.isActive
+                StudentFilter.BLOCKED -> student.isBlocked
+            }
+        }
+    }
     var showAssignDialog by remember { mutableStateOf(false) }
     var showGroupAssignDialog by remember { mutableStateOf(false) }
     var selectedStudent by remember { mutableStateOf<User?>(null) }
     var selectedTemplateId by remember { mutableStateOf("") }
     var selectedGroupId by remember { mutableStateOf("") }
     var startsAt by remember { mutableStateOf("") }
-
+    
     var showStudentDetail by remember { mutableStateOf(false) }
     var selectedDetailStudentId by remember { mutableStateOf("") }
 
@@ -94,9 +106,36 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatCardSmall("Total", students.size.toString(), MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, Icons.Default.People, modifier = Modifier.weight(1f))
-                            StatCardSmall("Ativos", students.count { it.isActive }.toString(), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondaryContainer, Icons.Default.CheckCircle, modifier = Modifier.weight(1f))
-                            StatCardSmall("Novos", "0", MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiaryContainer, Icons.Default.PersonAdd, modifier = Modifier.weight(1f))
+                            StatCardSmall(
+                                label = "Total",
+                                value = students.size.toString(),
+                                iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                bgColor = MaterialTheme.colorScheme.primaryContainer,
+                                icon = Icons.Default.People,
+                                isSelected = filter == StudentFilter.ALL,
+                                onClick = { filter = StudentFilter.ALL },
+                                modifier = Modifier.weight(1f)
+                            )
+                            StatCardSmall(
+                                label = "Ativos",
+                                value = students.count { it.isActive }.toString(),
+                                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                bgColor = MaterialTheme.colorScheme.secondaryContainer,
+                                icon = Icons.Default.CheckCircle,
+                                isSelected = filter == StudentFilter.ACTIVE,
+                                onClick = { filter = StudentFilter.ACTIVE },
+                                modifier = Modifier.weight(1f)
+                            )
+                            StatCardSmall(
+                                label = "Bloqueados",
+                                value = students.count { it.isBlocked }.toString(),
+                                iconTint = MaterialTheme.colorScheme.onErrorContainer,
+                                bgColor = MaterialTheme.colorScheme.errorContainer,
+                                icon = Icons.Default.Block,
+                                isSelected = filter == StudentFilter.BLOCKED,
+                                onClick = { filter = StudentFilter.BLOCKED },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
@@ -107,7 +146,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     }
-                } else if (students.isEmpty()) {
+                } else if (filteredStudents.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(top = 48.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -118,7 +157,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                         }
                     }
                 } else {
-                    items(students) { student ->
+                    items(filteredStudents) { student ->
                         Card(
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -177,6 +216,19 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                                                 Text(
                                                     "Ativo",
                                                     color = MaterialTheme.colorScheme.primary,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        if (student.isBlocked) {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = MaterialTheme.colorScheme.errorContainer
+                                            ) {
+                                                Text(
+                                                    "Bloqueado",
+                                                    color = MaterialTheme.colorScheme.error,
                                                     style = MaterialTheme.typography.labelSmall,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
@@ -393,12 +445,15 @@ private fun StatCardSmall(
     iconTint: Color,
     bgColor: Color,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        modifier = modifier
+        border = if (isSelected) BorderStroke(2.dp, iconTint) else null,
+        modifier = modifier.clickable { onClick() }
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(12.dp),

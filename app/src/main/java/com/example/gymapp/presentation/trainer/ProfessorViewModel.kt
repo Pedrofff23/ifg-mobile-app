@@ -200,7 +200,7 @@ class ProfessorViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val usersResponse = userService.getUsers()
+                val usersResponse = userService.getUsers(limit = 100)
                 val studentsList = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
                 _allStudents.value = studentsList
                 _students.value = studentsList
@@ -595,7 +595,7 @@ class ProfessorViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val usersResponse = userService.getUsers()
+                val usersResponse = userService.getUsers(limit = 100)
                 val studentsList = (usersResponse.data ?: emptyList()).filter { it.role.equals("aluno", ignoreCase = true) }
                 _allStudents.value = studentsList
                 _students.value = studentsList
@@ -643,7 +643,7 @@ class ProfessorViewModel @Inject constructor(
     _isLoading.value = true
     _error.value = null
     try {
-    _allUsers.value = userService.getUsers().data ?: emptyList()
+    _allUsers.value = userService.getUsers(limit = 100).data ?: emptyList()
     } catch (e: Exception) {
     _error.value = ErrorUtils.parseErrorMessage(e)
     } finally {

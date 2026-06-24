@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.gymapp.domain.model.BodyMeasurement
 import com.example.gymapp.domain.model.WorkoutSession
 import com.example.gymapp.domain.model.ExerciseProgressPoint
+import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.ui.theme.*
 import com.example.gymapp.utils.DateUtils
 import androidx.compose.ui.res.stringResource
@@ -44,8 +45,12 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
     val exerciseCustomMetrics by viewModel.exerciseCustomMetrics.collectAsState()
     val exerciseProgress by viewModel.exerciseProgress.collectAsState()
     val exerciseProgressLoading by viewModel.exerciseProgressLoading.collectAsState()
+    val exercises by viewModel.exercises.collectAsState()
+    val selectedExerciseId by viewModel.selectedExerciseId.collectAsState()
 
     var showLogWeightDialog by remember { mutableStateOf(false) }
+    var showExerciseSelectionDialog by remember { mutableStateOf(false) }
+    var exerciseSearchQuery by remember { mutableStateOf("") }
 
     // Date range filter state for weight chart
     var weightDateRange by remember { mutableStateOf(DateRangeFilter.LAST_90) }
@@ -54,17 +59,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
         viewModel.loadSessions()
         viewModel.loadProfile()
         viewModel.loadAssignments()
-    }
-
-    // Load exercise progress when sessions are loaded (sessions contain exercise IDs)
-    LaunchedEffect(sessions) {
-        val exerciseIds = (sessions ?: emptyList())
-            .flatMap { it.exercises ?: emptyList() }
-            .mapNotNull { it.exerciseId }
-            .distinct()
-        if (exerciseIds.isNotEmpty()) {
-            viewModel.loadExerciseProgress(exerciseIds.take(10))
-        }
+        viewModel.loadExercises()
     }
 
     // Ensure custom metrics are loaded (they are loaded inside loadExerciseProgress)
@@ -254,50 +249,96 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
             }
 
             // ============ EXERCISE PROGRESS CHARTS ============
-            if (exerciseProgress.isNotEmpty()) {
-                item {
-                    SectionHeader(title = "Progresso dos Exercícios")
-                }
+            item {
+                SectionHeader(title = "Progresso em Exercícios")
+            }
 
-                if (exerciseProgressLoading) {
+            item {
+                val selectedExercise = exercises.find { it.id == selectedExerciseId }
+                Card(
+                    onClick = { showExerciseSelectionDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(Spacing.md),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(Spacing.lg),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = selectedExercise?.name ?: "Selecionar Exercício",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = if (selectedExercise != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = selectedExercise?.muscleGroup?.replaceFirstChar { it.uppercase() } ?: "Clique para escolher um exercício e ver seu histórico",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            contentDescription = "Selecionar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (selectedExerciseId != null) {
+                val progressPoints = exerciseProgress[selectedExerciseId] ?: emptyList()
+                val selectedExercise = exercises.find { it.id == selectedExerciseId }
+                val exerciseName = selectedExercise?.name ?: ""
+
+                if (exerciseProgressLoading && progressPoints.isEmpty()) {
                     item {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }
-                }
+                } else if (progressPoints.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                        ) {
+                            Box(modifier = Modifier.padding(Spacing.lg).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Nenhum histórico de treino encontrado para este exercício.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        val chartData = progressPoints.toExerciseChartData { it.maxWeightKg?.toFloat() }
+                        val repData = progressPoints.toExerciseChartData { it.totalReps?.toFloat() }
+                        val selectedMetric = exerciseCustomMetrics[selectedExerciseId]?.metricType ?: "weight"
 
-                // Collect all exercise names from sessions for labeling
-                val exerciseNameMap = (sessions ?: emptyList())
-                    .flatMap { it.exercises ?: emptyList() }
-                    .associate { it.exerciseId to (it.exerciseName ?: it.exerciseId) }
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                            ExerciseProgressChart(
+                                exerciseName = "$exerciseName — Carga Máxima",
+                                progressPoints = chartData,
+                                selectedMetric = selectedMetric,
+                                onMetricChanged = { newMetric ->
+                                    viewModel.setExerciseMetric(selectedExerciseId!!, newMetric)
+                                },
+                                lineColor = MaterialTheme.colorScheme.primary
+                            )
 
-                items(exerciseProgress.entries.toList().take(6)) { (exerciseId, progressPoints) ->
-                    val exerciseName = exerciseNameMap[exerciseId] ?: exerciseId
-                    val chartData = progressPoints.toExerciseChartData { it.maxWeightKg?.toFloat() }
-                    val repData = progressPoints.toExerciseChartData { it.totalReps?.toFloat() }
-
-                    val selectedMetric = exerciseCustomMetrics[exerciseId]?.metricType ?: "weight"
-                    // Weight chart with metric selector
-                    ExerciseProgressChart(
-                        exerciseName = exerciseName,
-                        progressPoints = chartData,
-                        selectedMetric = selectedMetric,
-                        onMetricChanged = { newMetric ->
-                            viewModel.setExerciseMetric(exerciseId, newMetric)
-                        },
-                        lineColor = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-
-                    // Reps chart (no custom metric selector needed)
-                    if (repData.isNotEmpty()) {
-                        ExerciseProgressChart(
-                            exerciseName = "$exerciseName — Reps",
-                            progressPoints = repData,
-                            selectedMetric = "reps",
-                            onMetricChanged = { },
-                            lineColor = Blue600
-                        )
+                            if (repData.isNotEmpty()) {
+                                ExerciseProgressChart(
+                                    exerciseName = "$exerciseName — Total de Repetições",
+                                    progressPoints = repData,
+                                    selectedMetric = "reps",
+                                    onMetricChanged = { },
+                                    lineColor = Blue600
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -342,6 +383,111 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                 viewModel.addMeasurement(weightKg = weightKg)
                 showLogWeightDialog = false
             }
+        )
+    }
+
+    if (showExerciseSelectionDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showExerciseSelectionDialog = false
+                exerciseSearchQuery = ""
+            },
+            title = { Text("Selecionar Exercício") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    OutlinedTextField(
+                        value = exerciseSearchQuery,
+                        onValueChange = { exerciseSearchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Buscar exercício...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        shape = RoundedCornerShape(Spacing.md)
+                    )
+
+                    val filteredExercises = exercises.filter {
+                        it.name.contains(exerciseSearchQuery, ignoreCase = true) ||
+                        (it.muscleGroup?.contains(exerciseSearchQuery, ignoreCase = true) ?: false)
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                    ) {
+                        if (filteredExercises.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Nenhum exercício encontrado", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        } else {
+                            items(filteredExercises) { exercise ->
+                                Card(
+                                    onClick = {
+                                        viewModel.selectExerciseForProgress(exercise.id)
+                                        showExerciseSelectionDialog = false
+                                        exerciseSearchQuery = ""
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (exercise.id == selectedExerciseId) 
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                        else Color.Transparent
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = exercise.name,
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = exercise.muscleGroup?.replaceFirstChar { it.uppercase() } ?: "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (exercise.id == selectedExerciseId) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    showExerciseSelectionDialog = false
+                    exerciseSearchQuery = ""
+                }) {
+                    Text("Fechar")
+                }
+            },
+            shape = RoundedCornerShape(Spacing.lg)
         )
     }
 }

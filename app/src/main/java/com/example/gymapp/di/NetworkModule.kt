@@ -7,6 +7,7 @@ import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.GroupService
 import com.example.gymapp.data.remote.ProfileService
 import com.example.gymapp.data.remote.UserService
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -72,5 +73,11 @@ object NetworkModule {
  @Singleton
  fun provideGroupService(retrofit: Retrofit): GroupService {
  return retrofit.create(GroupService::class.java)
+ }
+
+ @Provides
+ @Singleton
+ fun provideNetworkMonitor(@dagger.hilt.android.qualifiers.ApplicationContext context: Context): com.example.gymapp.utils.NetworkMonitor {
+     return com.example.gymapp.utils.LiveNetworkMonitor(context)
  }
 }

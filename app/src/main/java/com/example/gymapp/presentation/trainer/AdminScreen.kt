@@ -33,7 +33,7 @@ fun AdminScreen(
     onNavigateToInstitutos: () -> Unit = {}
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Usuários", "Auditoria", "Tarefas")
+    val tabs = listOf("Usuários", "Tarefas")
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(
@@ -56,7 +56,6 @@ fun AdminScreen(
                             Icon(
                                 imageVector = when (index) {
                                     0 -> Icons.Default.People
-                                    1 -> Icons.Default.Assignment
                                     else -> Icons.Default.WorkHistory
                                 },
                                 contentDescription = null,
@@ -77,8 +76,7 @@ fun AdminScreen(
 
         when (selectedTabIndex) {
             0 -> AdminUsersTab(viewModel = viewModel, onNavigateToInstitutos = onNavigateToInstitutos)
-            1 -> AdminAuditTab(viewModel = viewModel)
-            2 -> AdminJobsTab(viewModel = viewModel)
+            1 -> AdminJobsTab(viewModel = viewModel)
         }
     }
 }
@@ -190,9 +188,9 @@ private fun AdminUsersTab(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatChip("Total", allUsers.size, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.weight(1f))
-                StatChip("Alunos", allUsers.count { it.role.equals("aluno", ignoreCase = true) }, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
-                StatChip("Profs", allUsers.count { it.role.equals("professor", ignoreCase = true) }, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.weight(1f))
+                StatChip("Total", allUsers.size, MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.weight(1f))
+                StatChip("Alunos", allUsers.count { it.role.equals("aluno", ignoreCase = true) }, MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
+                StatChip("Profs", allUsers.count { it.role.equals("professor", ignoreCase = true) }, MaterialTheme.colorScheme.onTertiaryContainer, MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(12.dp))
 

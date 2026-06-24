@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 // ==================== SESSION REQUESTS ====================
 
 data class StartSessionRequest(
-	@SerializedName("assignment_id") val assignmentId: String
+	@SerializedName("assignment_id") val assignmentId: String,
+	@SerializedName("session_id") val sessionId: String? = null
 )
 
 data class UpdateSetRequest(

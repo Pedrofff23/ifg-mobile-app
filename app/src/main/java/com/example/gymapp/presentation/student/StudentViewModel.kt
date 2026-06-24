@@ -20,10 +20,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class StudentViewModel @Inject constructor(
-	private val erpService: ErpService,
-	private val profileService: ProfileService,
-	private val userService: UserService,
-	private val tokenManager: TokenManager
+	private val erpService: com.example.gymapp.data.remote.ErpService,
+	private val profileService: com.example.gymapp.data.remote.ProfileService,
+	private val userService: com.example.gymapp.data.remote.UserService,
+	private val tokenManager: com.example.gymapp.data.local.TokenManager,
+	private val workoutSessionRepository: com.example.gymapp.data.repository.WorkoutSessionRepository,
+	private val syncManager: com.example.gymapp.data.repository.SyncManager
 ) : ViewModel() {
 
     private val _assignments = MutableStateFlow<List<WorkoutAssignment>>(emptyList())
@@ -31,6 +33,15 @@ class StudentViewModel @Inject constructor(
 
     private val _currentAssignment = MutableStateFlow<WorkoutAssignment?>(null)
     val currentAssignment: StateFlow<WorkoutAssignment?> = _currentAssignment.asStateFlow()
+
+    private val _currentTemplate = MutableStateFlow<WorkoutTemplate?>(null)
+    val currentTemplate: StateFlow<WorkoutTemplate?> = _currentTemplate.asStateFlow()
+
+    private val _selectedTemplateDetails = MutableStateFlow<WorkoutTemplate?>(null)
+    val selectedTemplateDetails: StateFlow<WorkoutTemplate?> = _selectedTemplateDetails.asStateFlow()
+
+    private val _isLoadingTemplateDetails = MutableStateFlow(false)
+    val isLoadingTemplateDetails: StateFlow<Boolean> = _isLoadingTemplateDetails.asStateFlow()
 
     private val _sessions = MutableStateFlow<List<WorkoutSession>>(emptyList())
     val sessions: StateFlow<List<WorkoutSession>> = _sessions.asStateFlow()
@@ -94,39 +105,51 @@ class StudentViewModel @Inject constructor(
     }
 
     fun loadAssignments() {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
-    try {
-    val userId = tokenManager.getUserIdSync() ?: return@launch
-    // Load all assignments (non-paginated endpoint)
-    val response = erpService.getAssignmentsByAluno(userId)
-    _assignments.value = (response.data ?: emptyList()).sortedByDescending { it.startsAt }
-    // Load current assignment in the same coroutine so isLoading covers both
-    try {
-    val currentResp = erpService.getCurrentAssignment(userId)
-    _currentAssignment.value = currentResp.data
-    } catch (e: HttpException) {
-    if (e.code() == 404) {
-    _currentAssignment.value = null
-    } else {
-    throw e // re-throw non-404 HTTP errors
-    }
-    }
-    } catch (e: Exception) {
-    _error.value = ErrorUtils.parseErrorMessage(e)
-    } finally {
-    _isLoading.value = false
-    }
-    }
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val userId = tokenManager.getUserIdSync() ?: return@launch
+                // Load all assignments (non-paginated endpoint)
+                val response = erpService.getAssignmentsByAluno(userId)
+                _assignments.value = (response.data ?: emptyList()).sortedByDescending { it.startsAt }
+                // Load current assignment in the same coroutine so isLoading covers both
+                try {
+                    val currentResp = erpService.getCurrentAssignment(userId)
+                    _currentAssignment.value = currentResp.data
+                } catch (e: HttpException) {
+                    if (e.code() == 404) {
+                        _currentAssignment.value = null
+                    } else {
+                        throw e // re-throw non-404 HTTP errors
+                    }
+                }
+
+                // Load current template details
+                val activeAssignment = _currentAssignment.value
+                    ?: _assignments.value.firstOrNull { it.endsAt == null }
+                    ?: _assignments.value.firstOrNull()
+                _currentTemplate.value = null
+                activeAssignment?.let { assignment ->
+                    try {
+                        val tempResp = erpService.getTemplate(assignment.templateId)
+                        _currentTemplate.value = tempResp.data
+                    } catch (_: Exception) {}
+                }
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun loadSessions() {
         viewModelScope.launch {
             try {
                 val userId = tokenManager.getUserIdSync() ?: return@launch
-                val response = erpService.getSessionsByAluno(userId)
-                _sessions.value = response.data ?: emptyList()
+                val sessionsList = workoutSessionRepository.getSessionsByAluno(userId)
+                _sessions.value = sessionsList
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             }
@@ -357,8 +380,8 @@ class StudentViewModel @Inject constructor(
                 for (id in exerciseIds) {
                     if (!_exerciseProgress.value.containsKey(id)) {
                         try {
-                            val response = erpService.getExerciseProgress(id)
-                            newMap[id] = response.data ?: emptyList()
+                            val points = workoutSessionRepository.getExerciseProgress(id)
+                            newMap[id] = points
                         } catch (_: Exception) {
                             newMap[id] = emptyList()
                         }
@@ -374,4 +397,32 @@ class StudentViewModel @Inject constructor(
             }
         }
     }
+
+    fun loadTemplateDetails(templateId: String) {
+        viewModelScope.launch {
+            _isLoadingTemplateDetails.value = true
+            _selectedTemplateDetails.value = null
+            try {
+                val resp = erpService.getTemplate(templateId)
+                _selectedTemplateDetails.value = resp.data
+            } catch (e: Exception) {
+                _error.value = ErrorUtils.parseErrorMessage(e)
+            } finally {
+                _isLoadingTemplateDetails.value = false
+            }
+        }
     }
+
+    fun clearTemplateDetails() {
+        _selectedTemplateDetails.value = null
+    }
+
+    private val _selectedExerciseId = MutableStateFlow<String?>(null)
+    val selectedExerciseId: StateFlow<String?> = _selectedExerciseId.asStateFlow()
+
+    fun selectExerciseForProgress(exerciseId: String) {
+        _selectedExerciseId.value = exerciseId
+        loadExerciseProgress(listOf(exerciseId))
+    }
+}
+

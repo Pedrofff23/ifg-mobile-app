@@ -20,8 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymapp.domain.model.WorkoutAssignment
+import com.example.gymapp.domain.model.WorkoutTemplate
 import com.example.gymapp.ui.theme.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.lazy.itemsIndexed
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentWorkoutsScreen(
     viewModel: StudentViewModel,
@@ -31,9 +38,20 @@ fun StudentWorkoutsScreen(
     val currentAssignment by viewModel.currentAssignment.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val selectedTemplateDetails by viewModel.selectedTemplateDetails.collectAsState()
+    val isLoadingTemplateDetails by viewModel.isLoadingTemplateDetails.collectAsState()
+
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAssignments()
+    }
+
+    // When template details start loading, open the sheet
+    LaunchedEffect(isLoadingTemplateDetails) {
+        if (isLoadingTemplateDetails) {
+            showBottomSheet = true
+        }
     }
 
     // Show error as snackbar
@@ -44,6 +62,7 @@ fun StudentWorkoutsScreen(
             viewModel.clearUpdateStatus()
         }
     }
+
 
     Scaffold(
         snackbarHost = {
@@ -100,7 +119,8 @@ fun StudentWorkoutsScreen(
                 WorkoutAssignmentCard(
                     assignment = assignment,
                     isActive = currentAssignment?.id == assignment.id,
-                    onStartClick = { onStartWorkout(assignment) }
+                    onStartClick = { onStartWorkout(assignment) },
+                    onCardClick = { viewModel.loadTemplateDetails(assignment.templateId) }
                 )
             }
 
@@ -116,6 +136,17 @@ fun StudentWorkoutsScreen(
                 }
             }
         }
+
+        if (showBottomSheet) {
+            TemplateDetailsBottomSheet(
+                template = selectedTemplateDetails,
+                isLoading = isLoadingTemplateDetails,
+                onDismiss = {
+                    showBottomSheet = false
+                    viewModel.clearTemplateDetails()
+                }
+            )
+        }
     }
 }
 
@@ -123,9 +154,11 @@ fun StudentWorkoutsScreen(
 private fun WorkoutAssignmentCard(
     assignment: WorkoutAssignment,
     isActive: Boolean,
-    onStartClick: () -> Unit
+    onStartClick: () -> Unit,
+    onCardClick: () -> Unit
 ) {
     Card(
+        onClick = onCardClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Spacing.lg),
         colors = CardDefaults.cardColors(
@@ -273,3 +306,106 @@ private fun WorkoutCardSkeleton() {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TemplateDetailsBottomSheet(
+    template: WorkoutTemplate?,
+    isLoading: Boolean,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+        ) {
+            if (isLoading || template == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                Text(
+                    text = template.name,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                )
+                if (!template.type.isNullOrBlank() || !template.difficulty.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        template.type?.let {
+                            SuggestionChip(onClick = {}, label = { Text(it) })
+                        }
+                        template.difficulty?.let {
+                            SuggestionChip(onClick = {}, label = { Text(it) })
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(Spacing.md))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Spacing.md))
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                ) {
+                    val days = template.workoutDays?.sortedBy { it.orderIndex ?: 0 } ?: emptyList()
+                    items(days) { day ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
+                                Text(
+                                    text = day.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(Spacing.sm))
+                                
+                                val exercises = day.exercises?.sortedBy { it.orderIndex } ?: emptyList()
+                                if (exercises.isEmpty()) {
+                                    Text(
+                                        text = "Nenhum exercício cadastrado",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                } else {
+                                    exercises.forEachIndexed { idx, ex ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "${idx + 1}. ${ex.exerciseName ?: "Exercício"}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Text(
+                                                text = if (ex.defaultReps == null || ex.defaultReps <= 0) "${ex.defaultSets}x cardio" else "${ex.defaultSets}x${ex.defaultReps} reps",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
