@@ -262,10 +262,10 @@ private fun ChangeInstitutoDialog(
             Button(
                 onClick = { onConfirm(selectedId) },
                 enabled = selectedId.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Confirmar", color = Color.White)
+                Text("Confirmar", color = MaterialTheme.colorScheme.onPrimary)
             }
         },
         dismissButton = {

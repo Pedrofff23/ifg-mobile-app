@@ -501,13 +501,13 @@ fun LogWeightDialog(
                     onSave(w)
                 },
                 enabled = !isUpdating && weightText.toDoubleOrNull() != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(Spacing.md)
             ) {
                 if (isUpdating) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
-                    Text("Registrar", color = Color.White)
+                    Text("Registrar", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },
@@ -615,13 +615,13 @@ private fun EditProfileDialog(
                     onSave(nameText.trim(), w, h, injuriesText.ifBlank { null })
                 },
                 enabled = !isUpdating && nameText.isNotBlank() && weightText.toDoubleOrNull() != null && heightText.toDoubleOrNull() != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(Spacing.md)
             ) {
                 if (isUpdating) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
-                    Text("Salvar", color = Color.White)
+                    Text("Salvar", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },

@@ -59,7 +59,7 @@ fun CompleteProfileScreen(
                     }
                 },
                 title = { Text("Completar Perfil", color = MaterialTheme.colorScheme.onPrimary) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = IfgGreen)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
             )
         }
     ) { padding ->
@@ -194,7 +194,7 @@ fun CompleteProfileScreen(
                 enabled = selectedInstituto != null,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Continuar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
             }

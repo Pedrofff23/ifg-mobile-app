@@ -80,7 +80,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                 },
                 title = { Text("Criar Novo Treino", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = IfgGreen,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -216,7 +216,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
 
                                 Card(
                                     colors = CardDefaults.cardColors(
-                                        containerColor = if (isDragging.value) IfgGreen.copy(alpha = 0.15f)
+                                        containerColor = if (isDragging.value) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     ),
                                     modifier = Modifier
@@ -325,7 +325,7 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
                         enabled = name.isNotBlank() && workoutDays.isNotEmpty() && workoutDays.all { it.exercises.isNotEmpty() } && !isLoading,
                         modifier = Modifier.weight(1f).height(50.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
                         else Text("Criar Treino", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
@@ -407,7 +407,7 @@ private fun AddExerciseToDayDialogCreate(
                                 .fillMaxWidth()
                                 .clickable { selectedExercise = ex },
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) IfgGreen.copy(alpha = 0.1f)
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                                 else MaterialTheme.colorScheme.surface
                             )
                         ) {
@@ -416,7 +416,7 @@ private fun AddExerciseToDayDialogCreate(
                                     Text(ex.name ?: "", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
                                     Text(ex.muscleGroup ?: "Geral", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (isSelected) Icon(Icons.Default.CheckCircle, contentDescription = null, tint = IfgGreen)
+                                if (isSelected) Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -426,7 +426,7 @@ private fun AddExerciseToDayDialogCreate(
                     Text(
                         "Configurações para: ${selectedExercise!!.name}",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = IfgGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -490,7 +490,7 @@ private fun AddExerciseToDayDialogCreate(
                     )
                 },
                 enabled = selectedExercise != null,
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) { Text("Adicionar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {

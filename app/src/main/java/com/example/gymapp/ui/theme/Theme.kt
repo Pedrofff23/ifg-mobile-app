@@ -32,6 +32,7 @@ private val LightForestScheme = lightColorScheme(
     error = Red500,
     onError = Color.White,
     errorContainer = Red100,
+    onErrorContainer = Color(0xFF410002),
     outline = Color(0xFFE2E8F0),
     outlineVariant = LightForestTextSecondary,
 )
@@ -58,6 +59,7 @@ private val LightOceanScheme = lightColorScheme(
     error = Red500,
     onError = Color.White,
     errorContainer = Red100,
+    onErrorContainer = Color(0xFF410002),
     outline = Color(0xFFCFD8DC),
     outlineVariant = LightOceanTextSecondary,
 )
@@ -84,13 +86,14 @@ private val LightSandScheme = lightColorScheme(
     error = Red500,
     onError = Color.White,
     errorContainer = Red100,
+    onErrorContainer = Color(0xFF410002),
     outline = Color(0xFFDDD0BC),
     outlineVariant = LightSandTextSecondary,
 )
 
 private val DarkAntigravityScheme = darkColorScheme(
     primary = DarkAntigravityPrimary,
-    onPrimary = DarkAntigravityOnPrimary,
+    onPrimary = Color.White,
     primaryContainer = IfgGreenDark,
     onPrimaryContainer = Green100,
     secondary = Color(0xFF60A5FA),
@@ -109,14 +112,15 @@ private val DarkAntigravityScheme = darkColorScheme(
     onSurfaceVariant = DarkAntigravityTextSecondary,
     error = Red500,
     onError = Color.White,
-    errorContainer = Red100,
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Red100,
     outline = DarkAntigravitySurfaceVariant,
     outlineVariant = DarkAntigravityTextSecondary,
 )
 
 private val DarkMidnightScheme = darkColorScheme(
     primary = DarkMidnightPrimary,
-    onPrimary = DarkMidnightOnPrimary,
+    onPrimary = Color.White,
     primaryContainer = Color(0xFF1E3A5F),
     onPrimaryContainer = Color(0xFFB3D4FF),
     secondary = Color(0xFF4DD0E1),
@@ -135,14 +139,15 @@ private val DarkMidnightScheme = darkColorScheme(
     onSurfaceVariant = DarkMidnightTextSecondary,
     error = Red500,
     onError = Color.White,
-    errorContainer = Red100,
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Red100,
     outline = DarkMidnightSurfaceVariant,
     outlineVariant = DarkMidnightTextSecondary,
 )
 
 private val DarkObsidianScheme = darkColorScheme(
     primary = DarkObsidianPrimary,
-    onPrimary = DarkObsidianOnPrimary,
+    onPrimary = Color.White,
     primaryContainer = Color(0xFF3B2563),
     onPrimaryContainer = Color(0xFFD4BAFF),
     secondary = Color(0xFFF06292),
@@ -161,7 +166,8 @@ private val DarkObsidianScheme = darkColorScheme(
     onSurfaceVariant = DarkObsidianTextSecondary,
     error = Red500,
     onError = Color.White,
-    errorContainer = Red100,
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Red100,
     outline = DarkObsidianSurfaceVariant,
     outlineVariant = DarkObsidianTextSecondary,
 )

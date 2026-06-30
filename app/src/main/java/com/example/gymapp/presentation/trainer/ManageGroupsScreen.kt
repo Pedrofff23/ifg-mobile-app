@@ -68,8 +68,8 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCreateDialog = true },
-                containerColor = IfgGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Criar Grupo")
             }
@@ -99,7 +99,7 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = IfgGreen)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (groups.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -258,10 +258,10 @@ private fun GroupCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(IfgGreen),
+                        .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Group, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -289,7 +289,7 @@ private fun GroupCard(
                         ) {
                             Text(
                                 "$memberCount membro(s)",
-                                color = IfgGreen,
+                                color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -297,7 +297,7 @@ private fun GroupCard(
                     }
                 }
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = IfgGreen)
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.error)
@@ -367,7 +367,7 @@ private fun GroupCard(
                             onClick = onAddMember,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -413,7 +413,7 @@ private fun GroupCard(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(IfgGreenDark),
+                                        .background(MaterialTheme.colorScheme.primary),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val initials = (member.fullName ?: "")
@@ -424,7 +424,7 @@ private fun GroupCard(
                                         .joinToString("")
                                     Text(
                                         initials.ifBlank { "?" },
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onPrimary,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
@@ -501,7 +501,7 @@ private fun GroupNameDialog(
             Button(
                 onClick = { if (name.isNotBlank()) onConfirm(name.trim(), description.trim()) },
                 enabled = name.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) { Text(confirmLabel) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
@@ -559,11 +559,11 @@ private fun AddMemberDialog(
                             ) {
                                 Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Box(
-                                        modifier = Modifier.size(36.dp).clip(CircleShape).background(IfgGreen),
+                                        modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         val initials = (student.fullName ?: "").split(" ").filter { it.isNotBlank() }.map { it.firstOrNull() ?: 'A' }.take(2).joinToString("")
-                                        Text(initials, color = Color.White, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                                        Text(initials, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column(modifier = Modifier.weight(1f)) {
@@ -576,7 +576,7 @@ private fun AddMemberDialog(
                                             onDismiss()
                                         },
                                         modifier = Modifier.size(36.dp),
-                                        colors = IconButtonDefaults.iconButtonColors(containerColor = IfgGreen, contentColor = Color.White)
+                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                                     ) {
                                         Icon(Icons.Default.Add, contentDescription = "Adicionar", modifier = Modifier.size(18.dp))
                                     }
@@ -669,8 +669,8 @@ private fun AssignGroupWorkoutDialog(
             Button(
                 onClick = { if (selectedTemplateId.isNotBlank() && startsAt.isNotBlank()) onAssign(group.id, selectedTemplateId, startsAt) },
                 enabled = selectedTemplateId.isNotBlank() && startsAt.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
-            ) { Text("Atribuir") }
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

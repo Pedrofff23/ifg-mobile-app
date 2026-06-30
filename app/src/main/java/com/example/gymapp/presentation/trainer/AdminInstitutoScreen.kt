@@ -44,7 +44,7 @@ fun AdminInstitutoScreen(
             TopAppBar(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = MaterialTheme.colorScheme.onPrimary) } },
                 title = { Text("Gerenciar Institutos", color = MaterialTheme.colorScheme.onPrimary) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = IfgGreen)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
             )
         },
         floatingActionButton = {

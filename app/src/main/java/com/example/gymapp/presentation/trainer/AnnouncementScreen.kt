@@ -79,7 +79,8 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
             if (!showCreateForm) {
                 FloatingActionButton(
                     onClick = { showCreateForm = true },
-                    containerColor = IfgGreen
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Novo Aviso")
                 }
@@ -153,7 +154,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                 enabled = title.isNotBlank() && content.isNotBlank() && !isLoading,
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) { Text("Publicar", color = MaterialTheme.colorScheme.onPrimary) }
                         }
                     }
@@ -370,7 +371,7 @@ private fun AnnouncementEditDialog(
             Button(
                 onClick = { onSave(title, content, selectedType) },
                 enabled = title.isNotBlank() && content.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) { Text("Salvar", color = MaterialTheme.colorScheme.onPrimary) }
         },
         dismissButton = {

@@ -250,7 +250,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                                 onClick = { selectedTemplate = template; showAssignDialog = true },
                                 modifier = Modifier.weight(1.2f),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
@@ -373,7 +373,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
                         }
                     },
                     enabled = selectedAlunoId.isNotBlank() && startsAt.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) { Text("Atribuir", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = {

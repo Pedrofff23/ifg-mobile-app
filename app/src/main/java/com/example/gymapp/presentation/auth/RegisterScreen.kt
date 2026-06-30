@@ -218,7 +218,7 @@ fun RegisterScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(Spacing.md),
                         enabled = authState !is AuthState.Loading &&
                             fullName.isNotBlank() &&

@@ -253,7 +253,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(Spacing.md),
                         enabled = authState !is AuthState.Loading
                     ) {
@@ -375,7 +375,7 @@ fun LoginScreen(
                             showForgotPasswordDialog = false
                             viewModel.clearForgotPasswordStatus()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(Spacing.md)
                     ) {
                         Text("Ok", color = MaterialTheme.colorScheme.onPrimary)
@@ -384,7 +384,7 @@ fun LoginScreen(
                     Button(
                         onClick = { viewModel.forgotPassword(recoveryEmail.trim()) },
                         enabled = !forgotLoading && recoveryEmail.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = IfgGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(Spacing.md)
                     ) {
                         if (forgotLoading) {

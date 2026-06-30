@@ -100,7 +100,7 @@ fun EditExerciseScreen(
                 },
                 title = { Text("Editar Exercício", color = MaterialTheme.colorScheme.onPrimary) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = IfgGreen,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -214,7 +214,7 @@ fun EditExerciseScreen(
                             onClick = { launcher.launch("*/*") },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = IfgGreen)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -291,7 +291,7 @@ fun EditExerciseScreen(
                     enabled = name.isNotBlank() && muscleGroup.isNotBlank() && !isLoading,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = IfgGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
                     else Text("Salvar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
