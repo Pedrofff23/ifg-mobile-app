@@ -23,9 +23,12 @@ import com.example.gymapp.presentation.auth.RegisterScreen
 import com.example.gymapp.presentation.auth.BlockedScreen
 import com.example.gymapp.presentation.student.StudentMainScreen
 import com.example.gymapp.presentation.student.WorkoutSessionScreen
+import com.example.gymapp.presentation.student.AnnouncementDetailScreen
 import com.example.gymapp.presentation.trainer.AdminInstitutoScreen
 import com.example.gymapp.presentation.trainer.TrainerMainScreen
 import com.example.gymapp.ui.theme.ThemeManager
+import com.example.gymapp.data.remote.ErpService
+
 
 object Routes {
     const val SPLASH = "splash"
@@ -38,13 +41,19 @@ object Routes {
     const val TRAINER_HOME = "trainer_home"
     const val ADMIN_INSTITUTOS = "admin_institutos"
     const val WORKOUT_SESSION = "workout_session/{assignmentId}"
+    const val ANNOUNCEMENT_DETAIL = "announcement_detail/{announcementId}"
 
     fun workoutSessionRoute(assignmentId: String) = "workout_session/$assignmentId"
     fun activationPendingRoute(email: String) = "activation_pending?email=$email"
+    fun announcementDetailRoute(announcementId: String) = "announcement_detail/$announcementId"
 }
 
 @Composable
-fun AppNavigation(themeManager: ThemeManager) {
+fun AppNavigation(
+    themeManager: ThemeManager,
+    erpService: ErpService,
+    initialAnnouncementId: String? = null
+) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
 
@@ -63,7 +72,8 @@ fun AppNavigation(themeManager: ThemeManager) {
         composable(Routes.SPLASH) {
             SplashScreen(
                 authViewModel = authViewModel,
-                onChecked = { destination ->
+                initialAnnouncementId = initialAnnouncementId,
+                onChecked = { destination, announcementId ->
                     val route = when (destination) {
                         AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
                         AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
@@ -75,6 +85,10 @@ fun AppNavigation(themeManager: ThemeManager) {
                     }
                     navController.navigate(route) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                    if (!announcementId.isNullOrEmpty() && 
+                        (destination == AuthDestination.STUDENT_HOME || destination == AuthDestination.PROFESSOR_HOME)) {
+                        navController.navigate(Routes.announcementDetailRoute(announcementId))
                     }
                 }
             )
@@ -198,13 +212,28 @@ fun AppNavigation(themeManager: ThemeManager) {
                 onLogout = performLogout
             )
         }
+
+        composable(
+            route = Routes.ANNOUNCEMENT_DETAIL,
+            arguments = listOf(
+                navArgument("announcementId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val announcementId = backStackEntry.arguments?.getString("announcementId") ?: ""
+            AnnouncementDetailScreen(
+                announcementId = announcementId,
+                erpService = erpService,
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
 @Composable
 private fun SplashScreen(
     authViewModel: AuthViewModel,
-    onChecked: (AuthDestination) -> Unit
+    initialAnnouncementId: String?,
+    onChecked: (AuthDestination, String?) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -214,7 +243,7 @@ private fun SplashScreen(
 
         LaunchedEffect(Unit) {
             val destination = authViewModel.checkAuth()
-            onChecked(destination ?: AuthDestination.LOGIN)
+            onChecked(destination ?: AuthDestination.LOGIN, initialAnnouncementId)
         }
     }
 }

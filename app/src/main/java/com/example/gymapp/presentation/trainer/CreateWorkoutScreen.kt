@@ -75,14 +75,18 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                title = { Text("Criar Novo Treino", color = MaterialTheme.colorScheme.onPrimary) },
+                title = { Text("Criar Novo Treino", color = MaterialTheme.colorScheme.onSurface) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -105,13 +109,6 @@ fun CreateWorkoutScreen(viewModel: ProfessorViewModel, onBack: () -> Unit = {}) 
             modifier = Modifier.fillMaxSize().padding(padding).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
-            item {
-                Column {
-                    Text("Criar Novo Treino", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
-                    Text("Monte um treino com múltiplos dias (Treino A, Treino B, ...)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
             // Form Card: name, type, difficulty
             item {
                 Card(

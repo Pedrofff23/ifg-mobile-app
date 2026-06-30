@@ -76,14 +76,18 @@ fun CreateExerciseScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                title = { Text("Novo Exercício", color = MaterialTheme.colorScheme.onPrimary) },
+                title = { Text("Novo Exercício", color = MaterialTheme.colorScheme.onSurface) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -98,19 +102,6 @@ fun CreateExerciseScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
-            Column {
-                Text(
-                    "Criar Novo Exercício",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    "Preencha os dados do exercício",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
             // Form
             Card(
                 shape = RoundedCornerShape(12.dp),

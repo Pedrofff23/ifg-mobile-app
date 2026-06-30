@@ -117,6 +117,9 @@ class AuthViewModel @Inject constructor(
                     email = userEmail
                 )
 
+                // Retrieve and store FCM Token for push notifications
+                retrieveAndStoreFCMToken()
+
                 // Check if profile is completed by calling /auth/me
                 try {
                     val meResponse = authService.getMe()
@@ -280,7 +283,6 @@ class AuthViewModel @Inject constructor(
     /**
      * Store FCM token for push notifications.
      * Called after Firebase Messaging integration is set up.
-     * Currently a placeholder - requires Firebase dependency.
      */
     fun storeFCMToken(fcmToken: String, deviceInfo: String? = null) {
         viewModelScope.launch {
@@ -289,6 +291,21 @@ class AuthViewModel @Inject constructor(
             } catch (_: Exception) {
                 // Silently fail - FCM is optional
             }
+        }
+    }
+
+    fun retrieveAndStoreFCMToken() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val token = task.result
+                    if (!token.isNullOrEmpty()) {
+                        storeFCMToken(token, android.os.Build.MODEL)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("AuthViewModel", "Failed to retrieve FCM token", e)
         }
     }
 

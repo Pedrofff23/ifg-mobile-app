@@ -14,22 +14,29 @@ import com.example.gymapp.ui.theme.AppThemeScheme
 import com.example.gymapp.ui.theme.GymAppTheme
 import com.example.gymapp.ui.theme.ThemeManager
 import com.example.gymapp.presentation.navigation.AppNavigation
+import com.example.gymapp.data.remote.ErpService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var themeManager: ThemeManager
+    @Inject lateinit var erpService: ErpService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val announcementId = intent?.getStringExtra("announcement_id") ?: intent?.extras?.getString("announcement_id")
         setContent {
             val currentScheme by themeManager.themeScheme.collectAsStateWithLifecycle(
                 initialValue = AppThemeScheme.DARK_ANTIGRAVITY
             )
             GymAppTheme(themeScheme = currentScheme) {
-                AppNavigation(themeManager = themeManager)
+                AppNavigation(
+                    themeManager = themeManager,
+                    erpService = erpService,
+                    initialAnnouncementId = announcementId
+                )
             }
         }
     }

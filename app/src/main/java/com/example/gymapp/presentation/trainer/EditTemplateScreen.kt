@@ -105,14 +105,18 @@ fun EditTemplateScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                title = { Text("Editar Treino", color = MaterialTheme.colorScheme.onPrimary) },
+                title = { Text("Editar Treino", color = MaterialTheme.colorScheme.onSurface) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -135,20 +139,6 @@ fun EditTemplateScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Column {
-                    Text(
-                        "Editar Treino",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        "Configure nome, tipo, dias e exercícios",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
             item {
                 Card(
                     shape = RoundedCornerShape(12.dp),

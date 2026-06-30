@@ -2,6 +2,9 @@
 package com.example.gymapp.presentation.trainer
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -169,7 +172,17 @@ fun StudentDetailScreen(
                 }
             }
             // Animated content for tab switching
-            AnimatedContent(targetState = selectedTabIndex, label = "TabSwitch") { targetIdx ->
+            AnimatedContent(
+                targetState = selectedTabIndex,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+                    } else {
+                        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                    }
+                },
+                label = "TabSwitch"
+            ) { targetIdx ->
                 when (targetIdx) {
                     0 -> PerfilTab(
                         student = student,

@@ -161,6 +161,11 @@ interface ErpService {
         @Query("type") type: String? = null
     ): PaginatedResponse<Announcement>
 
+    @GET("announcements/{id}")
+    suspend fun getAnnouncement(
+        @Path("id") id: String
+    ): ApiResponse<Announcement>
+
     @POST("announcements")
     suspend fun createAnnouncement(
         @Body request: CreateAnnouncementRequest
