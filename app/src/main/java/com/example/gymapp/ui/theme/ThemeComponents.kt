@@ -334,19 +334,19 @@ fun WelcomeBanner(
             .background(
                 brush = Brush.horizontalGradient(colors = gradientColors)
             )
-            .padding(Spacing.xxl)
+            .padding(Spacing.lg)
     ) {
         // Subtle decorative circles
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(100.dp)
                 .offset(x = 40.dp, y = (-20).dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.05f))
         )
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(70.dp)
                 .offset(x = (-10).dp, y = 30.dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.03f))
@@ -355,10 +355,10 @@ fun WelcomeBanner(
         Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium.copy(
+                style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    letterSpacing = (-0.5).sp
+                    letterSpacing = (-0.3).sp
                 )
             )
             Spacer(modifier = Modifier.height(Spacing.xs))
