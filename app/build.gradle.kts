@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -14,7 +16,7 @@ android {
     namespace = "com.example.gymapp"
     compileSdk = 36
 
-    val localProperties = java.util.Properties().apply {
+    val localProperties = Properties().apply {
         val propertiesFile = rootProject.file("local.properties")
         if (propertiesFile.exists()) {
             propertiesFile.inputStream().use { load(it) }
