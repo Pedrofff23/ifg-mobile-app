@@ -9,12 +9,14 @@ import androidx.room.RoomDatabase
         LocalSessionExercise::class,
         LocalSessionSet::class,
         PendingSyncAction::class,
-        LocalExerciseProgressPoint::class
+        LocalExerciseProgressPoint::class,
+        LocalAnnouncement::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class GymDatabase : RoomDatabase() {
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun pendingSyncDao(): PendingSyncDao
+    abstract fun announcementDao(): AnnouncementDao
 }

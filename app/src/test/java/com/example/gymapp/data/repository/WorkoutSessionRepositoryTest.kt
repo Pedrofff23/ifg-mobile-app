@@ -98,6 +98,7 @@ class WorkoutSessionRepositoryTest {
         override suspend fun getExerciseProgress(exerciseId: String): ApiResponse<List<ExerciseProgressPoint>> {
             return exerciseProgressResult ?: ApiResponse(null)
         }
+        override suspend fun getAnnouncement(id: String) = ApiResponse<Announcement>(null)
         override suspend fun getAlunoStats(alunoId: String) = ApiResponse<AlunoStats>(null)
         override suspend fun getAnnouncements(limit: Int?, offset: Int?, type: String?) = PaginatedResponse<Announcement>(null, null)
         override suspend fun createAnnouncement(request: CreateAnnouncementRequest) = ApiResponse<Announcement>(null)

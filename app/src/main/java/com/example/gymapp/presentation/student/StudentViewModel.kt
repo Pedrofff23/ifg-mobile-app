@@ -8,6 +8,7 @@ import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.ErpService
 import com.example.gymapp.data.remote.ProfileService
 import com.example.gymapp.data.remote.UserService
+import com.example.gymapp.data.repository.AnnouncementRepository
 import com.example.gymapp.domain.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,12 +21,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class StudentViewModel @Inject constructor(
-	private val erpService: com.example.gymapp.data.remote.ErpService,
-	private val profileService: com.example.gymapp.data.remote.ProfileService,
-	private val userService: com.example.gymapp.data.remote.UserService,
-	private val tokenManager: com.example.gymapp.data.local.TokenManager,
-	private val workoutSessionRepository: com.example.gymapp.data.repository.WorkoutSessionRepository,
-	private val syncManager: com.example.gymapp.data.repository.SyncManager
+    private val erpService: com.example.gymapp.data.remote.ErpService,
+    private val profileService: com.example.gymapp.data.remote.ProfileService,
+    private val userService: com.example.gymapp.data.remote.UserService,
+    private val tokenManager: com.example.gymapp.data.local.TokenManager,
+    private val workoutSessionRepository: com.example.gymapp.data.repository.WorkoutSessionRepository,
+    private val syncManager: com.example.gymapp.data.repository.SyncManager,
+    private val announcementRepository: AnnouncementRepository
 ) : ViewModel() {
 
     private val _assignments = MutableStateFlow<List<WorkoutAssignment>>(emptyList())
@@ -159,8 +161,10 @@ class StudentViewModel @Inject constructor(
     fun loadAnnouncements() {
         viewModelScope.launch {
             try {
-                val response = erpService.getAnnouncements()
-                _announcements.value = response.data ?: emptyList()
+                val institutoId = tokenManager.getInstitutoIdSync() ?: return@launch
+                announcementRepository.loadAnnouncements(institutoId).also { announcements ->
+                    _announcements.value = announcements
+                }
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
             }

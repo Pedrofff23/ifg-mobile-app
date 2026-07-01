@@ -2,6 +2,7 @@ package com.example.gymapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.gymapp.data.local.AnnouncementDao
 import com.example.gymapp.data.local.GymDatabase
 import com.example.gymapp.data.local.PendingSyncDao
 import com.example.gymapp.data.local.WorkoutSessionDao
@@ -38,5 +39,11 @@ object DatabaseModule {
     @Singleton
     fun providePendingSyncDao(db: GymDatabase): PendingSyncDao {
         return db.pendingSyncDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAnnouncementDao(db: GymDatabase): AnnouncementDao {
+        return db.announcementDao()
     }
 }

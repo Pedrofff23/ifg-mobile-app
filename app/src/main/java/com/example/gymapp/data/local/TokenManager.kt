@@ -24,6 +24,8 @@ class TokenManager @Inject constructor(
         private val KEY_USER_ROLE = stringPreferencesKey("user_role")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_USER_EMAIL = stringPreferencesKey("user_email")
+        private val KEY_INSTITUTO_ID = stringPreferencesKey("instituto_id")
+        private val KEY_INSTITUTO_NAME = stringPreferencesKey("instituto_name")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[KEY_ACCESS_TOKEN] }
@@ -32,6 +34,8 @@ class TokenManager @Inject constructor(
     val userRole: Flow<String?> = context.dataStore.data.map { it[KEY_USER_ROLE] }
     val userName: Flow<String?> = context.dataStore.data.map { it[KEY_USER_NAME] }
     val userEmail: Flow<String?> = context.dataStore.data.map { it[KEY_USER_EMAIL] }
+    val institutoId: Flow<String?> = context.dataStore.data.map { it[KEY_INSTITUTO_ID] }
+    val institutoName: Flow<String?> = context.dataStore.data.map { it[KEY_INSTITUTO_NAME] }
 
     val isLoggedIn: Flow<Boolean> = accessToken.map { !it.isNullOrEmpty() }
 
@@ -41,7 +45,9 @@ class TokenManager @Inject constructor(
         userId: String,
         role: String,
         fullName: String,
-        email: String
+        email: String,
+        institutoId: String? = null,
+        institutoName: String? = null
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_ACCESS_TOKEN] = accessToken
@@ -50,36 +56,50 @@ class TokenManager @Inject constructor(
             prefs[KEY_USER_ROLE] = role
             prefs[KEY_USER_NAME] = fullName
             prefs[KEY_USER_EMAIL] = email
+            if (institutoId != null) prefs[KEY_INSTITUTO_ID] = institutoId
+            if (institutoName != null) prefs[KEY_INSTITUTO_NAME] = institutoName
         }
     }
 
     suspend fun updateAccessToken(token: String) {
-    context.dataStore.edit { prefs ->
-    prefs[KEY_ACCESS_TOKEN] = token
-    }
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ACCESS_TOKEN] = token
+        }
     }
 
     suspend fun saveRefreshToken(token: String) {
-    context.dataStore.edit { prefs ->
-    prefs[KEY_REFRESH_TOKEN] = token
-    }
+        context.dataStore.edit { prefs ->
+            prefs[KEY_REFRESH_TOKEN] = token
+        }
     }
 
     suspend fun clearSession() {
-    	context.dataStore.edit { prefs ->
-    		prefs.clear()
-    	}
+        context.dataStore.edit { prefs ->
+            prefs.clear()
+        }
     }
 
     suspend fun saveUserName(name: String) {
-    context.dataStore.edit { prefs ->
-        prefs[KEY_USER_NAME] = name
+        context.dataStore.edit { prefs ->
+            prefs[KEY_USER_NAME] = name
+        }
     }
-}
 
     suspend fun saveUserRole(role: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_USER_ROLE] = role
+        }
+    }
+
+    suspend fun saveInstitutoId(institutoId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_INSTITUTO_ID] = institutoId
+        }
+    }
+
+    suspend fun saveInstitutoName(institutoName: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_INSTITUTO_NAME] = institutoName
         }
     }
 
@@ -89,4 +109,6 @@ class TokenManager @Inject constructor(
     suspend fun getUserNameSync(): String? = userName.first()
     suspend fun getUserEmailSync(): String? = userEmail.first()
     suspend fun getRefreshTokenSync(): String? = refreshToken.first()
+    suspend fun getInstitutoIdSync(): String? = institutoId.first()
+    suspend fun getInstitutoNameSync(): String? = institutoName.first()
 }

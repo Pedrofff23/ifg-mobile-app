@@ -14,26 +14,51 @@ android {
     namespace = "com.example.gymapp"
     compileSdk = 36
 
+    val localProperties = java.util.Properties().apply {
+        val propertiesFile = rootProject.file("local.properties")
+        if (propertiesFile.exists()) {
+            propertiesFile.inputStream().use { load(it) }
+        }
+    }
+    val localBaseUrl = localProperties.getProperty("BASE_URL") ?: System.getenv("BASE_URL") ?: "http://10.0.2.2:8080/api/v1/"
+    val localSupabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: System.getenv("SUPABASE_URL") ?: "http://10.0.2.2:8000/storage/v1/object/public/exercises/"
+
     defaultConfig {
         applicationId = "com.example.gymapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 1
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://192.168.240.1:8080/api/v1/\"")
-        buildConfigField("String", "SUPABASE_URL", "\"http://192.168.240.1:8000/storage/v1/object/public/exercises/\"")
+        buildConfigField("String", "BASE_URL", "\"$localBaseUrl\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$localSupabaseUrl\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            val storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) } ?: file("gymapp-release.jks")
+            val storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "change-me"
+            val keyAlias = System.getenv("KEY_ALIAS") ?: "gymapp-key"
+            val keyPassword = System.getenv("KEY_PASSWORD") ?: "change-me"
+
+            this.storeFile = storeFile
+            this.storePassword = storePassword
+            this.keyAlias = keyAlias
+            this.keyPassword = keyPassword
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

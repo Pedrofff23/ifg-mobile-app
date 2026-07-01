@@ -137,6 +137,14 @@ class AuthViewModel @Inject constructor(
                         if (dbRole != role) {
                             tokenManager.saveUserRole(dbRole)
                         }
+                        
+                        // Save instituto info
+                        if (!institutoId.isNullOrEmpty()) {
+                            tokenManager.saveInstitutoId(institutoId)
+                        }
+                        if (!meData.instituto.isNullOrEmpty()) {
+                            tokenManager.saveInstitutoName(meData.instituto!!)
+                        }
 
                         val domainUser = User(
                             id = meData.id,

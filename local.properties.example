@@ -1,0 +1,8 @@
+## Caminho para o SDK do Android
+# No Windows utilize barras duplas ou normais, ex: C:\\Users\\Nome\\AppData\\Local\\Android\\Sdk
+sdk.dir=/home/pedrofff/Android/Sdk
+
+## URLs de API da aplicação (Configuração local de Desenvolvimento)
+# Defina o IP do seu computador ou use 10.0.2.2 para o emulador Android padrão
+BASE_URL=http://192.168.240.1:8080/api/v1/
+SUPABASE_URL=http://192.168.240.1:8000/storage/v1/object/public/exercises/
