@@ -24,8 +24,9 @@ interface ErpService {
         @Part("description") description: okhttp3.RequestBody?,
         @Part("muscle_group") muscleGroup: okhttp3.RequestBody,
         @Part("uses_weight") usesWeight: okhttp3.RequestBody,
-        @Part("video_url") videoUrl: okhttp3.RequestBody?,
-        @Part file: okhttp3.MultipartBody.Part?
+        @Part("video_url") videoUrl: okhttp3.RequestBody?, // Keep legacy
+        @Part videoUrls: List<okhttp3.MultipartBody.Part>?,
+        @Part files: List<okhttp3.MultipartBody.Part>?
     ): ApiResponse<Exercise>
 
     @Multipart
@@ -36,10 +37,12 @@ interface ErpService {
         @Part("description") description: okhttp3.RequestBody?,
         @Part("muscle_group") muscleGroup: okhttp3.RequestBody,
         @Part("uses_weight") usesWeight: okhttp3.RequestBody,
-        @Part("video_url") videoUrl: okhttp3.RequestBody?,
-        @Part("media_path") mediaPath: okhttp3.RequestBody?,
-        @Part("media_type") mediaType: okhttp3.RequestBody?,
-        @Part file: okhttp3.MultipartBody.Part?
+        @Part("video_url") videoUrl: okhttp3.RequestBody?, // Keep legacy
+        @Part("media_path") mediaPath: okhttp3.RequestBody?, // Keep legacy
+        @Part("media_type") mediaType: okhttp3.RequestBody?, // Keep legacy
+        @Part keepMediaIds: List<okhttp3.MultipartBody.Part>?,
+        @Part videoUrls: List<okhttp3.MultipartBody.Part>?,
+        @Part files: List<okhttp3.MultipartBody.Part>?
     ): ApiResponse<Exercise>
 
     @DELETE("exercises/{id}")

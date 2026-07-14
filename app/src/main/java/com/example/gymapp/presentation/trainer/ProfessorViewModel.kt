@@ -315,8 +315,8 @@ class ProfessorViewModel @Inject constructor(
         description: String?,
         muscleGroup: String,
         usesWeight: Boolean,
-        videoUrl: String?,
-        fileUri: Uri?
+        videoUrls: List<String>,
+        fileUris: List<Uri>
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -327,19 +327,31 @@ class ProfessorViewModel @Inject constructor(
                 val mappedMuscle = mapMuscleGroup(muscleGroup)
                 val musclePart = mappedMuscle.toRequestBody("text/plain".toMediaTypeOrNull())
                 val weightPart = usesWeight.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-                val videoUrlPart = videoUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
+                val videoUrlPart = null
 
-                var filePart: MultipartBody.Part? = null
-                if (fileUri != null) {
-                    val fileData = getFileFromUri(context, fileUri)
+                val videoUrlsParts = videoUrls.map { url ->
+                    MultipartBody.Part.createFormData("video_urls", url)
+                }
+
+                val fileParts = mutableListOf<MultipartBody.Part>()
+                fileUris.forEach { uri ->
+                    val fileData = getFileFromUri(context, uri)
                     if (fileData != null) {
                         val (file, mimeType) = fileData
                         val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
-                        filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                        fileParts.add(MultipartBody.Part.createFormData("files", file.name, requestFile))
                     }
                 }
 
-                erpService.createExercise(namePart, descPart, musclePart, weightPart, videoUrlPart, filePart)
+                erpService.createExercise(
+                    name = namePart,
+                    description = descPart,
+                    muscleGroup = musclePart,
+                    usesWeight = weightPart,
+                    videoUrl = videoUrlPart,
+                    videoUrls = if (videoUrlsParts.isNotEmpty()) videoUrlsParts else null,
+                    files = if (fileParts.isNotEmpty()) fileParts else null
+                )
                 _successMessage.value = "Exercício criado com sucesso"
                 loadExercises()
             } catch (e: Exception) {
@@ -357,10 +369,9 @@ class ProfessorViewModel @Inject constructor(
         description: String?,
         muscleGroup: String,
         usesWeight: Boolean,
-        videoUrl: String?,
-        mediaPath: String?,
-        mediaType: String?,
-        fileUri: Uri?
+        keepMediaIds: List<String>,
+        newVideoUrls: List<String>,
+        newFileUris: List<Uri>
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -371,22 +382,41 @@ class ProfessorViewModel @Inject constructor(
                 val mappedMuscle = mapMuscleGroup(muscleGroup)
                 val musclePart = mappedMuscle.toRequestBody("text/plain".toMediaTypeOrNull())
                 val weightPart = usesWeight.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-                val videoUrlPart = videoUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
+                val videoUrlPart = null
+                val mediaPathPart = null
+                val mediaTypePart = null
 
-                var filePart: MultipartBody.Part? = null
-                if (fileUri != null) {
-                    val fileData = getFileFromUri(context, fileUri)
+                val keepMediaIdsParts = keepMediaIds.map { mediaId ->
+                    MultipartBody.Part.createFormData("keep_media_ids", mediaId)
+                }
+
+                val videoUrlsParts = newVideoUrls.map { url ->
+                    MultipartBody.Part.createFormData("video_urls", url)
+                }
+
+                val fileParts = mutableListOf<MultipartBody.Part>()
+                newFileUris.forEach { uri ->
+                    val fileData = getFileFromUri(context, uri)
                     if (fileData != null) {
                         val (file, mimeType) = fileData
                         val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
-                        filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                        fileParts.add(MultipartBody.Part.createFormData("files", file.name, requestFile))
                     }
                 }
 
-                val mediaPathPart = mediaPath?.toRequestBody("text/plain".toMediaTypeOrNull())
-                val mediaTypePart = mediaType?.toRequestBody("text/plain".toMediaTypeOrNull())
-
-                erpService.updateExercise(id, namePart, descPart, musclePart, weightPart, videoUrlPart, mediaPathPart, mediaTypePart, filePart)
+                erpService.updateExercise(
+                    id = id,
+                    name = namePart,
+                    description = descPart,
+                    muscleGroup = musclePart,
+                    usesWeight = weightPart,
+                    videoUrl = videoUrlPart,
+                    mediaPath = mediaPathPart,
+                    mediaType = mediaTypePart,
+                    keepMediaIds = if (keepMediaIdsParts.isNotEmpty()) keepMediaIdsParts else null,
+                    videoUrls = if (videoUrlsParts.isNotEmpty()) videoUrlsParts else null,
+                    files = if (fileParts.isNotEmpty()) fileParts else null
+                )
                 _successMessage.value = "Exercício atualizado com sucesso"
                 loadExercises()
             } catch (e: Exception) {

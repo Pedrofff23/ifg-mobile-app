@@ -37,14 +37,15 @@ fun CreateExerciseScreen(
     var description by remember { mutableStateOf("") }
     var muscleGroup by remember { mutableStateOf("Peito") }
     var usesWeight by remember { mutableStateOf(true) }
-    var videoUrl by remember { mutableStateOf("") }
-    var selectedMediaUri by remember { mutableStateOf<Uri?>(null) }
+    val selectedMediaUris = remember { mutableStateListOf<Uri>() }
+    val videoUrls = remember { mutableStateListOf<String>() }
+    var currentVideoUrlInput by remember { mutableStateOf("") }
 
     val muscleGroups = listOf("Peito", "Costas", "Ombros", "Bíceps", "Tríceps", "Pernas", "Glúteos", "Core", "Cardio")
     var groupExpanded by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedMediaUri = uri
+        uri?.let { selectedMediaUris.add(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -177,44 +178,128 @@ fun CreateExerciseScreen(
                         )
                     }
 
+                    // Attached Medias List
+                    if (selectedMediaUris.isNotEmpty() || videoUrls.isNotEmpty()) {
+                        Text(
+                            text = "Mídias Atreladas:",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            selectedMediaUris.forEachIndexed { index, uri ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AttachFile,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Arquivo local #${index + 1}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { selectedMediaUris.remove(uri) },
+                                        colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remover Mídia")
+                                    }
+                                }
+                            }
+                            videoUrls.forEach { url ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Link,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = url,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { videoUrls.remove(url) },
+                                        colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remover URL")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Attach local file button
+                    OutlinedButton(
+                        onClick = { launcher.launch("*/*") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Anexar Mídia (GIF/Imagem/Vídeo)")
+                    }
+
+                    // Add external URL field
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedButton(
-                            onClick = { launcher.launch("*/*") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (selectedMediaUri != null) "Mídia Anexada!" else "Anexar Mídia (GIF/Imagem/Vídeo)")
-                        }
-                        if (selectedMediaUri != null) {
-                            IconButton(
-                                onClick = { selectedMediaUri = null },
-                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Remover Mídia")
-                            }
-                        }
-                    }
-
-                    if (selectedMediaUri == null) {
                         OutlinedTextField(
-                            value = videoUrl,
-                            onValueChange = { videoUrl = it },
+                            value = currentVideoUrlInput,
+                            onValueChange = { currentVideoUrlInput = it },
                             label = { Text("URL de Vídeo Externo (Opcional)") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.weight(1f),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                                 cursorColor = MaterialTheme.colorScheme.primary
                             )
                         )
+                        IconButton(
+                            onClick = {
+                                if (currentVideoUrlInput.isNotBlank()) {
+                                    videoUrls.add(currentVideoUrlInput.trim())
+                                    currentVideoUrlInput = ""
+                                }
+                            },
+                            enabled = currentVideoUrlInput.isNotBlank(),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Adicionar URL")
+                        }
                     }
                 }
             }
@@ -233,14 +318,18 @@ fun CreateExerciseScreen(
                 }
                 Button(
                     onClick = {
+                        val finalVideoUrls = videoUrls.toMutableList()
+                        if (currentVideoUrlInput.isNotBlank() && !finalVideoUrls.contains(currentVideoUrlInput.trim())) {
+                            finalVideoUrls.add(currentVideoUrlInput.trim())
+                        }
                         viewModel.createExercise(
                             context = context,
                             name = name,
                             description = description.ifBlank { null },
                             muscleGroup = muscleGroup,
                             usesWeight = usesWeight,
-                            videoUrl = if (selectedMediaUri == null) videoUrl.ifBlank { null } else null,
-                            fileUri = selectedMediaUri
+                            videoUrls = finalVideoUrls,
+                            fileUris = selectedMediaUris
                         )
                     },
                     enabled = name.isNotBlank() && muscleGroup.isNotBlank() && !isLoading,

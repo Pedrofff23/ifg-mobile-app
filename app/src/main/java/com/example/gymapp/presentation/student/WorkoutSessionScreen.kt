@@ -537,16 +537,37 @@ private fun ExerciseInfoCard(
             }
 
             if (exerciseDetails != null) {
-                val mediaPath = exerciseDetails.mediaPath
-                val mediaType = exerciseDetails.mediaType
-                val videoUrl = exerciseDetails.videoUrl
+                val medias = exerciseDetails.medias ?: emptyList()
+                if (medias.isNotEmpty()) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        medias.forEach { media ->
+                            val path = media.mediaPath
+                            val type = media.mediaType
+                            val url = media.videoUrl
+                            if (!path.isNullOrBlank() && !type.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(Spacing.md))
+                                ExerciseMediaDisplay(mediaPath = path, mediaType = type, exerciseName = exerciseName)
+                            } else if (!url.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(Spacing.md))
+                                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = url)
+                            }
+                        }
+                    }
+                } else {
+                    val mediaPath = exerciseDetails.mediaPath
+                    val mediaType = exerciseDetails.mediaType
+                    val videoUrl = exerciseDetails.videoUrl
 
-                if (!mediaPath.isNullOrBlank() && !mediaType.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                    ExerciseMediaDisplay(mediaPath = mediaPath, mediaType = mediaType, exerciseName = exerciseName)
-                } else if (!videoUrl.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
+                    if (!mediaPath.isNullOrBlank() && !mediaType.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(Spacing.md))
+                        ExerciseMediaDisplay(mediaPath = mediaPath, mediaType = mediaType, exerciseName = exerciseName)
+                    } else if (!videoUrl.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(Spacing.md))
+                        com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
+                    }
                 }
             }
         }

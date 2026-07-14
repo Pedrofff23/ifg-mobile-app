@@ -99,4 +99,47 @@ class ModelParsingTest {
         assertEquals("peito", exercise.muscleGroup)
         assertEquals(true, exercise.usesWeight)
     }
+
+    @Test
+    fun `Exercise JSON deserialization maps medias correctly`() {
+        val json = """
+        {
+          "id": "ex1",
+          "name": "Bench Press",
+          "description": "Chest exercise",
+          "muscle_group": "peito",
+          "uses_weight": true,
+          "video_url": "http://example.com/video.mp4",
+          "media_type": "video",
+          "media_path": "/videos/bench.mp4",
+          "medias": [
+            {
+              "id": "m1",
+              "exercise_id": "ex1",
+              "media_type": "video",
+              "media_path": "/videos/bench.mp4",
+              "video_url": "http://example.com/video.mp4"
+            },
+            {
+              "id": "m2",
+              "exercise_id": "ex1",
+              "media_type": "image",
+              "media_path": "/images/bench.jpg"
+            }
+          ]
+        }
+        """.trimIndent()
+        val exercise = Gson().fromJson(json, Exercise::class.java)
+        assertEquals("ex1", exercise.id)
+        assertNotNull(exercise.medias)
+        assertEquals(2, exercise.medias?.size)
+        assertEquals("m1", exercise.medias?.get(0)?.id)
+        assertEquals("ex1", exercise.medias?.get(0)?.exerciseId)
+        assertEquals("video", exercise.medias?.get(0)?.mediaType)
+        assertEquals("/videos/bench.mp4", exercise.medias?.get(0)?.mediaPath)
+        assertEquals("http://example.com/video.mp4", exercise.medias?.get(0)?.videoUrl)
+        assertEquals("m2", exercise.medias?.get(1)?.id)
+        assertEquals("image", exercise.medias?.get(1)?.mediaType)
+        assertEquals("/images/bench.jpg", exercise.medias?.get(1)?.mediaPath)
+    }
 }

@@ -237,32 +237,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
 
                                         // Mídia
                                         val context = LocalContext.current
-                                        if (!exercise.mediaPath.isNullOrBlank()) {
-                                            if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
-                                                val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
-                                                AsyncImage(
-                                                    model = ImageRequest.Builder(context)
-                                                        .data(mediaUrl)
-                                                        .decoderFactory(
-                                                            if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
-                                                            else GifDecoder.Factory()
-                                                        )
-                                                        .crossfade(true)
-                                                        .build(),
-                                                    contentDescription = "Mídia do Exercício",
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(200.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color.Black.copy(alpha = 0.05f))
-                                                )
-                                            } else if (exercise.mediaType == "video") {
-                                                val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
-                                                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
-                                            }
-                                        } else if (!exercise.videoUrl.isNullOrBlank()) {
-                                            com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
-                                        }
+                                        ExerciseMultipleMediasDisplay(exercise = exercise)
 
                                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -323,5 +298,76 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
                 TextButton(onClick = { showDeleteDialog = null }) { Text("Cancelar") }
             }
         )
+    }
+}
+
+@Composable
+private fun ExerciseMultipleMediasDisplay(exercise: Exercise) {
+    val context = LocalContext.current
+    val medias = exercise.medias ?: emptyList()
+    if (medias.isNotEmpty()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            medias.forEach { media ->
+                val path = media.mediaPath
+                val type = media.mediaType
+                val url = media.videoUrl
+                if (!path.isNullOrBlank() && !type.isNullOrBlank()) {
+                    if (type == "image" || type == "gif") {
+                        val mediaUrl = "${BuildConfig.SUPABASE_URL}$path"
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(mediaUrl)
+                                .decoderFactory(
+                                    if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                                    else GifDecoder.Factory()
+                                )
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Mídia do Exercício",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.05f))
+                        )
+                    } else if (type == "video") {
+                        val videoUrl = "${BuildConfig.SUPABASE_URL}$path"
+                        com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
+                    }
+                } else if (!url.isNullOrBlank()) {
+                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = url)
+                }
+            }
+        }
+    } else {
+        if (!exercise.mediaPath.isNullOrBlank()) {
+            if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
+                val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(mediaUrl)
+                        .decoderFactory(
+                            if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                            else GifDecoder.Factory()
+                        )
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Mídia do Exercício",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.05f))
+                )
+            } else if (exercise.mediaType == "video") {
+                val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
+            }
+        } else if (!exercise.videoUrl.isNullOrBlank()) {
+            com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
+        }
     }
 }

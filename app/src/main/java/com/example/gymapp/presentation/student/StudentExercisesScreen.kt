@@ -13,6 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Intent
@@ -37,7 +42,7 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
     val error by viewModel.error.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todas") }
-    var selectedExercise by remember { mutableStateOf<Exercise?>(null) }
+    var expandedExerciseId by remember { mutableStateOf<String?>(null) }
     val categories = listOf("Todas", "Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps")
 
     // Trigger initial load and update on category change
@@ -161,7 +166,14 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredExercises) { exercise ->
-                ExerciseCard(exercise = exercise, onClick = { selectedExercise = exercise })
+                val isExpanded = expandedExerciseId == exercise.id
+                ExerciseCard(
+                    exercise = exercise,
+                    isExpanded = isExpanded,
+                    onToggleExpand = {
+                        expandedExerciseId = if (isExpanded) null else exercise.id
+                    }
+                )
             }
 
             if (filteredExercises.isEmpty()) {
@@ -179,127 +191,105 @@ fun StudentExercisesScreen(viewModel: StudentViewModel) {
             }
         }
     }
-
-    // Exercise detail dialog
-    if (selectedExercise != null) {
-        ExerciseDetailDialog(
-            exercise = selectedExercise!!,
-            onDismiss = { selectedExercise = null }
-        )
-    }
 }
 
 @Composable
-private fun ExerciseCard(exercise: Exercise, onClick: () -> Unit = {}) {
+private fun ExerciseCard(
+    exercise: Exercise,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { onToggleExpand() },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = exercise.name,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            if (exercise.description?.isNotBlank() == true) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    text = exercise.description,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    maxLines = 2
+                    text = exercise.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.weight(1f)
                 )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) { Text(exercise.muscleGroup ?: "Geral") }
-
-                if (exercise.usesWeight == true) {
-                    Badge(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    ) { Text("Com peso") }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val context = LocalContext.current
-            if (!exercise.mediaPath.isNullOrBlank()) {
-                if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
-                    val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(mediaUrl)
-                            .decoderFactory(
-                                if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
-                                else GifDecoder.Factory()
-                            )
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Mídia do Exercício",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Black.copy(alpha = 0.05f))
+                // Muscle group badge
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = exercise.muscleGroup ?: "Geral",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
-                } else if (exercise.mediaType == "video") {
-                    val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
-                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
                 }
-            } else if (!exercise.videoUrl.isNullOrBlank()) {
-                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
+                IconButton(onClick = onToggleExpand) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Recolher" else "Expandir",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    if (!exercise.description.isNullOrBlank()) {
+                        Text(
+                            text = exercise.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    if (exercise.usesWeight == true) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "Com peso",
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    ExerciseMultipleMediasDisplay(exercise = exercise)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ExerciseDetailDialog(
-    exercise: Exercise,
-    onDismiss: () -> Unit
-) {
+private fun ExerciseMultipleMediasDisplay(exercise: Exercise) {
     val context = LocalContext.current
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(exercise.name) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (exercise.description?.isNotBlank() == true) {
-                    Text(
-                        exercise.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Badge(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Text(exercise.muscleGroup ?: "Geral")
-                    }
-                    if (exercise.usesWeight == true) {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ) {
-                            Text("Com peso")
-                        }
-                    }
-                }
-
-                // Media section
-                if (!exercise.mediaPath.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
-                        val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+    val medias = exercise.medias ?: emptyList()
+    if (medias.isNotEmpty()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            medias.forEach { media ->
+                val path = media.mediaPath
+                val type = media.mediaType
+                val url = media.videoUrl
+                if (!path.isNullOrBlank() && !type.isNullOrBlank()) {
+                    if (type == "image" || type == "gif") {
+                        val mediaUrl = "${BuildConfig.SUPABASE_URL}$path"
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(mediaUrl)
@@ -316,18 +306,41 @@ private fun ExerciseDetailDialog(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.Black.copy(alpha = 0.05f))
                         )
-                    } else if (exercise.mediaType == "video") {
-                        val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                    } else if (type == "video") {
+                        val videoUrl = "${BuildConfig.SUPABASE_URL}$path"
                         com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
                     }
-                } else if (!exercise.videoUrl.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
+                } else if (!url.isNullOrBlank()) {
+                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = url)
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Fechar") }
         }
-    )
+    } else {
+        if (!exercise.mediaPath.isNullOrBlank()) {
+            if (exercise.mediaType == "image" || exercise.mediaType == "gif") {
+                val mediaUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(mediaUrl)
+                        .decoderFactory(
+                            if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                            else GifDecoder.Factory()
+                        )
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Mídia do Exercício",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.05f))
+                )
+            } else if (exercise.mediaType == "video") {
+                val videoUrl = "${BuildConfig.SUPABASE_URL}${exercise.mediaPath}"
+                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = videoUrl)
+            }
+        } else if (!exercise.videoUrl.isNullOrBlank()) {
+            com.example.gymapp.presentation.components.VideoPlayer(videoUrl = exercise.videoUrl)
+        }
+    }
 }

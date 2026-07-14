@@ -77,8 +77,29 @@ class WorkoutSessionRepositoryTest {
         }
 
         override suspend fun getExercises(limit: Int?, offset: Int?, muscleGroup: String?, search: String?) = PaginatedResponse<Exercise>(null, null)
-        override suspend fun createExercise(name: okhttp3.RequestBody, description: okhttp3.RequestBody?, muscleGroup: okhttp3.RequestBody, usesWeight: okhttp3.RequestBody, videoUrl: okhttp3.RequestBody?, file: okhttp3.MultipartBody.Part?) = ApiResponse<Exercise>(null)
-        override suspend fun updateExercise(id: String, name: okhttp3.RequestBody, description: okhttp3.RequestBody?, muscleGroup: okhttp3.RequestBody, usesWeight: okhttp3.RequestBody, videoUrl: okhttp3.RequestBody?, mediaPath: okhttp3.RequestBody?, mediaType: okhttp3.RequestBody?, file: okhttp3.MultipartBody.Part?) = ApiResponse<Exercise>(null)
+        override suspend fun createExercise(
+            name: okhttp3.RequestBody,
+            description: okhttp3.RequestBody?,
+            muscleGroup: okhttp3.RequestBody,
+            usesWeight: okhttp3.RequestBody,
+            videoUrl: okhttp3.RequestBody?,
+            videoUrls: List<okhttp3.MultipartBody.Part>?,
+            files: List<okhttp3.MultipartBody.Part>?
+        ) = ApiResponse<Exercise>(null)
+
+        override suspend fun updateExercise(
+            id: String,
+            name: okhttp3.RequestBody,
+            description: okhttp3.RequestBody?,
+            muscleGroup: okhttp3.RequestBody,
+            usesWeight: okhttp3.RequestBody,
+            videoUrl: okhttp3.RequestBody?,
+            mediaPath: okhttp3.RequestBody?,
+            mediaType: okhttp3.RequestBody?,
+            keepMediaIds: List<okhttp3.MultipartBody.Part>?,
+            videoUrls: List<okhttp3.MultipartBody.Part>?,
+            files: List<okhttp3.MultipartBody.Part>?
+        ) = ApiResponse<Exercise>(null)
         override suspend fun deleteExercise(id: String): Response<Unit> = Response.success(Unit)
         override suspend fun getExercise(id: String) = ApiResponse<Exercise>(null)
         override suspend fun getTemplates(limit: Int?, offset: Int?, withWorkoutDays: Boolean?) = PaginatedResponse<WorkoutTemplate>(null, null)

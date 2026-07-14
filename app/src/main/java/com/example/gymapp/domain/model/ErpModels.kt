@@ -2,6 +2,14 @@ package com.example.gymapp.domain.model
 
 import com.google.gson.annotations.SerializedName
 
+data class ExerciseMedia(
+	val id: String,
+	@SerializedName("exercise_id") val exerciseId: String,
+	@SerializedName("media_type") val mediaType: String,
+	@SerializedName("media_path") val mediaPath: String?,
+	@SerializedName("video_url") val videoUrl: String?
+)
+
 // ==================== EXERCISE ====================
 data class Exercise(
 	val id: String,
@@ -12,6 +20,7 @@ data class Exercise(
 	@SerializedName("video_url") val videoUrl: String?,
 	@SerializedName("media_type") val mediaType: String?,
 	@SerializedName("media_path") val mediaPath: String?,
+	val medias: List<ExerciseMedia>? = emptyList(),
 	val instituto: String?,
 	@SerializedName("created_by") val createdBy: String?,
 	@SerializedName("updated_by") val updatedBy: String?,
