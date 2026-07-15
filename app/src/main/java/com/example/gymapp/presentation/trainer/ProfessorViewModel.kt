@@ -1023,6 +1023,7 @@ class ProfessorViewModel @Inject constructor(
                     )
                 )
                 _successMessage.value = "Instituto do aluno atualizado com sucesso!"
+                loadStudents()
                 loadStudentDetail(studentId)
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)
