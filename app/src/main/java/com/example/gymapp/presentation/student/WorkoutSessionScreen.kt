@@ -601,17 +601,68 @@ private fun ExerciseInfoCard(
 private fun ExerciseMediaDisplay(mediaPath: String, mediaType: String, exerciseName: String) {
     val context = LocalContext.current
     val fullUrl = "${BuildConfig.SUPABASE_URL}$mediaPath"
+    var showFullscreen by remember { mutableStateOf(false) }
 
     when (mediaType.lowercase()) {
         "image", "gif" -> {
-            AsyncImage(
-                model = ImageRequest.Builder(context).data(fullUrl)
-                    .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
-                    .crossfade(true).build(),
-                contentDescription = "Imagem do exercício: $exerciseName",
-                modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(Spacing.md)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
+            Box {
+                AsyncImage(
+                    model = ImageRequest.Builder(context).data(fullUrl)
+                        .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                        .crossfade(true).build(),
+                    contentDescription = "Imagem do exercício: $exerciseName",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(Spacing.md))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .clickable { showFullscreen = true },
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+
+                if (showFullscreen) {
+                    androidx.compose.ui.window.Dialog(
+                        onDismissRequest = { showFullscreen = false },
+                        properties = androidx.compose.ui.window.DialogProperties(
+                            usePlatformDefaultWidth = false
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.9f))
+                                .clickable { showFullscreen = false },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context).data(fullUrl)
+                                    .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                                    .crossfade(true).build(),
+                                contentDescription = "Imagem expandida: $exerciseName",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(0.8f),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                            )
+
+                            IconButton(
+                                onClick = { showFullscreen = false },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(Spacing.lg)
+                                    .statusBarsPadding()
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Fechar visualização",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
         "video" -> {
             com.example.gymapp.presentation.components.VideoPlayer(videoUrl = fullUrl)

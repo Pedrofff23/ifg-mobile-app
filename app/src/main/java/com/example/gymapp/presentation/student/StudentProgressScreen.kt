@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import com.example.gymapp.domain.model.Exercise
 import com.example.gymapp.ui.theme.*
 import com.example.gymapp.utils.DateUtils
 import androidx.compose.ui.res.stringResource
+import java.util.Locale
 import com.example.gymapp.R
 import com.example.gymapp.presentation.components.*
 
@@ -58,6 +60,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
     LaunchedEffect(Unit) {
         viewModel.loadSessions()
         viewModel.loadProfile()
+        viewModel.loadMeasurementsChart()
         viewModel.loadAssignments()
         viewModel.loadExercises()
     }
@@ -82,6 +85,7 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
@@ -205,13 +209,21 @@ fun StudentProgressScreen(viewModel: StudentViewModel) {
                         tint = MaterialTheme.colorScheme.primary
                     )
                     StatChip(
-                        value = String.format("%.1f", stats?.weeklyFrequency ?: 0.0),
+                        value = String.format(Locale.US, "%.1f", stats?.weeklyFrequency ?: 0.0),
                         label = "Freq/Sem",
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
                         modifier = Modifier.weight(1f),
                         tint = Blue600
                     )
                 }
+            }
+
+            // ============ IMC CARD ============
+            item {
+                IMCCard(
+                    weightKg = profile?.currentWeightKg,
+                    heightCm = profile?.heightCm
+                )
             }
 
             // ============ BODY WEIGHT CHART ============
@@ -628,6 +640,173 @@ private fun MeasurementRow(measurement: BodyMeasurement) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun IMCCard(
+    weightKg: Double?,
+    heightCm: Double?
+) {
+    val hasMetrics = weightKg != null && heightCm != null && weightKg > 0 && heightCm > 0
+    
+    val bmi = if (hasMetrics) {
+        val heightM = heightCm!! / 100.0
+        weightKg!! / (heightM * heightM)
+    } else 0.0
+
+    val categoryTitle: String
+    val categoryDesc: String
+    val statusColor: Color
+    val statusBgColor: Color
+
+    if (!hasMetrics) {
+        categoryTitle = "Dados incompletos"
+        categoryDesc = "Insira seu peso e altura na tela de Perfil para calcular seu IMC."
+        statusColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        statusBgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    } else if (bmi < 18.5) {
+        categoryTitle = "Abaixo do peso"
+        categoryDesc = "Seu peso está abaixo do ideal recomendado pela OMS. É importante consultar um profissional de saúde."
+        statusColor = Orange600
+        statusBgColor = Orange600.copy(alpha = 0.08f)
+    } else if (bmi < 25.0) {
+        categoryTitle = "Peso saudável"
+        categoryDesc = "Parabéns! Seu peso está na faixa saudável recomendada pela OMS. Continue assim!"
+        statusColor = IfgGreen
+        statusBgColor = IfgGreen.copy(alpha = 0.08f)
+    } else if (bmi < 30.0) {
+        categoryTitle = "Sobrepeso"
+        categoryDesc = "Você está na faixa de sobrepeso. Praticar atividades físicas e ajustar a dieta pode ajudar."
+        statusColor = Orange600
+        statusBgColor = Orange600.copy(alpha = 0.08f)
+    } else {
+        categoryTitle = "Obesidade"
+        categoryDesc = "Seu IMC aponta obesidade. Recomendamos consultar profissionais de saúde para orientação adequada."
+        statusColor = MaterialTheme.colorScheme.error
+        statusBgColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(containerColor = statusBgColor),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Índice de Massa Corporal (IMC)",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (hasMetrics) String.format(Locale.US, "%.1f", bmi) else "--",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                            color = if (hasMetrics) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (hasMetrics) {
+                            Spacer(modifier = Modifier.width(Spacing.sm))
+                            Text(
+                                text = "kg/m²",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Category Badge
+                Surface(
+                    shape = RoundedCornerShape(Spacing.sm),
+                    color = statusColor.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
+                ) {
+                    Text(
+                        text = categoryTitle,
+                        color = statusColor,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            Text(
+                text = categoryDesc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // Scale bar if metrics exist
+            if (hasMetrics) {
+                Spacer(modifier = Modifier.height(Spacing.md))
+                IMCScaleBar(bmi = bmi)
+            }
+        }
+    }
+}
+
+@Composable
+private fun IMCScaleBar(bmi: Double) {
+    val minBmi = 15.0
+    val maxBmi = 35.0
+    val fraction = ((bmi - minBmi) / (maxBmi - minBmi)).coerceIn(0.0, 1.0).toFloat()
+    val bias = fraction * 2f - 1f
+
+    Column {
+        // Track
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFFBC02D), // Amarelo
+                            Color(0xFF4CAF50), // Verde
+                            Color(0xFFFFA000), // Laranja
+                            Color(0xFFE53935)  // Vermelho
+                        )
+                    )
+                )
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        // Indicator needle
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 4.dp, height = 8.dp)
+                    .align(androidx.compose.ui.BiasAlignment(bias, 0f))
+                    .background(MaterialTheme.colorScheme.onSurface, RoundedCornerShape(2.dp))
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("15.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("18.5", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("25.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("30.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("35.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

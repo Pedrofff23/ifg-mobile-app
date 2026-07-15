@@ -304,6 +304,7 @@ class StudentViewModel @Inject constructor(
                     )
                 )
                 loadProfile()
+                loadMeasurementsChart()
                 _updateSuccess.value = "Medição registrada com sucesso!"
             } catch (e: Exception) {
                 _error.value = ErrorUtils.parseErrorMessage(e)

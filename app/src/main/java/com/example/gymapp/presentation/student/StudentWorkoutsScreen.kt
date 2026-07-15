@@ -26,6 +26,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.lazy.itemsIndexed
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +39,8 @@ fun StudentWorkoutsScreen(
 ) {
     val assignments by viewModel.assignments.collectAsState()
     val currentAssignment by viewModel.currentAssignment.collectAsState()
+    val currentTemplate by viewModel.currentTemplate.collectAsState()
+    val sessions by viewModel.sessions.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val selectedTemplateDetails by viewModel.selectedTemplateDetails.collectAsState()
@@ -45,6 +50,7 @@ fun StudentWorkoutsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadAssignments()
+        viewModel.loadSessions()
     }
 
     // When template details start loading, open the sheet
@@ -65,6 +71,7 @@ fun StudentWorkoutsScreen(
 
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
@@ -116,9 +123,29 @@ fun StudentWorkoutsScreen(
 
             // Workout cards
             items(assignments) { assignment ->
+                val isActive = currentAssignment?.id == assignment.id
+                val inProgressSession = if (isActive) {
+                    remember(sessions) { sessions.find { it.finishedAt == null } }
+                } else null
+                val completedTodaySession = if (isActive) {
+                    remember(sessions) { sessions.find { it.finishedAt != null && isToday(it.finishedAt) } }
+                } else null
+                val currentWorkoutDayName = if (isActive) {
+                    remember(currentTemplate, assignment) {
+                        val index = assignment.currentWorkoutIndex ?: 0
+                        currentTemplate?.workoutDays
+                            ?.sortedBy { it.orderIndex ?: 0 }
+                            ?.getOrNull(index)
+                            ?.name
+                    }
+                } else null
+
                 WorkoutAssignmentCard(
                     assignment = assignment,
-                    isActive = currentAssignment?.id == assignment.id,
+                    isActive = isActive,
+                    inProgressSession = inProgressSession,
+                    completedTodaySession = completedTodaySession,
+                    currentWorkoutDayName = currentWorkoutDayName,
                     onStartClick = { onStartWorkout(assignment) },
                     onCardClick = { viewModel.loadTemplateDetails(assignment.templateId) }
                 )
@@ -154,26 +181,76 @@ fun StudentWorkoutsScreen(
 private fun WorkoutAssignmentCard(
     assignment: WorkoutAssignment,
     isActive: Boolean,
+    inProgressSession: com.example.gymapp.domain.model.WorkoutSession? = null,
+    completedTodaySession: com.example.gymapp.domain.model.WorkoutSession? = null,
+    currentWorkoutDayName: String? = null,
     onStartClick: () -> Unit,
     onCardClick: () -> Unit
 ) {
+    val isCompleted = isActive && completedTodaySession != null
+    val isInProgress = isActive && inProgressSession != null
+
+    val cardBg = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.08f)
+        isInProgress -> Orange600.copy(alpha = 0.08f)
+        isActive -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+
+    val cardBorderColor = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.3f)
+        isInProgress -> Orange600.copy(alpha = 0.3f)
+        isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    }
+
+    val icon = when {
+        isCompleted -> Icons.Default.CheckCircle
+        isInProgress -> Icons.Default.DirectionsRun
+        else -> Icons.Default.FitnessCenter
+    }
+
+    val iconColor = when {
+        isCompleted -> IfgGreen
+        isInProgress -> Orange600
+        isActive -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val iconBg = when {
+        isCompleted -> IfgGreen.copy(alpha = 0.1f)
+        isInProgress -> Orange600.copy(alpha = 0.1f)
+        isActive -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+
+    val buttonText = when {
+        isCompleted -> "Treino do dia concluído!"
+        isInProgress -> "Retomar Treino"
+        else -> "Iniciar Treino"
+    }
+
+    val buttonColor = when {
+        isCompleted -> MaterialTheme.colorScheme.surfaceVariant
+        isInProgress -> Orange600
+        else -> if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val buttonContentColor = when {
+        isCompleted -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> if (isActive || isInProgress) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
         onClick = onCardClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Spacing.lg),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
         border = BorderStroke(
             width = if (isActive) 2.dp else 1.dp,
-            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            color = cardBorderColor
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(Spacing.lg)
@@ -187,17 +264,13 @@ private fun WorkoutAssignmentCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (isActive) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ),
+                        .background(iconBg),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.FitnessCenter,
+                        icon,
                         contentDescription = null,
-                        tint = if (isActive) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = iconColor,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -212,30 +285,66 @@ private fun WorkoutAssignmentCard(
                         ),
                         color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
+                    
                     if (isActive) {
                         Spacer(modifier = Modifier.height(Spacing.xs))
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            // Badge Status
+                            val badgeText = when {
+                                isCompleted -> "CONCLUÍDO"
+                                isInProgress -> "EM ANDAMENTO"
+                                else -> "ATIVO"
+                            }
+                            val badgeColor = when {
+                                isCompleted -> IfgGreen
+                                isInProgress -> Orange600
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+                            val badgeBgColor = when {
+                                isCompleted -> IfgGreen.copy(alpha = 0.15f)
+                                isInProgress -> Orange600.copy(alpha = 0.15f)
+                                else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = badgeBgColor
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(badgeColor)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = badgeText,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp
+                                        ),
+                                        color = badgeColor
+                                    )
+                                }
+                            }
+
+                            // Subtext describing workout day/session
+                            val subtext = when {
+                                isInProgress -> inProgressSession?.workoutName
+                                isCompleted -> completedTodaySession?.workoutName
+                                else -> currentWorkoutDayName
+                            }
+                            if (!subtext.isNullOrBlank()) {
                                 Text(
-                                    text = "ATIVO",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = subtext,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -247,31 +356,49 @@ private fun WorkoutAssignmentCard(
 
             Button(
                 onClick = onStartClick,
+                enabled = !isCompleted,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isActive) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = buttonColor,
+                    contentColor = buttonContentColor,
+                    disabledContainerColor = buttonColor,
+                    disabledContentColor = buttonContentColor
                 ),
                 shape = RoundedCornerShape(Spacing.md)
             ) {
                 Icon(
-                    Icons.Default.PlayArrow,
+                    if (isCompleted) Icons.Default.Check else if (isInProgress) Icons.Default.DirectionsRun else Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = if (isActive) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = buttonContentColor,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(Spacing.sm))
                 Text(
-                    "Iniciar Treino",
-                    color = if (isActive) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    buttonText,
+                    color = buttonContentColor,
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
+    }
+}
+
+private fun isToday(dateString: String?): Boolean {
+    if (dateString.isNullOrBlank()) return false
+    return try {
+        val dateRegex = """(\d{4}-\d{2}-\d{2})""".toRegex()
+        val match = dateRegex.find(dateString)
+        if (match != null) {
+            val datePart = match.groupValues[1]
+            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+            datePart == todayStr
+        } else {
+            false
+        }
+    } catch (_: Exception) {
+        false
     }
 }
 
