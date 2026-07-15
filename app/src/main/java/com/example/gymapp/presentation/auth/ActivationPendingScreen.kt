@@ -21,7 +21,11 @@ fun ActivationPendingScreen(
     onResendSuccess: () -> Unit = {},
     onBackToLogin: () -> Unit = {}
 ) {
-    var resent by remember { mutableStateOf(false) }
+    val resendState by authViewModel.resendState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        authViewModel.resetResendState()
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -79,26 +83,46 @@ fun ActivationPendingScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            if (resent) {
-                Text(
-                    "Email reenviado com sucesso!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = IfgGreen
-                )
-            } else {
-                OutlinedButton(
-                    onClick = {
-                        authViewModel.resendActivation(email)
-                        resent = true
-                        onResendSuccess()
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Reenviar email")
+            when (resendState) {
+                is ResendState.Success -> {
+                    Text(
+                        "Email reenviado com sucesso!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = IfgGreen,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                is ResendState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                else -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        OutlinedButton(
+                            onClick = {
+                                authViewModel.resendActivation(email)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Reenviar email")
+                        }
+
+                        if (resendState is ResendState.Error) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = (resendState as ResendState.Error).message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                 }
             }
 

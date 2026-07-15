@@ -6,9 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.local.TokenManager
 import com.example.gymapp.data.remote.AuthService
 import com.example.gymapp.data.remote.ErpService
-import com.example.gymapp.data.remote.ResendActivationRequest
 import com.example.gymapp.data.remote.FCMTokenRequest
-import com.example.gymapp.data.remote.ForgotPasswordRequest
 import com.example.gymapp.domain.model.*
 import com.example.gymapp.utils.ErrorUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +24,13 @@ sealed class AuthState {
     data class NeedsActivation(val email: String) : AuthState()
     object Blocked : AuthState()
     data class Error(val message: String) : AuthState()
+}
+
+sealed class ResendState {
+    object Idle : ResendState()
+    object Loading : ResendState()
+    object Success : ResendState()
+    data class Error(val message: String) : ResendState()
 }
 
 enum class AuthDestination {
@@ -48,6 +53,16 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    private val _resendState = MutableStateFlow<ResendState>(ResendState.Idle)
+    val resendState: StateFlow<ResendState> = _resendState.asStateFlow()
+
+    var lastEnteredEmail: String = ""
+        private set
+
+    fun resetResendState() {
+        _resendState.value = ResendState.Idle
+    }
+
     private val _institutos = MutableStateFlow<List<Instituto>>(emptyList())
     val institutos: StateFlow<List<Instituto>> = _institutos.asStateFlow()
 
@@ -69,16 +84,92 @@ class AuthViewModel @Inject constructor(
     }
 
     fun register(email: String, password: String, fullName: String) {
+        lastEnteredEmail = email
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                // Call Supabase signup - this always returns 200 if the request is valid
-                // even if email confirmation is required
-                authService.register(RegisterRequest(email, password, fullName))
+                // Call Supabase signup
+                val response = authService.register(RegisterRequest(email, password, fullName))
 
-                // Always navigate to activation pending page after successful register
-                // The user needs to check their email to activate the account
-                _authState.value = AuthState.NeedsActivation(email)
+                // If autoconfirm is active on the backend, we receive an access_token immediately
+                val token = response.token
+                if (!token.isNullOrEmpty()) {
+                    val refreshToken = response.refreshToken
+                    val supabaseUser = response.user
+                    val userId = supabaseUser?.id ?: ""
+                    val userEmail = supabaseUser?.email ?: email
+                    val userFullName = supabaseUser?.userMetadata?.fullName ?: fullName
+                    val role = supabaseUser?.userMetadata?.role ?: "aluno"
+
+                    tokenManager.saveSession(
+                        accessToken = token,
+                        refreshToken = refreshToken,
+                        userId = userId,
+                        role = role,
+                        fullName = userFullName.ifBlank { email },
+                        email = userEmail
+                    )
+
+                    // Retrieve and store FCM Token for push notifications
+                    retrieveAndStoreFCMToken()
+
+                    // Check if profile is completed by calling /auth/me
+                    try {
+                        val meResponse = authService.getMe()
+                        val meData = meResponse.data
+
+                        if (meData != null) {
+                            val profileCompleted = meData.profileCompleted
+                            val institutoId = meData.institutoId
+                            val isActive = meData.isActive
+                            val dbRole = meData.role
+
+                            // Sync the database role to tokenManager (overrides stale Supabase metadata role)
+                            if (dbRole != role) {
+                                tokenManager.saveUserRole(dbRole)
+                            }
+                            
+                            // Save instituto info
+                            if (!institutoId.isNullOrEmpty()) {
+                                tokenManager.saveInstitutoId(institutoId)
+                            }
+                            if (!meData.instituto.isNullOrEmpty()) {
+                                tokenManager.saveInstitutoName(meData.instituto!!)
+                            }
+
+                            val domainUser = User(
+                                id = meData.id,
+                                email = meData.email,
+                                fullName = meData.fullName,
+                                role = dbRole,
+                                isActive = isActive,
+                                institutoId = institutoId,
+                                instituto = meData.instituto,
+                                profileCompleted = profileCompleted
+                            )
+
+                            val isProfileIncomplete = !profileCompleted || (institutoId.isNullOrEmpty() && meData.instituto.isNullOrEmpty())
+
+                            if (!isActive) {
+                                _authState.value = AuthState.NeedsActivation(meData.email)
+                            } else if (isProfileIncomplete) {
+                                _authState.value = AuthState.NeedsProfileCompletion(domainUser)
+                            } else {
+                                _authState.value = AuthState.Success(domainUser)
+                            }
+                        } else {
+                            val domainUser = User(id = userId, email = userEmail, fullName = userFullName, role = role)
+                            _authState.value = AuthState.NeedsProfileCompletion(domainUser)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AuthViewModel", "Error fetching me profile after autoconfirm register: ${e.message}", e)
+                        val domainUser = User(id = userId, email = userEmail, fullName = userFullName, role = role)
+                        _authState.value = AuthState.NeedsProfileCompletion(domainUser)
+                    }
+                } else {
+                    // Email confirmation is required - navigate to activation pending page
+                    _authState.value = AuthState.NeedsActivation(email)
+                }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(
                     ErrorUtils.parseErrorMessage(e, "Falha ao criar conta")
@@ -88,6 +179,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun login(email: String, password: String) {
+        lastEnteredEmail = email
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
@@ -250,10 +342,14 @@ class AuthViewModel @Inject constructor(
 
     fun resendActivation(email: String) {
         viewModelScope.launch {
+            _resendState.value = ResendState.Loading
             try {
                 authService.resendActivation(ResendActivationRequest(email))
-            } catch (_: Exception) {
-                // Silently fail
+                _resendState.value = ResendState.Success
+            } catch (e: Exception) {
+                _resendState.value = ResendState.Error(
+                    ErrorUtils.parseErrorMessage(e, "Falha ao reenviar e-mail")
+                )
             }
         }
     }
@@ -399,11 +495,13 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun getLastEmail(): String = when (val state = _authState.value) {
-        is AuthState.NeedsActivation -> state.email
-        is AuthState.NeedsProfileCompletion -> state.user.email
-        is AuthState.Success -> state.user.email
-        else -> ""
+    fun getLastEmail(): String = lastEnteredEmail.ifBlank {
+        when (val state = _authState.value) {
+            is AuthState.NeedsActivation -> state.email
+            is AuthState.NeedsProfileCompletion -> state.user.email
+            is AuthState.Success -> state.user.email
+            else -> ""
+        }
     }
 
     fun clearSession() {

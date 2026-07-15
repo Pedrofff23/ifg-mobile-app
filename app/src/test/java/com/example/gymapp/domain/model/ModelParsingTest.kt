@@ -142,4 +142,11 @@ class ModelParsingTest {
         assertEquals("image", exercise.medias?.get(1)?.mediaType)
         assertEquals("/images/bench.jpg", exercise.medias?.get(1)?.mediaPath)
     }
+
+    @Test
+    fun `ResendActivationRequest serialization`() {
+        val request = ResendActivationRequest("test@example.com")
+        val json = Gson().toJson(request)
+        assertEquals("{\"email\":\"test@example.com\"}", json)
+    }
 }

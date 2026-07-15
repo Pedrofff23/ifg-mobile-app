@@ -29,7 +29,7 @@ import com.example.gymapp.R
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: (String) -> Unit,
+    onRegisterSuccess: (AuthDestination, String) -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
@@ -43,7 +43,17 @@ fun RegisterScreen(
     LaunchedEffect(authState) {
         if (authState is AuthState.NeedsActivation) {
             val email = (authState as AuthState.NeedsActivation).email
-            onRegisterSuccess(email)
+            onRegisterSuccess(AuthDestination.ACTIVATION_PENDING, email)
+        } else if (authState is AuthState.NeedsProfileCompletion) {
+            onRegisterSuccess(AuthDestination.COMPLETE_PROFILE, email)
+        } else if (authState is AuthState.Success) {
+            val user = (authState as AuthState.Success).user
+            val destination = if (user.role.equals("professor", ignoreCase = true) || user.role.equals("admin", ignoreCase = true)) {
+                AuthDestination.PROFESSOR_HOME
+            } else {
+                AuthDestination.STUDENT_HOME
+            }
+            onRegisterSuccess(destination, email)
         }
     }
 

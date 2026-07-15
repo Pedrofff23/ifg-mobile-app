@@ -1,6 +1,8 @@
 package com.example.gymapp.data.remote
 
 import com.example.gymapp.data.local.TokenManager
+import com.example.gymapp.domain.model.RefreshTokenRequest
+import com.example.gymapp.domain.model.RefreshTokenResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
@@ -82,9 +84,9 @@ class AuthInterceptor @Inject constructor(
 
                         // Save new tokens
                         runBlocking(Dispatchers.IO) {
-                            tokenManager.updateAccessToken(refreshResp.access_token)
-                            if (refreshResp.refresh_token != null) {
-                                tokenManager.saveRefreshToken(refreshResp.refresh_token)
+                            tokenManager.updateAccessToken(refreshResp.accessToken)
+                            if (refreshResp.refreshToken != null) {
+                                tokenManager.saveRefreshToken(refreshResp.refreshToken)
                             }
                         }
 
@@ -92,7 +94,7 @@ class AuthInterceptor @Inject constructor(
 
                         // Retry original request with new access token
                         val retryRequest = originalRequest.newBuilder()
-                            .addHeader("Authorization", "Bearer ${refreshResp.access_token}")
+                            .addHeader("Authorization", "Bearer ${refreshResp.accessToken}")
                             .build()
                         return chain.proceed(retryRequest)
                     } catch (e: Exception) {

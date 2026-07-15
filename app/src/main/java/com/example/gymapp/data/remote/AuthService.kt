@@ -6,6 +6,10 @@ import com.example.gymapp.domain.model.LoginRequest
 import com.example.gymapp.domain.model.LoginResponse
 import com.example.gymapp.domain.model.MeResponse
 import com.example.gymapp.domain.model.RegisterRequest
+import com.example.gymapp.domain.model.ForgotPasswordRequest
+import com.example.gymapp.domain.model.RefreshTokenRequest
+import com.example.gymapp.domain.model.RefreshTokenResponse
+import com.example.gymapp.domain.model.ResendActivationRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -16,7 +20,7 @@ interface AuthService {
     suspend fun login(@Body request: LoginRequest): LoginResponse
 
     @POST("auth/signup")
-    suspend fun register(@Body request: RegisterRequest): Response<Unit>
+    suspend fun register(@Body request: RegisterRequest): LoginResponse
 
     @POST("auth/refresh-token")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): RefreshTokenResponse
@@ -31,19 +35,10 @@ interface AuthService {
     suspend fun completeProfile(@Body request: CompleteProfileRequest): ApiResponse<MeResponse>
 
     @POST("auth/resend-activation")
-    suspend fun resendActivation(@Body request: ResendActivationRequest): ApiResponse<Unit>
+    suspend fun resendActivation(@Body request: ResendActivationRequest): ApiResponse<String>
 
     @POST("auth/forgot-password")
     suspend fun forgotPassword(@Body request: ForgotPasswordRequest): ApiResponse<String>
 }
 
-data class ForgotPasswordRequest(val email: String)
 
-data class RefreshTokenRequest(val refresh_token: String)
-
-data class RefreshTokenResponse(
-    val access_token: String,
-    val refresh_token: String?
-)
-
-data class ResendActivationRequest(val email: String)

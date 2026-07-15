@@ -70,3 +70,20 @@ data class CompleteProfileRequest(
     @SerializedName("height_cm") val heightCm: Double? = null,
     @SerializedName("injury_history") val injuryHistory: String? = null
 )
+
+data class ForgotPasswordRequest(
+    @SerializedName("email") val email: String
+)
+
+data class RefreshTokenRequest(
+    @SerializedName("refresh_token") val refreshToken: String
+)
+
+data class RefreshTokenResponse(
+    @SerializedName("access_token") val accessToken: String,
+    @SerializedName("refresh_token") val refreshToken: String?
+)
+
+data class ResendActivationRequest(
+    @SerializedName("email") val email: String
+)

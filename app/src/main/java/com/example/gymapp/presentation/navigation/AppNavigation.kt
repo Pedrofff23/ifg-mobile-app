@@ -96,6 +96,7 @@ fun AppNavigation(
 
         composable(Routes.LOGIN) {
             LoginScreen(
+                viewModel = authViewModel,
                 onLoginSuccess = { destination ->
                     val route = when (destination) {
                         AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
@@ -117,8 +118,16 @@ fun AppNavigation(
 
         composable(Routes.REGISTER) {
             RegisterScreen(
-                onRegisterSuccess = { email ->
-                    navController.navigate(Routes.activationPendingRoute(email)) {
+                viewModel = authViewModel,
+                onRegisterSuccess = { destination, email ->
+                    val route = when (destination) {
+                        AuthDestination.STUDENT_HOME -> Routes.STUDENT_HOME
+                        AuthDestination.PROFESSOR_HOME -> Routes.TRAINER_HOME
+                        AuthDestination.COMPLETE_PROFILE -> Routes.COMPLETE_PROFILE
+                        AuthDestination.ACTIVATION_PENDING -> Routes.activationPendingRoute(email)
+                        else -> Routes.LOGIN
+                    }
+                    navController.navigate(route) {
                         popUpTo(Routes.REGISTER) { inclusive = true }
                     }
                 },
@@ -172,12 +181,14 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
+            val routeEmail = backStackEntry.arguments?.getString("email") ?: ""
+            val email = routeEmail.ifBlank { authViewModel.getLastEmail() }
             ActivationPendingScreen(
                 email = email,
                 authViewModel = authViewModel,
                 onResendSuccess = { /* Show snackbar */ },
                 onBackToLogin = {
+                    authViewModel.resetState()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }
