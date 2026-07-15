@@ -858,10 +858,22 @@ class ProfessorViewModel @Inject constructor(
     }
 
     // ==================== STUDENT DETAIL ====================
+    fun clearStudentDetail() {
+        _selectedStudentDetail.value = null
+        _studentProfile.value = null
+        _studentMeasurements.value = emptyList()
+        _studentAssignments.value = emptyList()
+        _studentSessions.value = emptyList()
+        _studentStats.value = null
+        _studentGroups.value = emptyList()
+        _studentExerciseProgress.value = emptyMap()
+    }
+
     fun loadStudentDetail(studentId: String) {
-    viewModelScope.launch {
-    _isLoading.value = true
-    _error.value = null
+        clearStudentDetail()
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
     try {
     val userResp = userService.getUser(studentId)
     _selectedStudentDetail.value = userResp.data

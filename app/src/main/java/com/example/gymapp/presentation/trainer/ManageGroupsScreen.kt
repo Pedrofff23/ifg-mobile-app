@@ -97,7 +97,7 @@ fun ManageGroupsScreen(viewModel: ProfessorViewModel) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (isLoading) {
+            if (isLoading && groups.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }

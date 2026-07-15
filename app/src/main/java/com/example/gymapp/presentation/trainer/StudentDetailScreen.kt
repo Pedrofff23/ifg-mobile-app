@@ -75,41 +75,49 @@ fun StudentDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val initials = student?.fullName?.split(" ")?.mapNotNull { it.firstOrNull()?.toString() }?.joinToString("") ?: "?"
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(IfgGreen, MaterialTheme.colorScheme.primary)
+                    val currentStudent = student
+                    if (currentStudent == null) {
+                        Text(
+                            text = "Detalhes do Aluno",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val initials = currentStudent.fullName?.split(" ")?.mapNotNull { it.firstOrNull()?.toString() }?.joinToString("") ?: "?"
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(IfgGreen, MaterialTheme.colorScheme.primary)
+                                        )
                                     )
+                            ) {
+                                Text(
+                                    text = initials.uppercase(),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.align(Alignment.Center)
                                 )
-                        ) {
-                            Text(
-                                text = initials.uppercase(),
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                modifier = Modifier.align(Alignment.Center)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = student?.fullName ?: "Aluno",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            val resolvedInstitutoName = student?.instituto?.ifBlank { null } 
-                                ?: institutos.find { it.id == student?.institutoId }?.name 
-                                ?: "Sem Instituto"
-                            Text(
-                                text = resolvedInstitutoName,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = currentStudent.fullName ?: "Aluno",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                val resolvedInstitutoName = currentStudent.instituto?.ifBlank { null } 
+                                    ?: institutos.find { it.id == currentStudent.institutoId }?.name 
+                                    ?: "Sem Instituto"
+                                Text(
+                                    text = resolvedInstitutoName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 },
@@ -131,6 +139,8 @@ fun StudentDetailScreen(
             .padding(innerPadding)) {
             if (isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary)
+            }
+            if (isLoading && student == null) {
                 return@Column
             }
             error?.let { errMsg ->

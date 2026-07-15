@@ -1,5 +1,7 @@
 package com.example.gymapp.presentation.trainer
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -140,7 +142,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                     }
                 }
 
-                if (isLoading) {
+                if (isLoading && students.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -162,6 +164,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             modifier = Modifier.fillMaxWidth().clickable {
+                                viewModel.clearStudentDetail()
                                 selectedDetailStudentId = student.id
                                 showStudentDetail = true
                             },
@@ -258,11 +261,24 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
             }
         }
 
-        if (showStudentDetail && selectedDetailStudentId.isNotBlank()) {
+        AnimatedVisibility(
+            visible = showStudentDetail && selectedDetailStudentId.isNotBlank(),
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)
+            ) + fadeOut(animationSpec = tween(durationMillis = 250))
+        ) {
             StudentDetailScreen(
                 studentId = selectedDetailStudentId,
                 viewModel = viewModel,
-                onBack = { showStudentDetail = false }
+                onBack = {
+                    viewModel.clearStudentDetail()
+                    showStudentDetail = false
+                }
             )
         }
     }

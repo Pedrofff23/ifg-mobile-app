@@ -105,7 +105,7 @@ fun ManageWorkoutsContent(viewModel: ProfessorViewModel, navController: androidx
             }
         }
 
-        if (isLoading) {
+        if (isLoading && templates.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = IfgGreen)

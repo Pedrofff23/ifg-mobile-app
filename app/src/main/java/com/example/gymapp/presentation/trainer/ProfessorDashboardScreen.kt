@@ -51,7 +51,7 @@ fun ProfessorDashboardScreen(
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        if (isLoading) {
+        if (isLoading && students.isEmpty() && templates.isEmpty() && exercises.isEmpty() && announcements.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

@@ -133,7 +133,7 @@ fun ManageExercisesScreen(viewModel: ProfessorViewModel, navController: androidx
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (isLoading) {
+            if (isLoading && exercises.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }

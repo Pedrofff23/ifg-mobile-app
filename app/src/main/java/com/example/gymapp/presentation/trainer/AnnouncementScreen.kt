@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -187,7 +188,7 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (isLoading) {
+                if (isLoading && announcements.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = IfgGreen)
                     }
@@ -211,8 +212,8 @@ fun CreateAnnouncementScreen(viewModel: ProfessorViewModel) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             when (announcement.type) {
-                                                "noticia" -> Icons.Default.Article
-                                                "instrucoes" -> Icons.Default.MenuBook
+                                                "noticia" -> Icons.AutoMirrored.Filled.Article
+                                                "instrucoes" -> Icons.AutoMirrored.Filled.MenuBook
                                                 else -> Icons.Default.Notifications
                                             },
                                             contentDescription = null,

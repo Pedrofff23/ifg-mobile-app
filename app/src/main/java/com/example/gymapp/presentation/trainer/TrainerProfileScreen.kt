@@ -1,58 +1,28 @@
 package com.example.gymapp.presentation.trainer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gymapp.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainerProfileScreen(
     viewModel: ProfessorViewModel,
@@ -62,144 +32,64 @@ fun TrainerProfileScreen(
 ) {
     val userName by viewModel.userName.collectAsState()
     val isAdmin by viewModel.isAdmin.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     val currentTheme by themeManager.themeScheme.collectAsState(initial = AppThemeScheme.DARK_ANTIGRAVITY)
 
+    var showEditProfileDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
     val internalSnackbarHostState = remember { SnackbarHostState() }
+    val effectiveSnackbarHostState = snackbarHostState ?: internalSnackbarHostState
+
+    LaunchedEffect(successMessage, error) {
+        val msg = successMessage ?: error
+        if (msg != null) {
+            effectiveSnackbarHostState.showSnackbar(msg)
+            viewModel.clearSuccessMessage()
+            viewModel.clearError()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = 0.dp,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             // Profile Header Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val initials = (userName ?: "")
-                                .split(" ")
-                                .filter { it.isNotBlank() }
-                                .mapNotNull { it.firstOrNull()?.toString() }
-                                .take(2)
-                                .joinToString("")
-                            Text(
-                                text = initials.ifBlank { "?" },
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = (userName ?: "").ifBlank { "Professor" },
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ) {
-                                Text(if (isAdmin) "Admin" else "Professor")
-                            }
-                            Badge(
-                                containerColor = Blue100,
-                                contentColor = Color(0xFF1565C0)
-                            ) {
-                                Text("Ativo")
-                            }
-                        }
-                    }
-                }
+                ProfileHeaderCard(
+                    userName = userName,
+                    isAdmin = isAdmin,
+                    onEdit = { showEditProfileDialog = true }
+                )
             }
 
-            // Account Info Card
+            // Personal Information
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Informacoes da Conta",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        ProfileInfoRow(
-                            icon = Icons.Default.Person,
-                            label = "Nome",
-                            value = (userName ?: "").ifBlank { "N/A" }
-                        )
-                        ProfileInfoRow(
-                            icon = Icons.Default.AdminPanelSettings,
-                            label = "Papel",
-                            value = if (isAdmin) "Administrador" else "Professor"
-                        )
-                        ProfileInfoRow(
-                            icon = Icons.Default.CheckCircle,
-                            label = "Status",
-                            value = "Ativo"
-                        )
-                    }
-                }
+                PersonalInfoCard(
+                    userName = userName,
+                    isAdmin = isAdmin
+                )
             }
 
-            // App Settings Card
+            // Theme Selection Preference
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Configuracoes do App",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-
-                        // Theme selector button
-                        OutlinedButton(
-                            onClick = { showThemeDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.Default.Palette, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Tema do App")
-                                Text(
-                                    text = currentTheme.displayName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
+                PreferenceCard(
+                    icon = Icons.Default.Palette,
+                    title = "Tema do App",
+                    subtitle = currentTheme.displayName,
+                    onClick = { showThemeDialog = true }
+                )
             }
 
             // Logout Button
@@ -207,14 +97,14 @@ fun TrainerProfileScreen(
                 Button(
                     onClick = { showLogoutConfirm = true },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Red500),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(Spacing.md)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.sm))
                     Text("Sair da Conta", color = Color.White)
                 }
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(Spacing.lg))
             }
         }
 
@@ -223,12 +113,32 @@ fun TrainerProfileScreen(
                 hostState = internalSnackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-            )
+                    .padding(bottom = Spacing.lg)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
         }
     }
 
-    // Theme selection dialog
+    // Edit Name Dialog
+    if (showEditProfileDialog) {
+        EditProfileDialog(
+            currentName = userName ?: "",
+            isUpdating = isLoading,
+            onDismiss = { showEditProfileDialog = false },
+            onSave = { newName ->
+                viewModel.updateUserName(fullName = newName, instituto = null)
+                showEditProfileDialog = false
+            }
+        )
+    }
+
+    // Theme Selection Dialog
     if (showThemeDialog) {
         ThemeSelectionDialog(
             currentTheme = currentTheme,
@@ -240,19 +150,20 @@ fun TrainerProfileScreen(
         )
     }
 
-    // Logout confirmation dialog
+    // Logout Confirmation Dialog
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
             title = { Text("Sair da Conta") },
-            text = { Text("Tem certeza que deseja desconectar? Voce precisara fazer login novamente.") },
+            text = { Text("Tem certeza que deseja desconectar? Você precisará fazer login novamente.") },
             confirmButton = {
                 Button(
                     onClick = {
                         showLogoutConfirm = false
                         onLogout()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Red500)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(Spacing.md)
                 ) {
                     Text("Sair", color = Color.White)
                 }
@@ -261,8 +172,207 @@ fun TrainerProfileScreen(
                 TextButton(onClick = { showLogoutConfirm = false }) {
                     Text("Cancelar")
                 }
-            }
+            },
+            shape = RoundedCornerShape(Spacing.lg)
         )
+    }
+}
+
+@Composable
+private fun ProfileHeaderCard(
+    userName: String?,
+    isAdmin: Boolean,
+    onEdit: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                val initials = (userName ?: "")
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .mapNotNull { it.firstOrNull()?.toString() }
+                    .take(2)
+                    .joinToString("")
+                Text(
+                    text = initials.ifBlank { "?" },
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            Text(
+                text = (userName ?: "").ifBlank { "Professor" },
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.sm))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Surface(
+                    shape = RoundedCornerShape(Spacing.sm),
+                    color = Green100
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.FitnessCenter,
+                            contentDescription = null,
+                            tint = IfgGreen,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = if (isAdmin) "Admin" else "Professor",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = IfgGreen,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(Spacing.sm),
+                    color = Blue100
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Blue600, modifier = Modifier.size(14.dp))
+                        Text("Ativo", style = MaterialTheme.typography.labelSmall, color = Blue600, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.sm))
+
+            FilledTonalIconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Editar perfil",
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PersonalInfoCard(
+    userName: String?,
+    isAdmin: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
+            Text(
+                text = "Informações Pessoais",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(bottom = Spacing.md)
+            )
+            ProfileInfoRow(Icons.Default.Person, "Nome", (userName ?: "").ifBlank { "N/A" })
+            ProfileInfoRow(
+                Icons.Default.AdminPanelSettings,
+                "Papel",
+                if (isAdmin) "Administrador" else "Professor"
+            )
+            ProfileInfoRow(Icons.Default.CheckCircle, "Status", "Ativo")
+        }
+    }
+}
+
+@Composable
+private fun PreferenceCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(Spacing.md))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -275,7 +385,7 @@ private fun ProfileInfoRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -284,7 +394,7 @@ private fun ProfileInfoRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(Spacing.md))
         Column {
             Text(
                 text = label,
@@ -297,5 +407,61 @@ private fun ProfileInfoRow(
             )
         }
     }
+}
+
+@Composable
+private fun EditProfileDialog(
+    currentName: String,
+    isUpdating: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (name: String) -> Unit
+) {
+    var nameText by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Perfil") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    label = { Text("Nome completo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(Spacing.md)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(nameText.trim())
+                },
+                enabled = !isUpdating && nameText.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(Spacing.md)
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                } else {
+                    Text("Salvar", color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+        shape = RoundedCornerShape(Spacing.lg)
+    )
 }
 

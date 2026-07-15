@@ -68,7 +68,7 @@ fun StudentProfileScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = Spacing.lg,
-                top = Spacing.md,
+                top = 0.dp,
                 end = Spacing.lg,
                 bottom = Spacing.lg
             ),
@@ -198,7 +198,7 @@ private fun ProfileHeaderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.xxl),
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Avatar
