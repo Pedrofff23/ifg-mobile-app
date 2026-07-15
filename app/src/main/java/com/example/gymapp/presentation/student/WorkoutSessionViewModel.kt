@@ -54,8 +54,8 @@ class WorkoutSessionViewModel @Inject constructor(
         private set
 
     /** Session exercises from the local/remote repository */
-    var sessionExercises: List<SessionExercise> = emptyList()
-        private set
+    private val _sessionExercises = MutableStateFlow<List<SessionExercise>>(emptyList())
+    val sessionExercises: StateFlow<List<SessionExercise>> = _sessionExercises.asStateFlow()
 
     fun startWorkoutSession(assignmentId: String) {
         viewModelScope.launch {
@@ -66,7 +66,7 @@ class WorkoutSessionViewModel @Inject constructor(
                 // Start session via repository
                 val startSession = workoutSessionRepository.startSession(assignmentId)
                 session = startSession
-                sessionExercises = (startSession.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
+                _sessionExercises.value = (startSession.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
 
                 // Load template details
                 val currentResp = erpService.getCurrentAssignment(userId)
@@ -90,16 +90,16 @@ class WorkoutSessionViewModel @Inject constructor(
     }
 
     private fun resumeFromProgress() {
-        if (sessionExercises.isEmpty()) return
+        if (_sessionExercises.value.isEmpty()) return
 
-        val incompleteExIdx = sessionExercises.indexOfFirst { ex ->
+        val incompleteExIdx = _sessionExercises.value.indexOfFirst { ex ->
             ex.status != "completed"
         }
 
         if (incompleteExIdx >= 0) {
             _currentExerciseIndex.value = incompleteExIdx
 
-            val ex = sessionExercises[incompleteExIdx]
+            val ex = _sessionExercises.value[incompleteExIdx]
             val sortedSets = (ex.sets ?: emptyList()).sortedBy { it.setNumber ?: 0 }
             val incompleteSet = sortedSets.indexOfFirst { set ->
                 set.isCompleted != true
@@ -110,7 +110,7 @@ class WorkoutSessionViewModel @Inject constructor(
                 1
             }
         } else {
-            _currentExerciseIndex.value = sessionExercises.lastIndex.coerceAtLeast(0)
+            _currentExerciseIndex.value = _sessionExercises.value.lastIndex.coerceAtLeast(0)
             _currentSet.value = 1
         }
     }
@@ -130,7 +130,7 @@ class WorkoutSessionViewModel @Inject constructor(
                 if (inProgressSession != null) {
                     val fullSession = workoutSessionRepository.getSession(inProgressSession.id)
                     session = fullSession
-                    sessionExercises = (fullSession.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
+                    _sessionExercises.value = (fullSession.exercises ?: emptyList()).sortedBy { it.orderIndex ?: 0 }
 
                     val currentResp = erpService.getCurrentAssignment(userId)
                     val assignment = currentResp.data?.takeIf { it.id == assignmentId }
@@ -158,14 +158,14 @@ class WorkoutSessionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val exIdx = _currentExerciseIndex.value
-                val sessionEx = sessionExercises.getOrNull(exIdx) ?: return@launch
+                val sessionEx = _sessionExercises.value.getOrNull(exIdx) ?: return@launch
                 val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
 
                 workoutSessionRepository.updateSet(
                     set.id, repsCompleted, weightKg, durationSeconds, distanceMeters, true
                 )
 
-                sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                _sessionExercises.value = _sessionExercises.value.mapIndexed { idx, ex ->
                     if (idx == exIdx) {
                         ex.copy(sets = ex.sets?.map { s ->
                             if (s.setNumber == setNumber) s.copy(
@@ -187,12 +187,12 @@ class WorkoutSessionViewModel @Inject constructor(
                 } else {
                     workoutSessionRepository.updateExerciseStatus(sessionEx.id, "completed")
 
-                    sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                    _sessionExercises.value = _sessionExercises.value.mapIndexed { idx, ex ->
                         if (idx == exIdx) ex.copy(status = "completed") else ex
                     }
 
                     val nextIdx = exIdx + 1
-                    if (nextIdx < sessionExercises.size) {
+                    if (nextIdx < _sessionExercises.value.size) {
                         _currentExerciseIndex.value = nextIdx
                         _currentSet.value = 1
                     }
@@ -206,14 +206,15 @@ class WorkoutSessionViewModel @Inject constructor(
     fun markSetIncomplete(sessionExerciseId: String, setNumber: Int) {
         viewModelScope.launch {
             try {
-                val sessionEx = sessionExercises.find { it.id == sessionExerciseId } ?: return@launch
+                val sessionEx = _sessionExercises.value.find { it.id == sessionExerciseId } ?: return@launch
                 val set = sessionEx.sets?.find { it.setNumber == setNumber } ?: return@launch
 
                 workoutSessionRepository.updateSet(
                     set.id, 0, null, null, null, false
                 )
+                workoutSessionRepository.updateExerciseStatus(sessionExerciseId, "in_progress")
 
-                sessionExercises = sessionExercises.mapIndexed { idx, ex ->
+                _sessionExercises.value = _sessionExercises.value.mapIndexed { idx, ex ->
                     if (ex.id == sessionExerciseId) {
                         ex.copy(
                             status = "in_progress",
@@ -239,7 +240,7 @@ class WorkoutSessionViewModel @Inject constructor(
 
     fun nextExercise() {
         val nextIdx = _currentExerciseIndex.value + 1
-        if (nextIdx < sessionExercises.size) {
+        if (nextIdx < _sessionExercises.value.size) {
             selectExercise(nextIdx)
         }
     }
@@ -252,10 +253,10 @@ class WorkoutSessionViewModel @Inject constructor(
     }
 
     fun selectExercise(index: Int) {
-        if (index < 0 || index >= sessionExercises.size) return
+        if (index < 0 || index >= _sessionExercises.value.size) return
         _currentExerciseIndex.value = index
 
-        val sessionEx = sessionExercises.getOrNull(index) ?: return
+        val sessionEx = _sessionExercises.value.getOrNull(index) ?: return
 
         val sortedSets = (sessionEx.sets ?: emptyList()).sortedBy { it.setNumber ?: 0 }
         val incompleteSet = sortedSets.indexOfFirst { set -> set.isCompleted != true }
@@ -269,6 +270,9 @@ class WorkoutSessionViewModel @Inject constructor(
             viewModelScope.launch {
                 try {
                     workoutSessionRepository.updateExerciseStatus(sessionEx.id, "in_progress")
+                    _sessionExercises.value = _sessionExercises.value.map { ex ->
+                        if (ex.id == sessionEx.id) ex.copy(status = "in_progress") else ex
+                    }
                 } catch (e: Exception) {
                     Log.e("GymApp/Error", "An error occurred", e)
                 }
@@ -300,7 +304,7 @@ class WorkoutSessionViewModel @Inject constructor(
     }
 
     fun getCurrentSessionExercise(): SessionExercise? {
-        return sessionExercises.getOrNull(_currentExerciseIndex.value)
+        return _sessionExercises.value.getOrNull(_currentExerciseIndex.value)
     }
 
     fun getCurrentTemplateExercise(): TemplateExercise? {

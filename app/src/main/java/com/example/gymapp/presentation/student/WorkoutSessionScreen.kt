@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,7 +93,7 @@ fun WorkoutSessionScreen(
             }
         }
         WorkoutSessionState.Active, WorkoutSessionState.Resumed -> {
-            val sessionExercises = viewModel.sessionExercises
+            val sessionExercises by viewModel.sessionExercises.collectAsState()
             val templateExercises = viewModel.templateExercises
             val session = viewModel.session
 
@@ -111,7 +112,10 @@ fun WorkoutSessionScreen(
                         sessionExercises = sessionExercises,
                         templateExercises = templateExercises,
                         onBack = onBack,
-                        onSelectExercise = { index -> selectedExerciseIndex = index },
+                        onSelectExercise = { index ->
+                            selectedExerciseIndex = index
+                            viewModel.selectExercise(index)
+                        },
                         onFinishWorkout = { viewModel.showRating() }
                     )
                 } else {
@@ -199,30 +203,33 @@ private fun ExerciseListScreen(
     ) {
         // Top Bar
         Surface(
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 3.dp
+            modifier = Modifier.background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(IfgGreen, IfgGreenDark)
+                )
+            ),
+            color = Color.Transparent
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(horizontal = Spacing.md, vertical = Spacing.sm)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = session?.workoutName ?: "Sessão de Treino",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Color.White
                         )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             Text(
                                 text = "Sessão ${session?.sessionNumber ?: "..."}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color.White.copy(alpha = 0.8f)
                             )
                             if (sessionState == WorkoutSessionState.Resumed) {
                                 Surface(shape = RoundedCornerShape(Spacing.xs), color = Orange100) {
@@ -233,9 +240,9 @@ private fun ExerciseListScreen(
                     }
                     IconButton(
                         onClick = onFinishWorkout,
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Finalizar", tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.Default.Check, contentDescription = "Finalizar", tint = IfgGreen)
                     }
                 }
             }
@@ -429,20 +436,27 @@ private fun ExerciseDetailScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Bar
-        Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
+        Surface(
+            modifier = Modifier.background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(IfgGreen, IfgGreenDark)
+                )
+            ),
+            color = Color.Transparent
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar aos exercícios")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar aos exercícios", tint = Color.White)
                 }
                 Text(
                     text = exerciseName,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -539,20 +553,29 @@ private fun ExerciseInfoCard(
             if (exerciseDetails != null) {
                 val medias = exerciseDetails.medias ?: emptyList()
                 if (medias.isNotEmpty()) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(Spacing.md),
-                        modifier = Modifier.fillMaxWidth()
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    androidx.compose.foundation.lazy.LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                     ) {
-                        medias.forEach { media ->
+                        items(medias.size) { page ->
+                            val media = medias[page]
                             val path = media.mediaPath
                             val type = media.mediaType
                             val url = media.videoUrl
-                            if (!path.isNullOrBlank() && !type.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(Spacing.md))
-                                ExerciseMediaDisplay(mediaPath = path, mediaType = type, exerciseName = exerciseName)
-                            } else if (!url.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(Spacing.md))
-                                com.example.gymapp.presentation.components.VideoPlayer(videoUrl = url)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(300.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!path.isNullOrBlank() && !type.isNullOrBlank()) {
+                                    ExerciseMediaDisplay(mediaPath = path, mediaType = type, exerciseName = exerciseName)
+                                } else if (!url.isNullOrBlank()) {
+                                    com.example.gymapp.presentation.components.VideoPlayer(videoUrl = url)
+                                }
                             }
                         }
                     }
