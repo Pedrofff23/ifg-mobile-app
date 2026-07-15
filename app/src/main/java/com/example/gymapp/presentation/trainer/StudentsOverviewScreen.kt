@@ -43,7 +43,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
         students.filter { student ->
             when (filter) {
                 StudentFilter.ALL -> true
-                StudentFilter.ACTIVE -> student.isActive
+                StudentFilter.ACTIVE -> student.isActive && !student.isBlocked
                 StudentFilter.BLOCKED -> student.isBlocked
             }
         }
@@ -120,7 +120,7 @@ fun StudentsOverviewScreen(viewModel: ProfessorViewModel) {
                             )
                             StatCardSmall(
                                 label = "Ativos",
-                                value = students.count { it.isActive }.toString(),
+                                value = students.count { it.isActive && !it.isBlocked }.toString(),
                                 iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 bgColor = MaterialTheme.colorScheme.secondaryContainer,
                                 icon = Icons.Default.CheckCircle,
