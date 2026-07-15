@@ -77,9 +77,17 @@ fun StudentCommunicationScreen(viewModel: StudentViewModel) {
 
         // Tab Content
         when (selectedTab) {
-            0 -> MuralTab(announcements = announcements, onAnnounceClick = { selectedAnnouncement = it })
-            1 -> InstrucoesTab()
-            2 -> NoticiasTab(announcements = announcements)
+            0 -> MuralTab(
+                announcements = announcements.filter { it.type == "aviso" || it.type.isNullOrEmpty() },
+                onAnnounceClick = { selectedAnnouncement = it }
+            )
+            1 -> InstrucoesTab(
+                announcements = announcements.filter { it.type == "instrucoes" }
+            )
+            2 -> NoticiasTab(
+                announcements = announcements.filter { it.type == "noticia" },
+                onNewsClick = { selectedAnnouncement = it }
+            )
         }
     }
 
@@ -189,41 +197,54 @@ private fun AnnouncementCard(announcement: Announcement, onAnnounceClick: (Annou
 }
 
 @Composable
-private fun InstrucoesTab() {
-    val instructions = listOf(
-        Instrucao("Fundamentos", "O que são Séries e Repetições?", "Série: Um grupo de repetições consecutivas de um exercício. Repetição: Uma execução completa do movimento do exercício."),
-        Instrucao("Fundamentos", "Velocidade de Execução", "A velocidade com que você realiza o movimento. Geralmente expressa em 3 números (ex: 2-0-2)."),
-        Instrucao("Técnicas", "Drop Set", "Técnica onde você executa uma série até a falha, reduz o peso e continua imediatamente."),
-        Instrucao("Técnicas", "Super Set", "Realizar dois exercícios consecutivos sem descanso, geralmente trabalhando músculos antagonistas."),
-        Instrucao("Conceitos", "Hipertrofia", "Aumento do tamanho das fibras musculares através de treinamento resistido e nutrição adequada."),
-        Instrucao("Conceitos", "Descanso e Recuperação", "Período entre as séries ou sessões de treino necessário para a recuperação muscular e crescimento.")
-    )
-
-    val categories = instructions.groupBy { it.category }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = Spacing.lg,
-            top = Spacing.sm,
-            end = Spacing.lg,
-            bottom = Spacing.lg
-        ),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md)
-    ) {
-        categories.forEach { (category, items) ->
-            item {
-                Text(
-                    text = category,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.xs)
-                )
+private fun InstrucoesTab(announcements: List<Announcement>?) {
+    if (announcements.isNullOrEmpty()) {
+        EmptyState(
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            title = "Nenhuma instrução disponível",
+            subtitle = "As instruções dos professores aparecerão aqui."
+        )
+    } else {
+        val instructions = announcements.map { announcement ->
+            val parts = announcement.title.split(":", limit = 2)
+            val (category, title) = if (parts.size == 2) {
+                parts[0].trim() to parts[1].trim()
+            } else {
+                "Instruções" to announcement.title
             }
-            items(items) { instruction ->
-                InstructionCard(instruction = instruction)
+            Instrucao(
+                category = category,
+                title = title,
+                content = announcement.content
+            )
+        }
+
+        val categories = instructions.groupBy { it.category }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                top = Spacing.sm,
+                end = Spacing.lg,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            categories.forEach { (category, items) ->
+                item {
+                    Text(
+                        text = category,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.xs)
+                    )
+                }
+                items(items) { instruction ->
+                    InstructionCard(instruction = instruction)
+                }
             }
         }
     }
@@ -269,10 +290,10 @@ private fun InstructionCard(instruction: Instrucao) {
 }
 
 @Composable
-private fun NoticiasTab(announcements: List<Announcement>?) {
+private fun NoticiasTab(announcements: List<Announcement>?, onNewsClick: (Announcement) -> Unit = {}) {
     if (announcements.isNullOrEmpty()) {
         EmptyState(
-            icon = Icons.Default.Article,
+            icon = Icons.AutoMirrored.Filled.Article,
             title = "Nenhuma notícia disponível",
             subtitle = "As notícias da academia aparecerão aqui."
         )
@@ -288,43 +309,76 @@ private fun NoticiasTab(announcements: List<Announcement>?) {
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             items(announcements) { announcement ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Spacing.lg),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                NewsCard(announcement = announcement, onNewsClick = onNewsClick)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsCard(announcement: Announcement, onNewsClick: (Announcement) -> Unit = {}) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNewsClick(announcement) },
+        shape = RoundedCornerShape(Spacing.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            RoundedCornerShape(Spacing.sm)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(Spacing.lg)) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(Spacing.sm)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Article,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                        Text(
-                            text = announcement.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.xs))
-                        Text(
-                            text = DateUtils.formatIsoDate(announcement.publishedAt),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.Article,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(Spacing.md))
+                Text(
+                    text = announcement.title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Text(
+                text = announcement.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(Spacing.xs))
+                    Text(
+                        text = announcement.authorName ?: "Administração",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(Spacing.xs))
+                    Text(
+                        text = DateUtils.formatIsoDate(announcement.publishedAt ?: announcement.createdAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

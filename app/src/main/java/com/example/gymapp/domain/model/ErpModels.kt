@@ -153,7 +153,7 @@ data class Announcement(
 	val title: String,
 	val content: String,
 	val type: String?,
-	val instituto: String?,
+	@SerializedName("instituto_id") val instituto: String?,
 	@SerializedName("author_id") val authorId: String?,
 	@SerializedName("published_at") val publishedAt: String?,
 	@SerializedName("created_at") val createdAt: String?,
